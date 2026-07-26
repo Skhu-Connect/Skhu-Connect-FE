@@ -17,11 +17,11 @@ const NAV = [
 ];
 
 export default function AdminLayout() {
-  const loadFeed = usePetitions((s) => s.loadFeed);
+  const loadAdmin = usePetitions((s) => s.loadAdmin);
 
   useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
+    loadAdmin();
+  }, [loadAdmin]);
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--surface-page)" }}>
@@ -49,6 +49,9 @@ export default function AdminLayout() {
                 color: isActive ? "#fff" : "rgba(255,255,255,.65)",
                 fontSize: 14,
                 fontWeight: isActive ? 700 : 500,
+                // 원본은 <button> 이라 UA line-height:normal 이었다. NavLink(<a>)는 body 의
+                // 1.5 를 상속받아 항목마다 2px 두꺼워지고 4개가 누적돼 하단 프로필이 밀린다.
+                lineHeight: "normal",
                 textDecoration: "none",
               })}
             >
@@ -61,7 +64,7 @@ export default function AdminLayout() {
           <Avatar name="관리" size={34} />
           <div style={{ fontSize: 12.5 }}>
             <div style={{ fontWeight: 700 }}>총괄 관리자</div>
-            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@skhu.ac.kr</div>
+            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@example.com</div>
           </div>
         </div>
       </aside>

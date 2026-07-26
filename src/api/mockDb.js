@@ -21,41 +21,45 @@ export const db = {
 
   prefs: { threshold: true, answer: true, empathy: false },
 
+  /* 담당자 5명은 **전부 가상 인물**이고 연락처도 자리표시자다. 원본 프로토타입에는 실제
+     대표번호(02-2610-4114)와 실도메인이 들어 있었는데, 가상 실명과 실제 기관 연락처를
+     나란히 두면 레포를 본 사람이 실제 인적사항으로 읽고 그 번호로 전화한다.
+     실제 부서 연락처로 교체할 때는 여기만 고치면 된다. */
   categories: [
     {
       key: "scholarship",
       label: "장학",
       threshold: 480,
       basis: "전체 학생",
-      owner: { team: "학생지원팀", name: "정명희", email: "scholarship@skhu.ac.kr", phone: "02-2610-4114" },
+      owner: { team: "학생지원팀", name: "정명희", email: "scholarship@example.com", phone: "02-0000-0000" },
     },
     {
       key: "facility",
       label: "시설",
       threshold: 480,
       basis: "전체 학생",
-      owner: { team: "시설관리팀", name: "박준호", email: "facility@skhu.ac.kr", phone: "02-2610-4125" },
+      owner: { team: "시설관리팀", name: "박준호", email: "facility@example.com", phone: "02-0000-0000" },
     },
     {
       key: "dorm",
       label: "기숙사",
       threshold: 240,
       basis: "기숙사 정원",
-      owner: { team: "생활관행정실", name: "김도윤", email: "dorm@skhu.ac.kr", phone: "02-2610-4210" },
+      owner: { team: "생활관행정실", name: "김도윤", email: "dorm@example.com", phone: "02-0000-0000" },
     },
     {
       key: "library",
       label: "도서관",
       threshold: 480,
       basis: "전체 학생",
-      owner: { team: "학술정보관", name: "이동수", email: "library@skhu.ac.kr", phone: "02-2610-4180" },
+      owner: { team: "학술정보관", name: "이동수", email: "library@example.com", phone: "02-0000-0000" },
     },
     {
       key: "department",
       label: "학부",
       threshold: 180,
       basis: "학과 정원",
-      owner: { team: "교학팀", name: "최주하", email: "haksa@skhu.ac.kr", phone: "02-2610-4132" },
+      owner: { team: "교학팀", name: "최주하", email: "haksa@example.com", phone: "02-0000-0000" },
     },
   ],
 

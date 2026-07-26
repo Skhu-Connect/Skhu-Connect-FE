@@ -221,3 +221,21 @@ a:hover {
 *::after {
   box-sizing: border-box;
 }
+
+/* 프로토타입은 preflight 없이 tokens/base.css 만 로드해 button/input/p 의 UA 기본값이
+   살아 있었다. Tailwind preflight 가 이를 font:inherit(→line-height 1.5 상속) ·
+   padding:0 · margin:0 으로 리셋해서, 손으로 짠 button/input/p 만 원본보다 두꺼워지고
+   여백을 잃는다(칩·사이드바 항목 +4px, 로그인 카드 -12px, 밑줄 2.25px 하강).
+   DS 프리미티브는 line-height·padding 을 인라인 style 로 박아 이 규칙에 영향받지 않는다. */
+button,
+input {
+  line-height: normal;
+}
+
+button {
+  padding: 1px 6px;
+}
+
+p {
+  margin-block: 1em;
+}

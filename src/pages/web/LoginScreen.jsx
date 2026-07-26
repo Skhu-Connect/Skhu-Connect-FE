@@ -23,11 +23,20 @@ export default function LoginScreen() {
   const submit = async (e) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const sid = String(form.get("sid") ?? "").trim();
+    const password = String(form.get("password") ?? "").trim();
     setError("");
+    if (!sid || !password) {
+      setError("학번과 비밀번호를 입력해 주세요.");
+      return;
+    }
     try {
-      await login(form.get("sid"), form.get("password"));
-    } catch (err) {
-      setError(err.message);
+      await login(sid, password);
+    } catch {
+      // 서버 문구(err.message)를 그대로 띄우지 않는다. 백엔드가 "등록되지 않은 학번" 과
+      // "비밀번호 불일치" 를 구분해 던지면 학번 순차 대입으로 재학생 명단을 만들 수 있고,
+      // 500 응답 본문이 로그인 카드에 렌더될 수도 있다. 화면이 문구를 소유한다.
+      setError("학번 또는 비밀번호가 올바르지 않습니다.");
     }
   };
 

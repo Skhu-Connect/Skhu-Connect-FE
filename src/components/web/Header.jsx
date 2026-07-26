@@ -189,6 +189,9 @@ const navLinkStyle = ({ isActive }) => ({
   fontFamily: "var(--font-sans)",
   fontSize: 15,
   fontWeight: isActive ? 700 : 500,
+  // 원본은 nav 를 <button> 으로 짜서 UA 의 line-height:normal 이었다. 여기는 NavLink(<a>)라
+  // body 의 1.5 를 상속받아 링크 박스가 4.5px 두꺼워지고 활성 밑줄이 그만큼 내려간다.
+  lineHeight: "normal",
   color: isActive ? "var(--indigo-600)" : "var(--text-body)",
   padding: "8px 2px",
   borderBottom: isActive ? "2.5px solid var(--indigo-600)" : "2.5px solid transparent",

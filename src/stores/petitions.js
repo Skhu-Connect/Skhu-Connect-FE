@@ -23,27 +23,40 @@ export const usePetitions = create((set) => ({
   bookmarked: {},
   loading: false,
 
-  /** 도메인 데이터 일괄 로드. 레이아웃이 마운트 시 한 번 부른다. */
+  /** 학생 웹 로드. WebLayout 이 마운트 시 한 번 부른다.
+      담당자 목록·내부 알림 로그는 부르지 않는다 — 학생 화면이 쓰지 않는 관리자 데이터다. */
   loadFeed: async () => {
     set({ loading: true });
     try {
-      const [petitions, categories, owners, notifications, notifLogs] = await Promise.all([
+      const [petitions, categories, notifications] = await Promise.all([
         api.listPetitions(),
         api.listCategories(),
-        api.listOwners(),
         api.listNotifications(),
-        api.listNotifLogs(),
       ]);
       set({
         petitions,
         categories,
-        owners,
         notifications,
-        notifLogs,
         voted: flags(petitions, "voted"),
         bookmarked: flags(petitions, "bookmarked"),
         answersById: answers(petitions),
       });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /** 관리자 콘솔 로드. AdminLayout 이 부른다 — 담당자 연락처·알림 로그는 여기서만 온다. */
+  loadAdmin: async () => {
+    set({ loading: true });
+    try {
+      const [petitions, categories, owners, notifLogs] = await Promise.all([
+        api.listAdminPetitions(),
+        api.listCategories(),
+        api.listOwners(),
+        api.listNotifLogs(),
+      ]);
+      set({ petitions, categories, owners, notifLogs, answersById: answers(petitions) });
     } finally {
       set({ loading: false });
     }
