@@ -3,20 +3,18 @@
 
 import { Route } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
-import {
-  AdminDashboard,
-  AdminLogs,
-  AdminManage,
-  AdminOwners,
-} from "../pages/placeholders-admin";
+import Dashboard from "../pages/admin/Dashboard";
+import Manage from "../pages/admin/Manage";
+import Owners from "../pages/admin/Owners";
+import Logs from "../pages/admin/Logs";
 
 export function adminRoutes() {
   return (
     <Route path="/admin" element={<AdminLayout />}>
-      <Route index element={<AdminDashboard />} />
-      <Route path="manage" element={<AdminManage />} />
-      <Route path="owners" element={<AdminOwners />} />
-      <Route path="logs" element={<AdminLogs />} />
+      <Route index element={<Dashboard />} />
+      <Route path="manage" element={<Manage />} />
+      <Route path="owners" element={<Owners />} />
+      <Route path="logs" element={<Logs />} />
     </Route>
   );
 }

@@ -1,11 +1,13 @@
 /* 관리자 콘솔 셸: 232px navy 사이드바 고정 + 본문만 스크롤.
    목 단계에서 /admin 에는 인증 게이트가 없다 — Phase 3-2 security review 에 기록할 항목.
-   Sidebar 는 플레이스홀더다 — Phase 2-1 이 "청" 타일·관리자 프로필까지 채운다. */
+   원본: design-handoff/project/app/admin-app-v4.jsx 63–83행.
+   "청" 타일은 Web 과 달리 --gradient-mileage 다 — --gradient-hero 와 섞지 않는다.
+   Sidebar 는 이 레이아웃에서만 쓰이므로 파일을 쪼개지 않는다. */
 
 import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { usePetitions } from "../stores/petitions";
-import { Icon } from "../components/ui";
+import { Avatar, Icon } from "../components/ui";
 
 const NAV = [
   { to: "/admin", end: true, icon: "dashboard", label: "대시보드" },
@@ -55,6 +57,13 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 8px", borderTop: "1px solid rgba(255,255,255,.1)" }}>
+          <Avatar name="관리" size={34} />
+          <div style={{ fontSize: 12.5 }}>
+            <div style={{ fontWeight: 700 }}>총괄 관리자</div>
+            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@skhu.ac.kr</div>
+          </div>
+        </div>
       </aside>
       <Outlet />
     </div>
