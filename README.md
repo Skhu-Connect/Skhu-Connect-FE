@@ -10,6 +10,8 @@
 
 Vite + React 19 + Tailwind CSS v4 + React Router 7 + zustand 5. 디자인 토큰은 Tailwind `@theme` 으로 이식.
 
+**배포**: https://web-production-c91d3.up.railway.app (Railway · production)
+
 ## 실행
 
 ```bash
@@ -17,6 +19,16 @@ npm install
 npm run dev          # http://localhost:5173
 npm run lint
 node src/api/selfcheck.js   # 임계치 전이 로직 self-check
+```
+
+## 배포 (Railway)
+
+설정 파일이 없다. Railpack 이 `vite.config.js` 를 보고 SPA 로 판정해 `npm ci` → `npm run build` →
+`dist/` 를 Caddy 로 서빙하고, **알 수 없는 경로를 `index.html` 로 폴백**한다 — `/p/3`·`/admin` 직접 진입이
+정적 호스팅에서도 살아나는 이유이므로 `RAILPACK_NO_SPA` 를 켜지 말 것.
+
+```bash
+railway up          # 또는 Railway MCP deploy (project: petition-system / service: web)
 ```
 
 `/_ds` 는 DS 프리미티브 14종의 전 variant 를 늘어놓은 이식 확인 페이지다.
@@ -27,7 +39,7 @@ node src/api/selfcheck.js   # 임계치 전이 로직 self-check
 src/
   index.css            디자인 토큰 130개 (Tailwind @theme + :root)
   api/                 데이터 접근 계약 — 화면·스토어는 이 밖을 모른다
-    index.js           async 함수 18개
+    index.js           async 함수 19개
     mockDb.js          인메모리 목 데이터 (index.js 만 import)
     selfcheck.js       임계치 전이 assert
   stores/              zustand — session(Web 전용) · petitions(Web·Admin 공용)
@@ -55,7 +67,8 @@ src/
 | `logout()` | `void` |
 | `getMe()` | `user \| null` |
 | `getPrefs()` / `savePrefs(patch)` | `prefs` |
-| `listPetitions()` | `Petition[]` |
+| `listPetitions()` | `Petition[]` — 담당자를 부서명까지만 내린다(학생용) |
+| `listAdminPetitions()` | `Petition[]` — 담당자 실명·이메일·전화 포함(관리자 스코프) |
 | `getPetition(id)` | `Petition \| null` |
 | `createPetition({ category, title, body })` | `Petition` — 카테고리·제목·본문 필수 |
 | `toggleEmpathy(id)` | `Petition` — 임계치 도달 시 `status: received → reviewing` |
