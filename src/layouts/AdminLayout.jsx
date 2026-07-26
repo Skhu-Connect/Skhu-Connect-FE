@@ -17,11 +17,11 @@ const NAV = [
 ];
 
 export default function AdminLayout() {
-  const loadFeed = usePetitions((s) => s.loadFeed);
+  const loadAdmin = usePetitions((s) => s.loadAdmin);
 
   useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
+    loadAdmin();
+  }, [loadAdmin]);
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--surface-page)" }}>
@@ -64,7 +64,7 @@ export default function AdminLayout() {
           <Avatar name="관리" size={34} />
           <div style={{ fontSize: 12.5 }}>
             <div style={{ fontWeight: 700 }}>총괄 관리자</div>
-            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@skhu.ac.kr</div>
+            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@example.com</div>
           </div>
         </div>
       </aside>

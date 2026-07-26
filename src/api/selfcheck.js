@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { db } from "./mockDb.js";
-import { getPetition, listCategories, toggleEmpathy, answerPetition } from "./index.js";
+import { getPetition, listCategories, listPetitions, listAdminPetitions, toggleEmpathy, answerPetition } from "./index.js";
 
 /* --- C. 임계치·기준·담당자의 단일 출처는 categories[] 다 --- */
 const cats = await listCategories();
@@ -17,7 +17,15 @@ const p2 = await getPetition(2); // 기숙사 청원
 assert.equal(dorm.threshold, 240);
 assert.equal(p2.threshold, dorm.threshold, "청원의 임계치는 카테고리에서 파생돼야 한다");
 assert.equal(p2.basis, dorm.basis);
-assert.equal(p2.owner.name, dorm.owner.name);
+assert.equal(p2.owner.team, dorm.owner.team);
+
+/* --- 응답 스코프: 담당자 연락처는 관리자 응답에만 실린다 --- */
+const student = JSON.stringify(await listPetitions());
+assert.ok(!/email|phone/.test(student), "학생 응답에 담당자 이메일·전화가 실려서는 안 된다");
+assert.equal(p2.owner.name, undefined, "학생 상세도 담당자 실명을 받지 않는다");
+const [admin1] = await listAdminPetitions();
+assert.equal(typeof admin1.owner.name, "string", "관리자 응답은 담당자 실명을 받는다");
+assert.ok(admin1.owner.phone, "관리자 응답은 담당자 연락처를 받는다");
 
 /* --- 임계치 전이: 접수 → 검토중 --- */
 const target = db.petitions.find((p) => p.id === 3); // 학부, 임계치 180

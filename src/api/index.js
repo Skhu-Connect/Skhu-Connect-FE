@@ -13,8 +13,12 @@ const category = (key) => db.categories.find((c) => c.key === key);
 const record = (id) => db.petitions.find((p) => p.id === Number(id));
 
 /** 청원 레코드 + 카테고리에서 파생한 임계치·기준·담당자 + 내 공감/북마크 여부.
-    화면은 p.current 를 그대로 렌더한다 — 내 공감은 이미 반영돼 있다. */
-function view(p) {
+    화면은 p.current 를 그대로 렌더한다 — 내 공감은 이미 반영돼 있다.
+
+    admin=false(학생)면 담당자는 **부서명까지만** 내린다. 담당자 실명·이메일·직통번호는
+    학생 화면이 쓰지 않는데도 응답에 실리면, 학번 하나로 로그인한 학생이 DevTools 로
+    5개 부서 담당자 연락처를 전부 긁을 수 있다 — 스코프는 라우트가 아니라 응답 필드다. */
+function view(p, { admin = false } = {}) {
   const c = category(p.category);
   return copy({
     ...p,
@@ -22,7 +26,7 @@ function view(p) {
     basis: c.basis,
     // 댓글 수는 목록에서 파생한다 — 별도 카운트 필드를 두면 카드(47)와 상세(0)가 어긋난다.
     comments: (db.comments[p.id] ?? []).length,
-    owner: c.owner,
+    owner: admin ? c.owner : { team: c.owner.team },
     voted: db.voted.has(p.id),
     bookmarked: db.bookmarked.has(p.id),
     answered: !!db.answers[p.id],
@@ -74,9 +78,16 @@ export async function savePrefs(patch) {
 
 /* ───────────────── 청원 ───────────────── */
 
+/** 학생용 목록 — 담당자는 부서명까지만. */
 export async function listPetitions() {
   await delay();
-  return db.petitions.map(view);
+  return db.petitions.map((p) => view(p));
+}
+
+/** 관리자용 목록 — 담당자 실명·이메일·직통번호 포함. 백엔드는 이 엔드포인트에 관리자 스코프를 건다. */
+export async function listAdminPetitions() {
+  await delay();
+  return db.petitions.map((p) => view(p, { admin: true }));
 }
 
 export async function getPetition(id) {
@@ -205,5 +216,5 @@ export async function answerPetition(id, body) {
     body: text,
   };
   p.status = "answered";
-  return { petition: view(p), answer: copy(db.answers[p.id]) };
+  return { petition: view(p, { admin: true }), answer: copy(db.answers[p.id]) };
 }
