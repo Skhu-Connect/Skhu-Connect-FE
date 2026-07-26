@@ -1,0 +1,223 @@
+/* 청원시스템 — 전역 스타일 진입점.
+   원본: design-handoff/project/_ds/design-system-…/tokens/*.css (7파일) + styles.css
+   + 청원시스템_{Web,Admin}.dc.html 의 <helmet> 전역 셸.
+
+   토큰 네임스페이스 규칙 (ROADMAP 의존 A):
+   - Tailwind v4 가 예약한 네임스페이스와 이름이 이미 맞는 것(--radius-, --shadow-,
+     --font-, --color-primary·--color-secondary 계열)은 @theme 에 두어 유틸리티까지 생성한다.
+   - 나머지 팔레트(--indigo-600 …)도 @theme 에 두지만 Tailwind 네임스페이스가 아니므로
+     유틸리티는 생기지 않는다. 원본과 같은 이름의 CSS 변수로만 쓴다. `static` 은
+     Tailwind 의 미사용 토큰 트리셰이킹을 끄기 위한 것 — 인라인 style 의 var() 는
+     Tailwind 스캐너가 보지 못한다.
+   - --text-* 는 Tailwind 의 font-size 네임스페이스와 충돌한다. 원본의 --text-strong
+     (색상) / --text-h3 (font shorthand) 는 @theme 밖 :root 에 원래 이름으로 둔다. */
+
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+@import "tailwindcss";
+
+@theme static {
+  /* ===== Brand — Indigo (primary) ===== */
+  --indigo-50: #eeeefb;
+  --indigo-100: #dcdcf4;
+  --indigo-200: #b9b9e8;
+  --indigo-300: #8c8ad6;
+  --indigo-400: #605dbe;
+  --indigo-500: #46429e; /* primary */
+  --indigo-600: #3d3a94; /* primary button fill */
+  --indigo-700: #322f7a;
+  --indigo-800: #29275f;
+  --indigo-900: #201f49;
+  --navy-900: #26264f; /* hero gradient dark end, footer */
+
+  /* ===== Secondary — Teal ===== */
+  --teal-50: #e4f7f3;
+  --teal-100: #c2eee7;
+  --teal-400: #3fc4b1;
+  --teal-500: #23b3a0;
+  --teal-600: #1b9c8b;
+
+  /* ===== Accent hues ===== */
+  --violet-400: #8b82dd;
+  --violet-500: #6c63c7;
+  --violet-600: #5c53b8;
+  --coral-400: #f49ba0;
+  --coral-500: #f0808a;
+  --coral-600: #e36672;
+  --magenta-500: #e12e6d;
+  --blue-500: #4c6ef5;
+
+  /* ===== Semantic / status — 접수 → 검토중 → 답변 완료 ===== */
+  --status-received-fg: #3d3a94;
+  --status-received-bg: #e7e7f7;
+  --status-review-fg: #b26a00;
+  --status-review-bg: #fcefd6;
+  --status-answered-fg: #1b8f5e;
+  --status-answered-bg: #ddf3e7;
+  --success-500: #22a06b;
+  --warning-500: #e8912b;
+  --danger-500: #e5354a;
+  --info-500: #4c6ef5;
+
+  /* ===== Neutrals ===== */
+  --white: #ffffff;
+  --gray-50: #f5f6fa;
+  --gray-100: #f0f1f6; /* page background */
+  --gray-150: #e9eaf1;
+  --gray-200: #e1e2ec;
+  --gray-300: #cfd0dc;
+  --gray-400: #a9aab9;
+  --gray-500: #8b8c9c;
+  --gray-600: #6a6b7b;
+  --gray-700: #4c4d5c;
+  --gray-800: #333442;
+  --gray-900: #23242f;
+
+  /* ===== Semantic aliases ===== */
+  --color-primary: var(--indigo-600);
+  --color-primary-hover: var(--indigo-700);
+  --color-primary-weak: var(--indigo-50);
+  --color-secondary: var(--teal-500);
+  --color-secondary-hover: var(--teal-600);
+
+  --surface-page: var(--gray-100);
+  --surface-card: var(--white);
+  --surface-sunken: var(--gray-50);
+  --border-subtle: var(--gray-200);
+  --border-strong: var(--gray-300);
+
+  /* ===== Category accents ===== */
+  --cat-scholarship: #e8912b; /* 장학 */
+  --cat-facility: #23b3a0; /* 시설 */
+  --cat-dorm: #6c63c7; /* 기숙사 */
+  --cat-library: #f0808a; /* 도서관 */
+  --cat-department: #4c6ef5; /* 학부 */
+
+  /* ===== Radii — cards 18px, pill buttons fully round ===== */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px; /* icon tiles, inputs */
+  --radius-lg: 18px; /* cards */
+  --radius-xl: 24px; /* hero / large panels */
+  --radius-pill: 999px; /* buttons, chips, badges */
+  --radius-full: 50%; /* avatars, date circles */
+
+  /* ===== Shadows — soft, cool-tinted ===== */
+  --shadow-xs: 0 1px 2px rgba(38, 38, 79, 0.06);
+  --shadow-sm: 0 2px 8px rgba(38, 38, 79, 0.06);
+  --shadow-md: 0 6px 20px rgba(38, 38, 79, 0.08);
+  --shadow-lg: 0 14px 40px rgba(38, 38, 79, 0.12);
+  --shadow-primary: 0 10px 24px rgba(61, 58, 148, 0.28);
+  --shadow-magenta: 0 12px 28px rgba(225, 46, 109, 0.28);
+
+  /* ===== Fonts ===== */
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, sans-serif;
+  --font-display: "Pretendard", system-ui, sans-serif;
+}
+
+:root {
+  /* --- 시맨틱 텍스트 색상 (Tailwind --text-* 네임스페이스 회피용으로 @theme 밖) --- */
+  --text-strong: var(--gray-900);
+  --text-heading: var(--indigo-600); /* navy-indigo headings */
+  --text-body: var(--gray-700);
+  --text-muted: var(--gray-500);
+  --text-on-primary: var(--white);
+
+  --focus-ring: color-mix(in srgb, var(--indigo-500) 45%, transparent);
+
+  /* --- Signature gradients --- */
+  --gradient-hero: linear-gradient(100deg, #3d5ab5 0%, #34348a 55%, #26264f 100%);
+  --gradient-mileage: linear-gradient(90deg, #7a5cd0 0%, #e12e6d 100%);
+
+  /* --- Weights --- */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* --- Type scale (px) --- */
+  --fs-caption: 12px;
+  --fs-sm: 13px;
+  --fs-body: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fs-title: 28px; /* card / section titles */
+  --fs-display: 40px; /* big numerals */
+  --fs-display-lg: 56px; /* hero counts */
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.3;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.65;
+
+  --ls-tight: -0.02em;
+  --ls-normal: 0;
+  --ls-wide: 0.04em;
+
+  /* --- 시맨틱 텍스트 역할 (font shorthand) --- */
+  --text-display: var(--fw-extrabold) var(--fs-display) / var(--lh-tight) var(--font-display);
+  --text-title: var(--fw-bold) var(--fs-title) / var(--lh-snug) var(--font-sans);
+  --text-h2: var(--fw-bold) var(--fs-xl) / var(--lh-snug) var(--font-sans);
+  --text-h3: var(--fw-semibold) var(--fs-lg) / var(--lh-snug) var(--font-sans);
+  --text-body-role: var(--fw-regular) var(--fs-body) / var(--lh-relaxed) var(--font-sans);
+  --text-label: var(--fw-semibold) var(--fs-sm) / var(--lh-normal) var(--font-sans);
+  --text-caption-role: var(--fw-regular) var(--fs-caption) / var(--lh-normal) var(--font-sans);
+
+  /* --- Spacing: 4px base grid --- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* --- Component-level rhythm --- */
+  --pad-card: 24px;
+  --pad-card-lg: 32px;
+  --gap-stack: 16px;
+  --page-max: 1120px;
+  --page-gutter: 24px;
+
+  /* --- tokens/base.css --- */
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* tokens/base.css + .dc.html 의 html,body{margin:0;background:var(--surface-page)} */
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--text-body);
+  background: var(--surface-page);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}

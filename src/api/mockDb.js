@@ -1,0 +1,181 @@
+/* 가변 목데이터. **오직 src/api/index.js 만 이 파일을 import 한다.**
+   백엔드 연동 시 index.js 를 fetch 로 다시 쓰고 이 파일을 지우면 끝난다.
+
+   시드 출처
+   - design-handoff/project/app/data-v4.js (user / categories / petitions / notifications / comments)
+   - design-handoff/project/app/admin-app-v4.jsx 61행 OWNERS, 177–183행 OWNER_DETAILS,
+     282–287행 NOTI_LOGS
+
+   스키마 결정
+   - categories[]: threshold / basis / owner 를 여기에만 둔다. Web Submit 미리보기와
+     Admin 담당자 화면이 같은 출처를 읽는다 (ROADMAP 의존 C). 청원 레코드에는
+     threshold·basis 를 두지 않는다 — 카테고리에서 파생한다.
+   - answers: 전역 단일 객체가 아니라 petitionId 키로 정규화한다 (ROADMAP 의존 B).
+   - comments: petitionId 키. */
+
+export const db = {
+  session: null, // login 이 user 를 넣는다
+
+  user: { name: "김석환", dept: "소프트웨어융합학부", year: 3, sid: "202214139" },
+
+  prefs: { threshold: true, answer: true, empathy: false },
+
+  categories: [
+    {
+      key: "scholarship",
+      label: "장학",
+      threshold: 480,
+      basis: "전체 학생",
+      owner: { team: "학생지원팀", name: "정명희", email: "scholarship@skhu.ac.kr", phone: "02-2610-4114" },
+    },
+    {
+      key: "facility",
+      label: "시설",
+      threshold: 480,
+      basis: "전체 학생",
+      owner: { team: "시설관리팀", name: "박준호", email: "facility@skhu.ac.kr", phone: "02-2610-4125" },
+    },
+    {
+      key: "dorm",
+      label: "기숙사",
+      threshold: 240,
+      basis: "기숙사 정원",
+      owner: { team: "생활관행정실", name: "김도윤", email: "dorm@skhu.ac.kr", phone: "02-2610-4210" },
+    },
+    {
+      key: "library",
+      label: "도서관",
+      threshold: 480,
+      basis: "전체 학생",
+      owner: { team: "학술정보관", name: "이동수", email: "library@skhu.ac.kr", phone: "02-2610-4180" },
+    },
+    {
+      key: "department",
+      label: "학부",
+      threshold: 180,
+      basis: "학과 정원",
+      owner: { team: "교학팀", name: "최주하", email: "haksa@skhu.ac.kr", phone: "02-2610-4132" },
+    },
+  ],
+
+  petitions: [
+    {
+      id: 1,
+      title: "중앙도서관 시험기간 24시간 개방 요청",
+      excerpt: "시험기간만이라도 열람실을 24시간 운영해 주세요. 밤 12시에 문을 닫으면 자리 경쟁이 너무 심합니다. 인근 대학은 이미 시행 중입니다.",
+      body: "시험기간만이라도 열람실을 24시간 운영해 주세요. 밤 12시에 문을 닫으면 자리 경쟁이 너무 심합니다. 인근 대학은 이미 시행 중입니다.\n\n특히 시험 2주 전부터는 오후 9시만 되어도 3·4층 열람실에 빈자리가 없습니다. 폐관 후에는 24시간 카페로 이동하는 학생이 많은데, 비용 부담과 안전 문제가 함께 따라옵니다. 전 기간이 어렵다면 시험기간 2주만이라도 시범 운영해 주시기 바랍니다.",
+      category: "library",
+      status: "reviewing",
+      current: 512,
+      author: "익명",
+      date: "2일 전",
+      comments: 47,
+      views: 1204,
+    },
+    {
+      id: 2,
+      title: "기숙사 세탁기 추가 설치 건의",
+      excerpt: "세탁기 대수가 부족해 주말마다 1시간 이상 기다립니다. 층당 최소 2대씩 증설이 필요합니다.",
+      body: "세탁기 대수가 부족해 주말마다 1시간 이상 기다립니다. 층당 최소 2대씩 증설이 필요합니다.\n\n현재 한 층에 세탁기 2대·건조기 1대가 배치되어 있습니다. 주말 오후에는 대기 인원이 열 명을 넘어 세탁을 포기하는 경우가 많습니다. 예산 문제로 즉시 증설이 어렵다면 예약제 운영이라도 먼저 도입해 주시기 바랍니다.",
+      category: "dorm",
+      status: "reviewing",
+      current: 243,
+      author: "익명",
+      date: "4일 전",
+      comments: 31,
+      views: 862,
+    },
+    {
+      id: 3,
+      title: "소프트웨어융합학부 실습실 야간 개방",
+      excerpt: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족합니다.",
+      body: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족합니다.\n\n학기말 프로젝트 기간에는 조별로 모여 개발할 공간이 필요한데, 실습실은 오후 6시에 문을 닫습니다. 고사양 장비가 필요한 과목이 많아 개인 노트북으로는 대체가 어렵습니다. 조교 근로 배치가 가능한 기간만이라도 연장 운영을 검토해 주시기 바랍니다.",
+      category: "department",
+      status: "received",
+      current: 88,
+      author: "익명",
+      date: "6시간 전",
+      comments: 12,
+      views: 341,
+      mine: true,
+    },
+    {
+      id: 4,
+      title: "교내 장학금 신청 절차 간소화",
+      excerpt: "매 학기 동일 서류를 반복 제출합니다. 종합정보시스템 연동으로 자동화해 주세요.",
+      body: "매 학기 동일 서류를 반복 제출합니다. 종합정보시스템 연동으로 자동화해 주세요.\n\n성적증명서·재학증명서처럼 학교가 이미 보유한 정보를 매 학기 다시 발급받아 제출하고 있습니다. 발급 비용과 대기 시간도 부담이지만, 마감 직전 창구가 혼잡해 신청을 놓치는 학생도 있습니다. 교내에서 확인 가능한 서류는 시스템 연동으로 자동 첨부되도록 개선해 주시기 바랍니다.",
+      category: "scholarship",
+      status: "answered",
+      current: 631,
+      author: "익명",
+      date: "2주 전",
+      comments: 58,
+      views: 2417,
+      mine: true,
+    },
+    {
+      id: 5,
+      title: "학생회관 남녀 화장실 리모델링",
+      excerpt: "노후된 학생회관 화장실 위생 상태가 심각합니다. 전면 보수를 요청합니다.",
+      body: "노후된 학생회관 화장실 위생 상태가 심각합니다. 전면 보수를 요청합니다.\n\n배수가 자주 막히고 환기가 되지 않아 냄새가 복도까지 퍼집니다. 세면대 온수도 나오지 않는 곳이 있습니다. 전면 보수가 어렵다면 우선 배수·환기 설비만이라도 이번 방학 중에 점검해 주시기 바랍니다.",
+      category: "facility",
+      status: "received",
+      current: 154,
+      author: "익명",
+      date: "1일 전",
+      comments: 19,
+      views: 508,
+    },
+    {
+      id: 6,
+      title: "도서관 노트북 대여 대수 확대",
+      excerpt: "노트북 대여가 오전 중 전부 소진됩니다. 최소 20대 추가 확보가 필요합니다.",
+      body: "노트북 대여가 오전 중 전부 소진됩니다. 최소 20대 추가 확보가 필요합니다.\n\n대여 가능 대수가 30대인데 오전 10시면 모두 나갑니다. 과제·발표 준비로 수요가 몰리는 학기 중반에는 예약조차 어렵습니다. 노후 장비 교체와 함께 대여 대수를 확대해 주시기 바랍니다.",
+      category: "library",
+      status: "received",
+      current: 96,
+      author: "익명",
+      date: "3일 전",
+      comments: 8,
+      views: 297,
+    },
+  ],
+
+  /* petitionId → 답변 레코드 (의존 B). 시드 답변은 청원 4(장학)의 담당 부서인
+     학생지원팀 명의다 — 원본 data-v4.js 의 전역 adminAnswer 는 학술정보관 문구였으나
+     그것은 청원 1 용 본문이 전역에 하나만 있던 프로토타입의 한계다. */
+  answers: {
+    4: {
+      petitionId: 4,
+      dept: "학생지원팀",
+      manager: "정명희",
+      date: "2026.05.22",
+      body: "안녕하세요, 학생지원팀입니다. 교내에서 확인 가능한 성적·재학 정보는 2026학년도 2학기 신청분부터 종합정보시스템 연동으로 자동 첨부되도록 개선하였습니다. 소득분위 증빙 등 외부 기관 발급 서류는 기존 절차가 유지됩니다. 세부 안내는 장학 공지사항으로 게시하겠습니다. 소중한 의견 감사합니다.",
+    },
+  },
+
+  /* petitionId → 댓글 목록 */
+  comments: {
+    1: [
+      { id: 1, author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리 없어서 고생했어요.", date: "2일 전", votes: 24 },
+      { id: 2, author: "익명 2", body: "타 대학도 다 하는데 우리만 안 하는 게 이상해요.", date: "1일 전", votes: 12 },
+      { id: 3, author: "익명 3", body: "안전 문제로 최소 인력만 배치해도 충분할 것 같습니다.", date: "20시간 전", votes: 7 },
+    ],
+  },
+
+  notifications: [
+    { id: 1, type: "answer", petitionId: 4, title: "공식 답변 등록", body: "‘교내 장학금 신청 절차 간소화’에 학생지원팀의 답변이 등록되었습니다.", date: "3시간 전", read: false },
+    { id: 2, type: "threshold", petitionId: 1, title: "임계치 도달", body: "‘중앙도서관 시험기간 24시간 개방 요청’이 임계치를 넘어 검토가 시작되었습니다.", date: "1일 전", read: false },
+    { id: 3, type: "empathy", petitionId: 3, title: "공감 알림", body: "내 청원 ‘소프트웨어융합학부 실습실 야간 개방’이 공감 50개를 넘었습니다.", date: "2일 전", read: true },
+  ],
+
+  notifLogs: [
+    { id: 1, time: "2026.07.25 14:02", type: "threshold", petitionId: 2, msg: "공감 243/240 도달 — 생활관행정실 김도윤에게 검토 요청을 발송했습니다." },
+    { id: 2, time: "2026.07.24 09:31", type: "threshold", petitionId: 1, msg: "공감 512/480 도달 — 학술정보관 이동수에게 검토 요청을 발송했습니다." },
+    { id: 3, time: "2026.05.22 16:45", type: "answer", petitionId: 4, msg: "학생지원팀 공식 답변 등록 — 청원 상태가 답변 완료로 변경되었습니다." },
+    { id: 4, time: "2026.05.20 11:12", type: "reminder", petitionId: 4, msg: "검토 기한 임박 — 학생지원팀 정명희에게 리마인더를 발송했습니다." },
+  ],
+
+  voted: new Set(),
+  bookmarked: new Set(),
+};
