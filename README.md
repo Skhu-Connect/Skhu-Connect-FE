@@ -10,6 +10,8 @@
 
 Vite + React 19 + Tailwind CSS v4 + React Router 7 + zustand 5. 디자인 토큰은 Tailwind `@theme` 으로 이식.
 
+**배포**: https://petition-system-two.vercel.app (Vercel · production)
+
 ## 실행
 
 ```bash
@@ -19,6 +21,22 @@ npm run lint
 node src/api/selfcheck.js   # 임계치 전이 로직 self-check
 ```
 
+## 배포 (Vercel)
+
+```bash
+vercel deploy --prod
+```
+
+프레임워크 감지(Vite)로 빌드·정적 서빙은 자동이고, `vercel.json` 은 **한 줄짜리 SPA 폴백**만 갖는다.
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+정적 호스팅에서 `/p/3`·`/admin` 직접 진입이 404 가 되는 유일한 지점이므로 지우지 말 것 — 라우팅이
+URL 에 있다는 전제(ROADMAP 0-8, 의존 G)가 배포에서 깨진다. rewrite 는 파일 시스템 조회 뒤에 걸리므로
+`/assets/*` 는 그대로 정적 파일로 나간다.
+
 `/_ds` 는 DS 프리미티브 14종의 전 variant 를 늘어놓은 이식 확인 페이지다.
 
 ## 구조
@@ -27,7 +45,7 @@ node src/api/selfcheck.js   # 임계치 전이 로직 self-check
 src/
   index.css            디자인 토큰 130개 (Tailwind @theme + :root)
   api/                 데이터 접근 계약 — 화면·스토어는 이 밖을 모른다
-    index.js           async 함수 18개
+    index.js           async 함수 19개
     mockDb.js          인메모리 목 데이터 (index.js 만 import)
     selfcheck.js       임계치 전이 assert
   stores/              zustand — session(Web 전용) · petitions(Web·Admin 공용)
@@ -55,7 +73,8 @@ src/
 | `logout()` | `void` |
 | `getMe()` | `user \| null` |
 | `getPrefs()` / `savePrefs(patch)` | `prefs` |
-| `listPetitions()` | `Petition[]` |
+| `listPetitions()` | `Petition[]` — 담당자를 부서명까지만 내린다(학생용) |
+| `listAdminPetitions()` | `Petition[]` — 담당자 실명·이메일·전화 포함(관리자 스코프) |
 | `getPetition(id)` | `Petition \| null` |
 | `createPetition({ category, title, body })` | `Petition` — 카테고리·제목·본문 필수 |
 | `toggleEmpathy(id)` | `Petition` — 임계치 도달 시 `status: received → reviewing` |
