@@ -225,19 +225,19 @@ Admin 테이블 `Row` 와 `AnswerModal`, `Owners` 카드가 이들을 쓴다. Ph
 
 ## Phase 4 — 배포 (2026-07-26 추가)
 
-- [x] **4-1. Railway 배포** — Railway MCP 로 project `petition-system` / service `web` 생성 후 로컬 디렉터리 배포.
-  **설정 파일을 만들지 않았다** — Railpack 이 Vite 를 SPA 로 판정해 `dist/` 를 Caddy 로 서빙하고 `index.html`
-  폴백까지 준다. 정적 호스팅에서 `/p/:id`·`/admin` 직접 진입이 깨지는 유일한 지점이 그 폴백이므로,
-  프로토타입의 nav→URL 승격(0-8)이 배포에서도 그대로 성립한다.
-  완료: 배포 상태 `SUCCESS`(`845dfb8c`), https://web-production-c91d3.up.railway.app,
+- [x] **4-1. Vercel 배포** — `vercel deploy --prod`. 빌드·정적 서빙은 Vite 프레임워크 감지로 자동이고,
+  설정은 `vercel.json` 의 **SPA 폴백 rewrite 한 줄**뿐이다. 정적 호스팅에서 `/p/:id`·`/admin` 직접 진입이
+  404 가 되는 유일한 지점이 그 폴백이므로, 라우팅을 URL 로 올린 0-8·의존 G 가 배포에서도 그대로 성립한다.
+  rewrite 는 파일 시스템 조회 뒤에 걸려 `/assets/*` 는 정적 파일로 나간다.
+  완료: `readyState: READY`(`dpl_DGJGC3nG…`), https://petition-system-two.vercel.app,
   프로덕션 빌드에서 브라우저 조작으로 확인 — ① `/p/3` 직접 진입 → `/login?next=/p/3` → 로그인 후 `/p/3` 복귀(의존 G)
   ② `document.fonts.check('700 14px Pretendard')` = true ③ 콘솔 에러 0건
   ④ `/admin` 답변 등록 → 모달 닫힘·행 상태·통계(도달 2→1, 완료 1→2)·경고 배너 건수 갱신.
 
 **배포 후 남은 것** (구현 항목 아님, 기록용)
 - **2차 `code-reviewer` 재리뷰** — 3-2 에서 API 한도로 중단된 그 지점부터. 이후 변경은 오케스트레이터 검증만 받았다.
-- **CSP** — README 보안 항목 7. 지금 넣으면 Vite 개발 서버의 인라인 프리앰블이 막히므로 백엔드 연동 시
-  응답 헤더로 넣는다(meta 태그로 넣지 않는다).
+- **CSP** — README 보안 항목 7. meta 태그로 넣으면 Vite 개발 서버의 인라인 프리앰블이 막힌다.
+  백엔드 연동 시 `vercel.json` 의 `headers` 로 응답 헤더에 넣는다(개발 서버는 영향 없음).
 - **의존 B 의 라이브 end-to-end** — 관리자→학생 웹 왕복은 페이지 리로드를 거치고, 목 데이터는 메모리라
   리로드에서 초기화된다. 배포본에서는 재현 불가하고 로컬에서 확인됐다(3-1 기록). 백엔드가 붙으면 자연히 풀린다.
 

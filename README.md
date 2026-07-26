@@ -10,7 +10,7 @@
 
 Vite + React 19 + Tailwind CSS v4 + React Router 7 + zustand 5. 디자인 토큰은 Tailwind `@theme` 으로 이식.
 
-**배포**: https://web-production-c91d3.up.railway.app (Railway · production)
+**배포**: https://petition-system-two.vercel.app (Vercel · production)
 
 ## 실행
 
@@ -21,15 +21,21 @@ npm run lint
 node src/api/selfcheck.js   # 임계치 전이 로직 self-check
 ```
 
-## 배포 (Railway)
-
-설정 파일이 없다. Railpack 이 `vite.config.js` 를 보고 SPA 로 판정해 `npm ci` → `npm run build` →
-`dist/` 를 Caddy 로 서빙하고, **알 수 없는 경로를 `index.html` 로 폴백**한다 — `/p/3`·`/admin` 직접 진입이
-정적 호스팅에서도 살아나는 이유이므로 `RAILPACK_NO_SPA` 를 켜지 말 것.
+## 배포 (Vercel)
 
 ```bash
-railway up          # 또는 Railway MCP deploy (project: petition-system / service: web)
+vercel deploy --prod
 ```
+
+프레임워크 감지(Vite)로 빌드·정적 서빙은 자동이고, `vercel.json` 은 **한 줄짜리 SPA 폴백**만 갖는다.
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+정적 호스팅에서 `/p/3`·`/admin` 직접 진입이 404 가 되는 유일한 지점이므로 지우지 말 것 — 라우팅이
+URL 에 있다는 전제(ROADMAP 0-8, 의존 G)가 배포에서 깨진다. rewrite 는 파일 시스템 조회 뒤에 걸리므로
+`/assets/*` 는 그대로 정적 파일로 나간다.
 
 `/_ds` 는 DS 프리미티브 14종의 전 variant 를 늘어놓은 이식 확인 페이지다.
 
