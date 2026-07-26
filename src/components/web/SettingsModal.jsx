@@ -2,6 +2,8 @@
    44×26px 토글은 DS 14종에 없어서 여기서 만든다 — 이 모달 밖에서 쓰이지 않는다.
    토글 상태는 session 스토어 prefs 다(모달을 닫았다 열어도 유지). */
 
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "../../stores/session";
 import { Button, Icon } from "../ui";
 
@@ -30,15 +32,23 @@ export default function SettingsModal({ user, onClose }) {
   const prefs = useSession((s) => s.prefs) ?? {};
   const savePrefs = useSession((s) => s.savePrefs);
 
-  return (
-    /* 스크림 클릭으로 닫기(원본 545행). Escape 는 onKeyDown 이 받는다 —
-       열릴 때 닫기 버튼이 autoFocus 라 포커스가 항상 모달 안에 있다. */
+  // Escape 는 document 에서 받는다 — dialog 의 onKeyDown 으로 두면
+  // 포커스가 모달 밖으로 나간 순간(트랩 없음) 키가 안 잡힌다.
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  /* body 로 포털한다: 호출부가 <header> 안이고 그 헤더에 backdrop-filter 가 걸려 있어
+     position:fixed 의 containing block 이 헤더(66px)로 좁혀진다 — 그대로 두면 모달 상단이 잘린다. */
+  return createPortal(
+    /* 스크림 클릭으로 닫기(원본 545행). Escape 는 위 document 리스너가 받는다. */
     <div
       role="dialog"
       aria-modal="true"
       aria-label="환경설정"
       onClick={onClose}
-      onKeyDown={(e) => e.key === "Escape" && onClose()}
       style={{ position: "fixed", inset: 0, background: "rgba(30,30,60,.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
     >
       <div onClick={(e) => e.stopPropagation()} style={{ width: 460, maxWidth: "100%", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-lg)", padding: 28 }}>
@@ -67,6 +77,7 @@ export default function SettingsModal({ user, onClose }) {
           <Button variant="primary" onClick={onClose}>확인</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

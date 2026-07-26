@@ -20,6 +20,8 @@ function view(p) {
     ...p,
     threshold: c.threshold,
     basis: c.basis,
+    // 댓글 수는 목록에서 파생한다 — 별도 카운트 필드를 두면 카드(47)와 상세(0)가 어긋난다.
+    comments: (db.comments[p.id] ?? []).length,
     owner: c.owner,
     voted: db.voted.has(p.id),
     bookmarked: db.bookmarked.has(p.id),
@@ -85,20 +87,21 @@ export async function getPetition(id) {
 
 export async function createPetition({ category: categoryKey, title, body }) {
   const t = String(title ?? "").trim();
+  const b = String(body ?? "").trim();
   if (!category(categoryKey)) throw new Error("카테고리를 선택해 주세요.");
   if (!t) throw new Error("제목을 입력해 주세요.");
+  if (!b) throw new Error("건의 내용을 입력해 주세요.");
   await delay();
   const p = {
     id: Math.max(...db.petitions.map((x) => x.id)) + 1,
     title: t,
-    excerpt: String(body ?? "").trim().slice(0, 120),
-    body: String(body ?? "").trim(),
+    excerpt: b.slice(0, 120),
+    body: b,
     category: categoryKey,
     status: "received",
     current: 0,
     author: "익명",
     date: "방금 전",
-    comments: 0,
     views: 0,
     mine: true,
   };
@@ -145,8 +148,6 @@ export async function addComment(petitionId, body) {
   const list = (db.comments[key] ??= []);
   const c = { id: (list.at(-1)?.id ?? 0) + 1, author: `익명 ${list.length + 1}`, body: text, date: "방금 전", votes: 0 };
   list.push(c);
-  const p = record(key);
-  if (p) p.comments += 1;
   return copy(c);
 }
 
@@ -191,7 +192,11 @@ export async function answerPetition(id, body) {
   await delay();
   const p = record(id);
   if (!p) throw new Error(`청원 ${id} 을(를) 찾을 수 없습니다.`);
-  const { owner } = category(p.category);
+  const { owner, threshold } = category(p.category);
+  // 임계치를 넘어야 담당 부서가 답한다 — 제품의 핵심 규칙이므로 UI 게이팅이 아니라 여기서 막는다.
+  // 백엔드는 이 계약을 그대로 구현한다.
+  if (p.current < threshold) throw new Error("임계치에 도달하지 않은 청원입니다.");
+  if (db.answers[p.id]) throw new Error("이미 답변이 등록된 청원입니다.");
   db.answers[p.id] = {
     petitionId: p.id,
     dept: owner.team,

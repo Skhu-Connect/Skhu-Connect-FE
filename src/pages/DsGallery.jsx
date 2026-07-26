@@ -110,7 +110,7 @@ export default function DsGallery() {
 
       <Section title="Avatar" note="fontSize = size × 0.4 · ring 시 0 0 0 3px #fff, 0 0 0 5px --indigo-200">
         {[34, 38, 44, 52].map((size) => (
-          <Avatar key={size} name="석환" size={size} />
+          <Avatar key={size} name="한울" size={size} />
         ))}
         <Avatar name="관리" size={44} ring />
       </Section>

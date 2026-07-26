@@ -53,7 +53,7 @@ export default function Manage() {
     (p) =>
       (status === "all" || p.status === status) &&
       (cat === "all" || p.category === cat) &&
-      (!q.trim() || p.title.includes(q.trim())),
+      (!q.trim() || p.title.toLowerCase().includes(q.trim().toLowerCase())),
   );
 
   return (

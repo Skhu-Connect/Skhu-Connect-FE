@@ -5,7 +5,7 @@
    Outlet context 로 내려온다. */
 
 import { useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
 import { Button, Icon } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
@@ -79,7 +79,8 @@ export default function FeedScreen({ nav = "feed" }) {
   const { query } = useOutletContext();
   const navigate = useNavigate();
   const [cat, setCat] = useState("all");
-  const [sort, setSort] = useState("hot");
+  // 청원 등록 직후에는 최신순으로 연다 — 공감 0인 새 청원이 공감순에서 맨 아래로 밀리기 때문.
+  const [sort, setSort] = useState(useLocation().state?.sort ?? "hot");
 
   const base = nav === "answered" ? petitions.filter((p) => p.status === "answered") : nav === "mine" ? petitions.filter((p) => p.mine) : petitions;
   let list = base.filter((p) => cat === "all" || p.category === cat);
@@ -93,8 +94,8 @@ export default function FeedScreen({ nav = "feed" }) {
     { value: "88%", label: "평균 답변률" },
   ];
 
-  const intro = query ? (
-    <SearchIntro query={query} count={list.length} />
+  const intro = q ? (
+    <SearchIntro query={query.trim()} count={list.length} />
   ) : nav === "feed" ? (
     <HeroBanner stats={stats} />
   ) : nav === "answered" ? (
@@ -115,10 +116,10 @@ export default function FeedScreen({ nav = "feed" }) {
       />
       {list.length === 0 ? (
         <EmptyState
-          title={query ? `‘${query}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 청원이 없습니다" : "해당 조건의 청원이 없습니다"}
-          desc={query ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 청원을 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
+          title={q ? `‘${query.trim()}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 청원이 없습니다" : "해당 조건의 청원이 없습니다"}
+          desc={q ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 청원을 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
         >
-          {nav === "mine" && !query && <Button variant="primary" onClick={() => navigate("/submit")}>청원 등록</Button>}
+          {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>청원 등록</Button>}
         </EmptyState>
       ) : (
         <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 청원" : undefined} />

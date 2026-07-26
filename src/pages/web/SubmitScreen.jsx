@@ -23,7 +23,8 @@ export default function SubmitScreen() {
     setSaving(true);
     try {
       await submit({ category: cat, title, body });
-      navigate("/");
+      // 기본 정렬이 공감순이라 새 청원(공감 0)은 맨 아래로 간다 — 등록 직후만 최신순으로 연다.
+      navigate("/", { state: { sort: "new" } });
       toast("청원이 익명으로 등록되었습니다");
     } catch (err) {
       toast(err.message);
@@ -74,7 +75,7 @@ export default function SubmitScreen() {
 
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
           <Button variant="outline" onClick={() => navigate("/")}>취소</Button>
-          <Button variant="primary" disabled={!title.trim() || !cat || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
+          <Button variant="primary" disabled={!title.trim() || !body.trim() || !cat || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
         </div>
       </Card>
     </div>
