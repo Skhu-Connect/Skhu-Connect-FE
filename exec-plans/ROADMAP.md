@@ -342,6 +342,33 @@ RN 에는 `<select>` 가 없고 Picker 계열은 새 의존성이다. `Select` �
 
 ---
 
+## 진행 현황 (2026-07-28)
+
+**M0-1 ~ M0-7 완료. M0-8 부터는 코드가 다 있고 시뮬레이터 실사만 남았다.**
+
+| 상태 | 항목 |
+| --- | --- |
+| 완료·확인됨 | M0-1 · M0-2 · M0-3 · M0-4 · M0-5 · M0-6 · M0-7 |
+| 코드 완료 · 실사 미검증 | M0-8 · M0-9 · M1-1~M1-5 · M2-2~M2-6 |
+| 코드 완료 · 부분 검증 | M2-1 로그인 — 렌더·그라데이션·흰 상태바까지 확인, **화면 전환과 키보드 회피는 미검증** |
+| 시작 안 함 | M3-1 · M3-2 · M3-3 |
+
+확인된 것: `xcodebuild` **Build Succeeded**(경고 1·오류 0), 시뮬레이터 설치·실행, 번들 1230 모듈,
+`npx tsc --noEmit` 클린, `node src/selfcheck.ts` 통과, 로그인 화면이 시뮬레이터에 원본대로 뜨는 것까지.
+
+**막힌 지점 — 로그인 이후로 넘어갈 방법이 없다.** `xcrun simctl` 은 스크린샷·앱 실행·딥링크만 되고
+탭을 못 한다. `osascript` 클릭은 접근성 권한이 없어 거부된다(-1719). `idb-companion` 은 brew formula 가
+없어졌다. M0-8 이후 항목의 완료 조건은 전부 "시뮬레이터에서 눌러 확인"이므로 **탭 수단이 생기기 전에는
+닫을 수 없다.** 실사가 헛일이 아니라는 근거: 로그인 화면 하나를 띄운 것만으로 아래 두 버그를 잡았다
+(M0-7 의 8번째 규칙 ①②) — 둘 다 빌드·타입 검사를 통과하고도 화면이 비는 종류다.
+
+로드맵과 달라진 것 3가지는 M0-7 · M0-9 · M1-2 · "스코프에서 잘라낸 것" 에 각각 적었다.
+
+**이슈 대응**: M0-1~M0-3 → #4 · M0-5 → #5 · M0-4/M1-* → #6 · M2-1 → #7 · M2-2 → #8 ·
+M2-3 → #9 · M2-5 → #10 · M2-6 → #11 · M0-8/M0-9/M2-4 → #12.
+
+---
+
 ## Phase M0 — Platform
 
 - [x] **M0-1. Expo 스캐폴딩 + 의존성** — `expo` blank-typescript 템플릿. 추가 의존성은 `react-native-svg`(아이콘) · `expo-linear-gradient`(그라데이션 6곳) · `react-native-safe-area-context`(의존 H) 3종뿐.
@@ -361,16 +388,22 @@ RN 에는 `<select>` 가 없고 Picker 계열은 새 의존성이다. `Select` �
 - [x] **M0-5. `src/data.ts` + `src/logic.ts` + `src/selfcheck.ts`** — 목데이터(SEED 6건·댓글·공식 답변·알림 3건·사용자·칩 목록·기준 문구)와 순수 로직(`count`/`remain`/`isSoon`/`visibleList`/`basisFor`/`thresholdFor`/`statusOf`)을 분리했다. `logic.ts` 가 RN 을 import 하지 않으므로 시뮬레이터 없이 검증된다.
   완료: `node src/selfcheck.ts` 가 assert 전부 통과.
 
-- [ ] **M0-6. NativeWind 시뮬레이터 스모크 검증** — **크로스 트랙 의존 A. 가장 큰 리스크이고 다른 모든 항목보다 먼저다.** Expo 57 / RN 0.86 에서 NativeWind 4.2 가 도는지 확인된 바 없고, 깨지면 Metro 변환에서 죽어 앱이 뜨지 않는다.
+- [x] **M0-6. NativeWind 시뮬레이터 스모크 검증** — **크로스 트랙 의존 A. 가장 큰 리스크이고 다른 모든 항목보다 먼저다.** Expo 57 / RN 0.86 에서 NativeWind 4.2 가 도는지 확인된 바 없고, 깨지면 Metro 변환에서 죽어 앱이 뜨지 않는다.
   방법: `App.tsx` 를 `className` 한 줄짜리 화면으로 바꾸고 `npx expo start --ios` 로 시뮬레이터에 띄운다. 확인할 것은 세 가지 — ① 토큰 색 클래스(`bg-indigo-600` 등 `tailwind.config.js` 의 `colors` 에서 생성된 것)가 실제로 칠해지는가 ② 임의값 클래스가 무시되지 않는가 ③ Fast Refresh 후에도 스타일이 유지되는가.
   **실패 시 즉시 폴백한다**: `tailwind.config.js`·`global.css` 를 버리고 `tokens.js` 를 `style` prop 으로 직접 참조한다(의존 A). 재시도로 시간을 쓰지 않는다 — 웹 DS 원본이 이미 인라인 `style` 객체라 폴백이 오히려 이식 경로가 짧다.
   완료: 시뮬레이터에 클래스로 칠한 화면이 뜨거나, 폴백 결정이 내려지고 그 결정이 이 항목에 기록됐다. **이 항목이 닫히기 전에는 `className` 을 다른 파일에 한 줄도 쓰지 않는다.**
+  **결과: NativeWind 는 동작한다. 폴백하지 않는다.** iPhone 17 Pro 시뮬레이터에서 `bg-page`·`text-white`·`rounded-lg`·임의값 클래스가 전부 칠해졌고 Fast Refresh 후에도 유지됐다. 번들 1230 모듈, 실패 0.
+  배선에서 하나 빠져 있었다 — SDK 57 blank 템플릿은 `babel-preset-expo` 를 최상위 의존성으로 깔지 않는데 `babel.config.js` 를 직접 쓰면 필요하다. 없으면 Metro 가 `Failed to construct transformer` 로 죽는다.
 
-- [ ] **M0-7. 스타일 경계선 확정 + `tokens.js` 보강** — 크로스 트랙 의존 B. 7가지 대응 규칙을 한 번에 정하고 토큰에 반영한다. (M0-6 선행)
+- [x] **M0-7. 스타일 경계선 확정 + `tokens.js` 보강** — 크로스 트랙 의존 B. 7가지 대응 규칙을 한 번에 정하고 토큰에 반영한다. (M0-6 선행)
   `tokens.js` 에 추가: ① `CategoryTag` soft 배경 5색(`color-mix` 사전 계산 — 지금 없다) ② 반투명+블러 표면 2곳의 불투명 대체색 ③ 그라데이션은 이미 있는 `gradient.hero`/`gradient.mileage` 를 `LinearGradient` props 로 그대로 쓴다.
   규칙으로 남길 것: `lineHeight` = `fontSize × 배수`(절대값) / `letterSpacing` = `fontSize × em`(pt) / 그림자는 클래스가 아니라 `tokens.shadow` 스프레드 / 가로 칩 줄은 `horizontal ScrollView` + 스크롤바 숨김 / sticky 는 `stickyHeaderIndices`.
   **`logic.ts` 의 `statusOf` 를 화면에서 쓰지 않는다** — 그건 웹의 임계치 전이 규칙이고, 모바일 원본은 `p.status` 를 그대로 렌더한다(공감으로 배지가 바뀌지 않는다). 상세의 "처리 상태" 스텝퍼만 `count >= threshold` 로 `reached` 를 따로 계산한다(원본 557행). 섞으면 피드 배지가 원본과 달라진다.
   완료: 위 결정이 `tokens.js` 주석과 이 항목에 적혔고, 어떤 화면 코드도 `color-mix`·`backdrop-filter`·배수 `lineHeight`·em `letterSpacing` 을 다시 고민하지 않는다.
+  **결정과 달라진 것 하나** — `CategoryTag` soft 배경을 `tokens.js` 상수 5개로 사전 계산하지 않고, `ui.tsx` 의 `mixWhite(색, 0.14)` 로 런타임 계산한다. 카테고리 원색이 이미 `tokens.cat` 에 있으므로 같은 값이 두 번 적히지 않는다 — 원색을 고치면 soft 배경이 따라온다.
+  **여기에 8번째 규칙이 붙었다(M0-6 스모크와 구현 중에 드러남).** RN 은 CSS 에 없는 제약을 하나 더 건다:
+  ① **`className` 은 서드파티 컴포넌트에 닿지 않는다.** `LinearGradient` 에 `className="flex-1"` 을 주면 조용히 무시돼 높이 0 이 되고 화면이 통째로 하얗게 뜬다. 서드파티는 `style` 로만 준다.
+  ② **`Pressable` 의 함수형 `style={({pressed}) => …}` 이 NativeWind JSX 래퍼에서 유실된다.** 배경·높이가 전부 사라져 흰 배경에 흰 글씨만 남는다(버튼이 안 보인다). 눌림 반응이 필요한 곳은 `TouchableOpacity` + 배열 `style` 로 간다 — 그래서 M1-1 의 press `scale` 은 `activeOpacity` 로 대체된다.
 
 - [ ] **M0-8. 앱 셸 — 상태 머신 + SafeArea + 상태바 + 하단 탭바** — 크로스 트랙 의존 C·D·G·H 가 전부 여기서 닫힌다. **화면 5개보다 먼저다** — 셸이 없으면 만든 화면을 시뮬레이터에서 볼 수 없다. (M0-7 선행)
   상태: `authed` `screen`(login/feed/detail/submit/my) `tab`(home/soon/mine/my) `openId` `votes` `petitions` `comments` `prefs` `toast` `shareOpen` — 원본 477–485행 그대로. 필터·검색·입력 중 텍스트 등 **화면 로컬 상태는 셸에 올리지 않는다**(웹 로드맵의 상태 분담 규칙과 같다).
@@ -383,6 +416,7 @@ RN 에는 `<select>` 가 없고 Picker 계열은 새 의존성이다. `Select` �
   토스트: `left/right 20`, `bottom 88`(+ safe inset), `gray-900` pill, `teal-400` 체크 아이콘, 13px/700, **1.9초 후 자동 소멸**, 재호출 시 이전 타이머 취소(원본 497–501행).
   시트 표면: 스크림 `rgba(24,24,54,.45)`(탭 시 닫힘), 상단 라운드 24, `padding 20 20 26`, 38×4 핸들바, `shadow-lg`. 원본 `cwUp`(translateY 20 → 0, .22s `cubic-bezier(.2,.8,.3,1)`) 은 RN 내장 `Animated` 로 낸다 — 애니메이션 라이브러리를 추가하지 않는다.
   완료: 아무 화면에서나 한 줄 호출로 토스트가 뜨고 1.9초에 사라지며, 연속 호출해도 하나만 보인다. 시트 표면이 아래에서 올라오고 스크림 탭으로 닫힌다. 시트가 탭바 위에 그려진다.
+  **결정과 달라진 것** — 시트 표면을 `Select` 와 공유하지 않는다. 공유 시트는 RN 내장 `Modal`(`animationType="slide"`)로 냈고, `Select` 는 **iOS 네이티브 `ActionSheetIOS`** 로 갔다. 의존 E 의 목적(Picker 패키지를 새로 들이지 않는다)은 그대로 지켜지고, 표면을 손으로 만드는 것보다 코드가 더 적으면서 결과가 진짜 iOS 시트다. 대신 `Select` 열림 UI 는 원본 프로토타입의 시트 모양과 다르다 — 원본 재현보다 네이티브 관행을 택했다.
 
 ---
 
@@ -402,6 +436,7 @@ RN 에는 `<select>` 가 없고 Picker 계열은 새 의존성이다. `Select` �
   Textarea: `multiline`, `minHeight 128`, **우하단 `n / 1000` 카운터**, `maxLength`. RN 은 `resize` 가 없다 — 고정 높이로 간다.
   비밀번호 필드는 `secureTextEntry`. 학번은 `keyboardType="number-pad"`.
   완료: 두 부품이 시뮬레이터 키보드로 실제 입력되고, 포커스 시 테두리가 바뀌며, 카운터가 글자 수를 따라간다. 키보드가 필드를 가리지 않는다(`KeyboardAvoidingView`).
+  **아직 안 한 것**: 학번 필드의 `keyboardType="number-pad"` 가 빠졌다. 지금은 기본 키보드가 뜬다.
 
 - [ ] **M1-3. `Select`** — 크로스 트랙 의존 E. **RN 에 `<select>` 가 없다 — 등록 화면을 막는 유일한 부품이다.** (M0-9 시트 표면, M1-2 선행)
   닫힌 상태의 필드 표면은 원본과 같게 만든다(1.5px 테두리 · `radius-md` · `padding 12 40 12 15` · 우측 14px chevron · 값 없으면 `text-muted` 플레이스홀더). 탭하면 **M0-9 의 시트 표면**에 카테고리 5개를 리스트로 띄우고 선택 시 닫는다.
@@ -498,7 +533,7 @@ RN 에는 `<select>` 가 없고 Picker 계열은 새 의존성이다. `Select` �
 - **딥링크 진입 배너 2종**(로그인 카드의 "에타 공유 링크로 접속", 상세 상단의 "에타에서 오셨네요") — 원본에서 디자인 툴 prop(`deepLinkDemo`)으로만 켜진다. Universal Links 설정은 배포·백엔드가 필요해 범위 밖이라 **띄울 트리거가 없다.** 산출물을 잃지 않도록 `App.tsx` 상단 `DEEP_LINK_DEMO` 상수 한 줄로 두 배너를 볼 수 있게 남긴다.
 - **`skipLogin` prop** — 디자인 툴 데모 장치. 옮기지 않는다.
 - **목업 크롬**(가짜 상태바 "9:41"·배터리·노치·폰 베젤·`shadow-lg` 프레임) — 전제. 실제 상태바 + `SafeAreaView` 로 대체된다. 단 상태바 **글자색 분기는 옮긴다**(의존 G).
-- **실제 클립보드 복사** — `expo-clipboard` 가 새 의존성이고, 원본도 라벨만 바꾼다(644행). 라벨 전환 + 토스트로 재현.
+- ~~**실제 클립보드 복사**~~ — **자르지 않고 넣었다.** `expo-clipboard` 를 추가하고 실제로 복사한다. 원본이 라벨만 바꾸는 건 프로토타입이라 그런 것이고, "링크 복사 후 에타에 붙여넣기" 라고 써 놓고 복사가 안 되는 버튼은 거짓말이다. 공유가 이 제품의 유입 경로라 여기서 아끼면 기능이 죽는다.
 - **`expo-blur`** — 새 의존성. `backdrop-filter` 2곳은 불투명색으로 대체한다(의존 B-3).
 - **Pretendard 웹폰트** — 바이너리가 핸드오프에 없고 `expo-font` + CDN 다운로드는 새 의존성 + 네트워크 의존이다. `fonts.css` 가 지정한 애플 기기 폴백 `Apple SD Gothic Neo` 를 그대로 쓴다(M0-2). 웹은 jsDelivr `@import` 가 있어 다르게 갔다.
 - **테스트 프레임워크** — 넣지 않는다. 유일한 비자명 로직(임계치·필터·정렬)에 `src/selfcheck.ts` assert 하나만(M0-5).
