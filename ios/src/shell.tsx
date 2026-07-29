@@ -1,9 +1,9 @@
 /* 화면 위에 공통으로 얹히는 것들 — 하단 탭바, 공유 바텀시트, 토스트. */
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "./icons";
-import { Button } from "./ui";
+import { Button, Sheet } from "./ui";
 import { colors, font, gradient, radius, shadow } from "./theme";
 import type { Tab } from "./logic";
 
@@ -60,13 +60,9 @@ function TabItem({ icon, label, active, onPress, badge }: { icon: IconName; labe
 }
 
 export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boolean; url: string; copied: boolean; onCopy: () => void; onClose: () => void }) {
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable accessibilityLabel="닫기" onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(24,24,54,.45)" }} />
-      <View style={[{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingHorizontal: 20, paddingBottom: 26 + insets.bottom }, shadow.lg]}>
-        <View style={{ width: 38, height: 4, borderRadius: 99, backgroundColor: colors.gray[150], alignSelf: "center", marginBottom: 16 }} />
-        <Text style={[t, { fontSize: 16.5, fontWeight: "800", color: colors.strong }]}>에타에 공유</Text>
+    <Sheet open={open} onClose={onClose} title="에타에 공유">
+      <>
         <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 청원에 공감할 수 있습니다.</Text>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14 }}>
@@ -83,8 +79,8 @@ export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boole
             닫기
           </Button>
         </View>
-      </View>
-    </Modal>
+      </>
+    </Sheet>
   );
 }
 
