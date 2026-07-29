@@ -39,7 +39,8 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
     /* LinearGradient 는 서드파티라 NativeWind 의 className 이 닿지 않는다 — style 로 준다. */
     <LinearGradient {...gradient.hero} style={{ flex: 1 }}>
       <KeyboardAvoidingView behavior="padding" className="flex-1">
-        <ScrollView contentContainerClassName="flex-grow justify-center px-[22px] py-5" keyboardShouldPersistTaps="handled">
+        {/* 학번 필드는 number-pad 라 return 키가 없다. 빈 곳 탭(keyboardShouldPersistTaps="handled")에 더해 드래그로도 닫는다. */}
+        <ScrollView contentContainerClassName="flex-grow justify-center px-[22px] py-5" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View className="items-center gap-[10px] mb-[22px]">
             <LogoMark />
             <View className="items-center">
@@ -57,7 +58,7 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
               </View>
             ) : null}
 
-            <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" />
+            <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" keyboardType="number-pad" />
             <Input label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
             <Button variant="primary" size="lg" block onPress={onLogin}>
               {deepTitle ? "로그인하고 공감하기" : "로그인"}

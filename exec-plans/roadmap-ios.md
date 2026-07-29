@@ -14,7 +14,7 @@
 
 | 대상 | 원본 |
 |---|---|
-| 모바일 앱 5화면 | `handoff/untitled/project/청원시스템 Mobile.dc.html` (721줄 — 1–435행 화면 마크업, 436–716행 상태·데이터·핸들러) |
+| 모바일 앱 5화면 | `handoff/untitled/project/청원시스템 Mobile.dc.html` (720줄 — 1–435행 화면 마크업, 436–716행 상태·데이터·핸들러). 이 문서가 인용하는 행 번호(585·593·713 …)가 이 파일 기준으로 일치함을 확인했다. **공개 금지 자료라 레포에 넣지 않는다** — 평소에는 디스크에 두지 않고, M3 대조를 시작할 때 사용자에게 받는다. 없다고 찾아 헤매지 말 것 |
 | 컴포넌트 9종 | `design-handoff/project/_ds/design-system-…/_ds_bundle.js` — 웹 이식본 `src/components/ui/index.jsx` 가 이미 값 대조를 마친 참조 구현이다 |
 | 토큰 | 같은 번들의 `tokens/*.css` → `ios/src/tokens.js` 에 이식 완료 |
 
@@ -192,33 +192,91 @@ FAB 로 등록 화면에 들어가면 탭바가 사라지고, 상세에서도 �
 
 > 크로스 트랙 의존 F. 항목 순서는 **화면이 쓰는 순서**(로그인 → 피드 → 등록)다 — M2 를 기다리게 하지 않으려면 이 순서여야 한다.
 > 참조 구현은 웹 이식본 `src/components/ui/index.jsx` 다(값 대조를 이미 마쳤다). **웹 코드를 복사하지 않고 값만 가져온다** — 웹은 `var(--토큰)` 문자열과 마우스 이벤트로 짜여 있어 RN 에서 동작하지 않는다.
-> 공통: hover 는 이식하지 않는다(터치에 hover 가 없다). press 축소(`scale`)는 `Pressable` 의 `style` 콜백으로 살린다. 계산값(`fontSize: size*0.4`, 진행바 `width: pct%`)은 클래스가 아니라 `style` 로 남긴다 — 클래스로 바꾸면 동적 값이 죽는다(웹 0-5 와 같은 판단).
+> 공통: hover 는 이식하지 않는다(터치에 hover 가 없다). press 축소(`scale`)는 `Pressable` 로 살린다 — **단 `style` 콜백은 쓸 수 없다**(아래 M1 검증 기록: NativeWind interop 이 함수 `style` 을 버린다). 눌림 여부를 state 로 들고 평범한 style 객체를 넘긴다. 계산값(`fontSize: size*0.4`, 진행바 `width: pct%`)은 클래스가 아니라 `style` 로 남긴다 — 클래스로 바꾸면 동적 값이 죽는다(웹 0-5 와 같은 판단).
 
-- [ ] **M1-1. `Button` + `Avatar`** — 5화면 전부가 쓴다. 로그인(`primary lg block`) · 상세 댓글(`primary sm`) · 등록(`primary lg block` + disabled) · MY(`outline block`) · 공유 시트(`gradient lg block` + `outline block`). (M0-7 선행)
+- [x] **M1-1. `Button` + `Avatar`** — 5화면 전부가 쓴다. 로그인(`primary lg block`) · 상세 댓글(`primary sm`) · 등록(`primary lg block` + disabled) · MY(`outline block`) · 공유 시트(`gradient lg block` + `outline block`). (M0-7 선행)
   Button: 3사이즈(36/44/52px)·6변형, `radius-pill`, press `scale(.98)`, disabled `opacity .5`. **`gradient` 변형만 `LinearGradient` 를 배경 엘리먼트로 감싼다**(의존 B-1) — 나머지는 단색이라 감싸지 않는다.
   Avatar: 원형, `indigo-100` 배경 / `indigo-700` 글자, `fontSize = size*0.4`, 이름 앞 2글자. 쓰이는 크기는 댓글 32px 과 MY 프로필 56px 두 가지이고 **56px 만 `ring`**(흰 3px + `indigo-200` 5px → RN 은 `borderWidth`+바깥 View 2겹으로 낸다, `box-shadow` 스프레드가 없다).
   완료: 두 부품의 모든 variant/size 를 늘어놓은 임시 화면이 시뮬레이터에 뜨고, padding·fontSize·색이 웹 이식본 값과 일치한다. 눌렀을 때 축소 반응이 보인다.
 
-- [ ] **M1-2. `Input` + `Textarea`** — 로그인 2개 · 등록 2개. (M1-1 선행)
+- [x] **M1-2. `Input` + `Textarea`** — 로그인 2개 · 등록 2개. (M1-1 선행)
   Input: 라벨(위) + 1.5px `border-strong` 테두리 + `radius-md`, 포커스 시 `indigo-400` 테두리. **포커스 링(`0 0 0 3px`)은 RN 에 `box-shadow` 스프레드가 없으므로 테두리 색 전환만으로 낸다** — 링을 흉내내려고 View 를 덧대지 않는다(원본 폼 높이 66/68px 이 어긋난다).
   Textarea: `multiline`, `minHeight 128`, **우하단 `n / 1000` 카운터**, `maxLength`. RN 은 `resize` 가 없다 — 고정 높이로 간다.
   비밀번호 필드는 `secureTextEntry`. 학번은 `keyboardType="number-pad"`.
   완료: 두 부품이 시뮬레이터 키보드로 실제 입력되고, 포커스 시 테두리가 바뀌며, 카운터가 글자 수를 따라간다. 키보드가 필드를 가리지 않는다(`KeyboardAvoidingView`).
 
-- [ ] **M1-3. `Select`** — 크로스 트랙 의존 E. **RN 에 `<select>` 가 없다 — 등록 화면을 막는 유일한 부품이다.** (M0-9 시트 표면, M1-2 선행)
+- [x] **M1-3. `Select`** — 크로스 트랙 의존 E. **RN 에 `<select>` 가 없다 — 등록 화면을 막는 유일한 부품이다.** (M0-9 시트 표면, M1-2 선행)
   닫힌 상태의 필드 표면은 원본과 같게 만든다(1.5px 테두리 · `radius-md` · `padding 12 40 12 15` · 우측 14px chevron · 값 없으면 `text-muted` 플레이스홀더). 탭하면 **M0-9 의 시트 표면**에 카테고리 5개를 리스트로 띄우고 선택 시 닫는다.
   Picker 계열 패키지를 넣지 않는다(전제) — 시트 표면이 이미 있으므로 추가 코드가 리스트 하나뿐이다.
   완료: 등록 화면에서 카테고리를 고르면 필드에 라벨이 들어가고 시트가 닫힌다. 닫힌 필드의 높이·테두리·chevron 위치가 `Input` 과 나란히 놓았을 때 어긋나지 않는다.
 
-- [ ] **M1-4. `CategoryTag` + `StatusBadge`** — 피드 카드 · 상세 헤더 · 등록 미리보기가 쓴다. 둘 다 `size="sm"` 만 실제로 쓰인다(원본 176–177, 222–223, 314행). (M0-7 선행)
+- [x] **M1-4. `CategoryTag` + `StatusBadge`** — 피드 카드 · 상세 헤더 · 등록 미리보기가 쓴다. 둘 다 `size="sm"` 만 실제로 쓰인다(원본 176–177, 222–223, 314행). (M0-7 선행)
   CategoryTag: `padding 3 10` · 11px · 5px 점 · `radius-pill` · **soft 배경은 M0-7 에서 사전 계산한 5색**(의존 B-2), 글자·점은 카테고리 원색.
   StatusBadge: 3상태(접수 `indigo` / 검토중 `warning` / 답변 완료 `success`)의 fg·bg·dot 3색 조합. 700 두께.
   완료: 카테고리 5종 × 상태 3종을 늘어놓은 임시 화면에서 배경·글자·점 색이 웹 이식본과 같은 값이고, soft 배경이 흰색으로 뭉개지거나 원색으로 튀지 않는다.
 
-- [ ] **M1-5. `EmpathyButton` + `ThresholdBar`** — 이 앱의 핵심 인터랙션과 핵심 시각 산출물. (M1-1, M0-7 선행)
+- [x] **M1-5. `EmpathyButton` + `ThresholdBar`** — 이 앱의 핵심 인터랙션과 핵심 시각 산출물. (M1-1, M0-7 선행)
   EmpathyButton: `sm`(피드 카드) · `lg block`(상세 하단) 두 크기. 비활성 = 흰 배경 + `coral-400` 1.5px 테두리 + `coral-600` 글자 + 빈 하트. **활성 = `gradient-mileage` 배경 + `shadow-magenta` + 흰 글자 + 채운 하트**(의존 B-1 — `LinearGradient` 로 감싼다). press `scale(.95)`. 숫자는 `fontVariant: ['tabular-nums']`.
   ThresholdBar: `sm`(피드, 높이 6) · `md`(등록 미리보기, 9) · `lg`(상세, 12). 상단 메타 2줄(`{기준} 대비 임계치` / `현재 / 임계치 · N%`), 트랙 `gray-150`, 채움은 **미달 시 `gradient-hero` / 도달 시 `success` 단색**, 도달 시 하단에 "임계치 도달 · 담당자 검토 요청됨" 캡션. 폭 전환 `.5s` 는 `Animated` 로 낸다.
   완료: 공감을 누르면 버튼이 그라데이션으로 바뀌고 카운트가 +1 되며 같은 카드의 진행바가 함께 움직인다. `current 512 / threshold 480`(SEED p1)에서 바가 100% 에서 멈추고 초록 + 도달 캡션이 나온다.
+
+---
+
+## M1 검증 기록 (2026-07-29)
+
+**M1 은 재작성이 아니라 값 대조였다.** 9종은 M2 화면 작업 중에 이미 `ios/src/ui.tsx` 에 들어와 있었다
+(`feat/#6` 커밋 `e73ffd4`). 남아 있던 실제 일은 참조 구현과의 대조와 어긋난 곳 보정이다.
+참조는 웹 이식본 `src/components/ui/index.jsx` 와 DS 원본 `_ds_bundle.js` 두 곳이고, 이번에 값이
+서로 일치함을 확인했다. 모바일 프로토타입 HTML 은 이 작업 시점에 디스크에 없어 쓰지 못했다
+(같은 날 복원됐다 — 위 스펙 표의 경로. M1 은 부품 값만 다루므로 결과에 영향은 없다).
+
+**고친 값** (`ui.tsx`, `screens/Login.tsx`)
+- `EmpathyButton` active 에 `1.5px` 투명 테두리 — 원본(`index.jsx:462`)에 있는데 빠져 있었다.
+  없으면 **공감을 누를 때 버튼이 가로·세로로 3px 줄어든다.** 시뮬레이터 A/B 실측으로 크기 불변 확인.
+- press 축소 — `Button` `.98` / `EmpathyButton` `.95`. 이전에는 `activeOpacity` 였다.
+- `EmpathyButton` 공감 수와 `ThresholdBar` 메타 숫자에 `fontVariant: ['tabular-nums']`.
+- `ThresholdBar` 폭 전환 `Animated.timing` 500ms + `Easing.bezier(.4,0,.2,1)`(`useNativeDriver:false`),
+  메타 정렬 `baseline`.
+- `Input` 에 `keyboardType` 을 뚫고 로그인 학번 필드를 `number-pad` 로. `number-pad` 는 return 키가
+  없어서 `ScrollView` 에 `keyboardDismissMode="on-drag"` 를 같이 뒀다(빈 곳 탭 해제는 원래
+  `keyboardShouldPersistTaps="handled"` 로 동작한다 — 이건 리뷰 중 확인됐다).
+- 절대값 `lineHeight`: 라벨 19.5(`--text-label` 13/1.5) · 캡션 18(`--text-caption-role` 12/1.5) ·
+  태그 글자 `fontSize × 1.3`(`--lh-snug`). `CategoryTag` 의 1px 투명 테두리 복원 —
+  **원본은 `CategoryTag` 에만 두고 `StatusBadge` 에는 두지 않는다**(실측 22.3pt vs 20.3pt).
+
+**규칙 정정 — `Pressable` 의 `style` 콜백은 이 스택에서 쓸 수 없다.**
+NativeWind 의 interop 이 `Pressable` 을 **`className` 유무와 무관하게** 치환하고
+(`react-native-css-interop/dist/runtime/wrap-jsx.js:16`), `style` prop 을 규칙으로 다시 조립하는
+과정에서 함수를 스프레드해 `{}` 로 만들어 버린다. 결과는 **스타일 전소** — 로그인 버튼이 배경도
+글자색도 없이 투명하게 렌더됐다(시뮬레이터에서 잡음). 눌림 여부를 state 로 들고 평범한 style
+객체를 넘기는 방식으로 우회했다. M1 머리말의 공통 규칙을 이에 맞게 고쳤다.
+
+**하지 않기로 한 것**
+- **`Button` 미사용 3변형(secondary/ghost/danger)** — 원본 DS 는 6변형이지만 5화면이 쓰는 것은
+  primary·outline·gradient 3종뿐이다. 안 쓰는 변형은 만들지 않는다.
+- **임시 갤러리 화면** — M1 각 항목의 완료 조건이 "모든 variant/size 를 늘어놓은 임시 화면"이었으나,
+  출시되는 조합이 전부 실제 5화면에서 쓰이므로(md 사이즈 일부만 예외) 실제 화면으로 확인했다.
+  버릴 화면을 만드는 대신 로그인·피드·상세·등록·MY 를 돌며 부품별로 확인했다.
+- **`TextInput` 에 `lineHeight`** — `Input` 본문과 `Select` 값 텍스트. iOS 에서 커서·수직정렬이
+  틀어지고, `Select` 에 넣으면 닫힌 필드가 `Input` 보다 ~6pt 높아져 M1-3 완료 조건을 깬다.
+  현재 두 필드 높이 차이는 ~1.5pt.
+- **`Button`·`EmpathyButton` 라벨의 `line-height: 1`** — RN 에서 `lineHeight === fontSize` 는 한글
+  글리프가 잘린다. 버튼 높이는 고정값(36/44/52)과 아이콘 크기가 이미 결정한다(드리프트 0 확인).
+
+**관측하지 못한 것 1건** — `ThresholdBar` 의 500ms 트윈이 실제로 재생되는 장면. 공감 1건이 폭의
+0.2% 라 육안·스크린샷으로 잡히지 않는다. 코드가 원본과 같은 duration·easing 이고 0%/부분/100%
+렌더가 정상인 것까지만 확인했다. M3-1 전 플로우 실사에서 다시 본다.
+
+**리뷰** — `code-reviewer` 지적 3건(애니메이션 값 매 렌더 생성 / 주석이 원본과 반대 / 키보드 해제
+경로)을 반영했고, 키보드 지적은 리뷰어가 근거를 들어 철회했다. `security-reviewer` 는 두 차례 모두
+지적 없음. `npx tsc --noEmit` · `node src/selfcheck.ts` 통과.
+
+**리뷰가 남긴 남은 것 (M1 아님, 기록용)**
+- 이번에 보정한 값(19.5 / 18 / ×1.3 / 투명 테두리 / tabular-nums)이 다시 드리프트해도 실패하는
+  검증 수단이 없다. 스타일 상수를 그대로 다시 적는 테스트는 동어반복이라 넣지 않았다 —
+  드리프트 감지는 M3-2 소스 값 대조가 맡는다.
+- 시뮬레이터 탭 자동화가 접근성 권한(`-25211`)으로 막혀 있다. 화면 전환은 `App.tsx` 초기 상태를
+  일시 변경해 냈다(매번 원복). M3-1 전에 권한을 열어두는 편이 낫다.
 
 ---
 
@@ -284,6 +342,7 @@ FAB 로 등록 화면에 들어가면 탭바가 사라지고, 상세에서도 �
 - [ ] **M3-3. `code-reviewer` + `security-reviewer` 통과** — 전제로 못 박힌 필수 절차. (M3-2 선행)
   security-reviewer 에게 명시할 목 단계 사항: 로그인이 자격 증명을 검증하지 않는다 / 데이터가 인메모리라 앱을 내리면 초기화된다(스토리지 사용 0건 — **세션·목데이터를 `AsyncStorage` 로 옮기지 않는다**, 익명 청원 앱에서 로컬 영속은 새 노출면이다) / 댓글·청원 본문이 사용자 입력이다(RN `<Text>` 는 마크업을 해석하지 않는다) / 딥링크 스킴을 등록하지 않았다. 이들은 "발견"이 아니라 백엔드 연동 시 닫을 항목이다.
   웹 README 의 "연동 시 반드시 닫아야 할 항목" 9건 중 **3(`mine` 은 서버가 세션 기준으로 계산) · 4(공감 1인 1회를 서버가 소유)** 는 모바일에도 그대로 걸린다 — 목 `votes` 가 클라이언트 소유다.
+  여기에 하나 더: **`screens/Login.tsx` 의 학번·비밀번호 프리필을 걷어낸다.** 목 편의로 넣은 초기값인데 학번이 실제 값이고 `data.ts` 의 `USER.sid` 와 같다(M1 보안 리뷰 지적).
   완료: 두 리뷰의 지적이 전부 처리되거나 백엔드 연동 항목으로 기록됐다. `npx tsc --noEmit` 이 통과하고 `node src/selfcheck.ts` 가 여전히 통과한다.
 
 ---

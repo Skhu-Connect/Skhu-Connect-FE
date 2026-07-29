@@ -1,8 +1,21 @@
 /* 디자인 시스템 프리미티브 RN 이식.
    스펙 원본: design-handoff 의 _ds_bundle.js (웹 이식본은 ../../src/components/ui/index.jsx).
    원본이 픽셀을 인라인으로 정의하므로 수치를 그대로 옮긴다 — 유틸리티 클래스로 반올림하면 값이 드리프트한다. */
-import { useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Text, TouchableOpacity, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  type KeyboardTypeOptions,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "./icons";
@@ -22,6 +35,18 @@ function mixWhite(hex: string, ratio: number): string {
 }
 
 const base: TextStyle = { fontFamily: font };
+
+/* 원본의 press 축소. 터치에는 hover 가 없으므로 이식하는 인터랙션은 이것뿐이다.
+   Pressable 의 style 콜백은 쓰지 않는다 — NativeWind 의 interop 이 style prop 을 규칙으로
+   다시 조립하면서 함수를 버려 스타일이 통째로 사라진다(로그인 버튼이 안 보였던 원인).
+   눌림 상태를 state 로 들고 평범한 객체를 넘긴다. */
+const PRESS_98: ViewStyle = { transform: [{ scale: 0.98 }] };
+const PRESS_95: ViewStyle = { transform: [{ scale: 0.95 }] };
+
+function usePressed() {
+  const [pressed, setPressed] = useState(false);
+  return { pressed, onPressIn: () => setPressed(true), onPressOut: () => setPressed(false) };
+}
 
 /* ───────────────────────── core ───────────────────────── */
 
@@ -65,6 +90,7 @@ export function Button({
   onPress?: () => void;
 }) {
   const s = BUTTON_SIZES[size];
+  const { pressed, ...press } = usePressed();
   const layout: ViewStyle = {
     height: s.height,
     paddingHorizontal: s.padH,
@@ -78,17 +104,17 @@ export function Button({
 
   if (variant === "gradient") {
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={disabled ? undefined : onPress}
         disabled={disabled}
         accessibilityRole="button"
-        activeOpacity={0.9}
-        style={[{ alignSelf: block ? "stretch" : "flex-start" }, shadow.magenta]}
+        {...press}
+        style={[{ alignSelf: block ? "stretch" : "flex-start" }, shadow.magenta, pressed && !disabled ? PRESS_98 : null]}
       >
         <LinearGradient {...gradient.mileage} style={layout}>
           {label("#fff")}
         </LinearGradient>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
@@ -98,16 +124,23 @@ export function Button({
       : { backgroundColor: colors.indigo[600] };
 
   return (
-    <TouchableOpacity onPress={disabled ? undefined : onPress} disabled={disabled} accessibilityRole="button" activeOpacity={0.9} style={[layout, fill]}>
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      {...press}
+      style={[layout, fill, pressed && !disabled ? PRESS_98 : null]}
+    >
       {label(variant === "outline" ? colors.indigo[600] : "#fff")}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 /* ───────────────────────── forms ───────────────────────── */
 
 function Label({ children }: { children: string }) {
-  return <Text style={[base, { fontSize: 13, fontWeight: "600", color: colors.strong, marginBottom: 6 }]}>{children}</Text>;
+  /* --text-label = 600 13/1.5 → lineHeight 는 절대값(13×1.5)으로 환산한다(M0-7 규칙). */
+  return <Text style={[base, { fontSize: 13, lineHeight: 19.5, fontWeight: "600", color: colors.strong, marginBottom: 6 }]}>{children}</Text>;
 }
 
 /* 원본의 focus 링은 box-shadow 다. RN 에 대응이 없어 테두리 색 전환만 남겼다.
@@ -125,12 +158,14 @@ export function Input({
   onChangeText,
   placeholder,
   secureTextEntry,
+  keyboardType,
 }: {
   label?: string;
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
+  keyboardType?: KeyboardTypeOptions;
 }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -143,6 +178,7 @@ export function Input({
           placeholder={placeholder}
           placeholderTextColor={colors.muted}
           secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
           autoCapitalize="none"
           autoCorrect={false}
           onFocus={() => setFocused(true)}
@@ -263,7 +299,7 @@ export function Textarea({
         style={[base, fieldBox(focused), { minHeight: 128, paddingHorizontal: 15, paddingVertical: 13, fontSize: 14, lineHeight: 23, color: colors.strong }]}
       />
       {maxLength != null ? (
-        <Text style={[base, { alignSelf: "flex-end", marginTop: 6, fontSize: 12, color: colors.muted }]}>
+        <Text style={[base, { alignSelf: "flex-end", marginTop: 6, fontSize: 12, lineHeight: 18, color: colors.muted }]}>
           {value.length} / {maxLength}
         </Text>
       ) : null}
@@ -289,10 +325,13 @@ export function CategoryTag({ category, size = "md" }: { category: CategoryKey; 
         paddingHorizontal: d.padH,
         borderRadius: radius.pill,
         backgroundColor: mixWhite(color, 0.14),
+        /* 원본은 CategoryTag 에만 1px 투명 테두리를 둔다(StatusBadge 에는 없다) — 빼면 원본보다 2px 작아진다. */
+        borderWidth: 1,
+        borderColor: "transparent",
       }}
     >
       <View style={{ width: d.dot, height: d.dot, borderRadius: d.dot / 2, backgroundColor: color }} />
-      <Text style={[base, { fontSize: d.fontSize, fontWeight: "600", color }]}>{CAT_LABEL[category]}</Text>
+      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "600", color }]}>{CAT_LABEL[category]}</Text>
     </View>
   );
 }
@@ -320,7 +359,7 @@ export function StatusBadge({ status, size = "md" }: { status: StatusKey; size?:
       }}
     >
       <View style={{ width: d.dot, height: d.dot, borderRadius: d.dot / 2, backgroundColor: s.dot }} />
-      <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color: s.fg }]}>{s.label}</Text>
+      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "700", color: s.fg }]}>{s.label}</Text>
     </View>
   );
 }
@@ -341,15 +380,17 @@ export function EmpathyButton({
 }) {
   const d =
     size === "lg" ? { padV: 14, padH: 26, fontSize: 16, icon: 22 } : size === "sm" ? { padV: 7, padH: 14, fontSize: 13, icon: 16 } : { padV: 11, padH: 20, fontSize: 14, icon: 19 };
+  const { pressed, ...press } = usePressed();
 
   const inner = (color: string) => (
     <>
       <Icon name={active ? "heartSolid" : "heart"} size={d.icon} color={color} />
       <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color }]}>공감</Text>
-      <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color, opacity: active ? 1 : 0.85 }]}>{fmt(count)}</Text>
+      <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color, opacity: active ? 1 : 0.85, fontVariant: ["tabular-nums"] }]}>{fmt(count)}</Text>
     </>
   );
 
+  /* 테두리는 활성일 때도 1.5px 로 남는다(원본은 투명색). 빼면 공감을 누를 때마다 버튼이 3px 씩 줄어든다. */
   const layout: ViewStyle = {
     flexDirection: "row",
     alignItems: "center",
@@ -358,25 +399,27 @@ export function EmpathyButton({
     paddingVertical: d.padV,
     paddingHorizontal: d.padH,
     borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: "transparent",
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onToggle}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       accessibilityLabel={`공감 ${fmt(count)}`}
-      activeOpacity={0.85}
-      style={[{ flex: block ? 1 : undefined }, active ? shadow.magenta : null]}
+      {...press}
+      style={[{ flex: block ? 1 : undefined }, active ? shadow.magenta : null, pressed ? PRESS_95 : null]}
     >
       {active ? (
         <LinearGradient {...gradient.mileage} style={layout}>
           {inner("#fff")}
         </LinearGradient>
       ) : (
-        <View style={[layout, { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.coral[400] }]}>{inner(colors.coral[600])}</View>
+        <View style={[layout, { backgroundColor: colors.card, borderColor: colors.coral[400] }]}>{inner(colors.coral[600])}</View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -400,12 +443,20 @@ export function ThresholdBar({
   const reached = current >= threshold;
   const h = size === "lg" ? 12 : size === "sm" ? 6 : 9;
 
+  /* 원본의 transition: width .5s cubic-bezier(.4,0,.2,1). RN 내장 Animated 로 낸다 —
+     폭은 레이아웃 값이라 네이티브 드라이버로 못 넘긴다(useNativeDriver: false). */
+  const [anim] = useState(() => new Animated.Value(pct));
+  useEffect(() => {
+    Animated.timing(anim, { toValue: pct, duration: 500, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: false }).start();
+  }, [anim, pct]);
+  const width = anim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
+
   return (
     <View style={[{ gap: 8 }, style]}>
       {showMeta ? (
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <Text style={[base, { fontSize: 12, color: colors.muted }]}>{basisLabel} 대비 임계치</Text>
-          <Text style={[base, { fontSize: 13, fontWeight: "700", color: reached ? colors.success : colors.indigo[600] }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+          <Text style={[base, { fontSize: 12, lineHeight: 18, color: colors.muted }]}>{basisLabel} 대비 임계치</Text>
+          <Text style={[base, { fontSize: 13, fontWeight: "700", color: reached ? colors.success : colors.indigo[600], fontVariant: ["tabular-nums"] }]}>
             {fmt(current)} / {fmt(threshold)}
             <Text style={[base, { fontSize: 13, fontWeight: "500", color: colors.muted }]}> · {Math.round(pct)}%</Text>
           </Text>
@@ -413,14 +464,14 @@ export function ThresholdBar({
       ) : null}
 
       <View style={{ height: h, borderRadius: radius.pill, backgroundColor: colors.gray[150], overflow: "hidden" }}>
-        {reached ? (
-          <View style={{ width: `${pct}%`, height: "100%", borderRadius: radius.pill, backgroundColor: colors.success }} />
-        ) : (
-          <LinearGradient {...gradient.hero} style={{ width: `${pct}%`, height: "100%", borderRadius: radius.pill }} />
-        )}
+        <Animated.View style={{ width, height: "100%", borderRadius: radius.pill, overflow: "hidden", backgroundColor: reached ? colors.success : undefined }}>
+          {reached ? null : <LinearGradient {...gradient.hero} style={{ flex: 1 }} />}
+        </Animated.View>
       </View>
 
-      {showMeta && reached ? <Text style={[base, { fontSize: 12, fontWeight: "600", color: colors.success }]}>임계치 도달 · 담당자 검토 요청됨</Text> : null}
+      {showMeta && reached ? (
+        <Text style={[base, { fontSize: 12, lineHeight: 18, fontWeight: "600", color: colors.success }]}>임계치 도달 · 담당자 검토 요청됨</Text>
+      ) : null}
     </View>
   );
 }
