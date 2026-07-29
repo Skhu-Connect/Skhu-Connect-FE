@@ -57,7 +57,7 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
               </View>
             ) : null}
 
-            <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" />
+            <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" keyboardType="number-pad" />
             <Input label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
             <Button variant="primary" size="lg" block onPress={onLogin}>
               {deepTitle ? "로그인하고 공감하기" : "로그인"}
