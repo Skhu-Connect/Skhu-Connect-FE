@@ -140,5 +140,6 @@ Category  { key, label, threshold, basis, owner { team, name, email, phone } }
 - `project/청원시스템 Admin.dc.html`, `project/app/admin-app-v4.jsx` — 관리자 콘솔
 - `project/_ds/…/tokens/*.css`, `_ds_bundle.js` — 디자인 토큰·컴포넌트 14종
 
-프로토타입과 **의도적으로 다르게 한 것 3가지**와 그 근거는 `exec-plans/ROADMAP.md` 의
-"크로스 트랙 의존" 절에 기록돼 있다.
+프로토타입과 **의도적으로 다르게 한 것 3가지**와 그 근거는 `exec-plans/roadmap-web.md` 의
+"크로스 트랙 의존" 절에 기록돼 있다. 로드맵은 대상별로 나뉘어 있고 목차는
+`exec-plans/ROADMAP.md` 다.
