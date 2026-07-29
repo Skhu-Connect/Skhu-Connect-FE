@@ -2,7 +2,7 @@
    스펙 원본: design-handoff 의 _ds_bundle.js (웹 이식본은 ../../src/components/ui/index.jsx).
    원본이 픽셀을 인라인으로 정의하므로 수치를 그대로 옮긴다 — 유틸리티 클래스로 반올림하면 값이 드리프트한다. */
 import { useState, type ReactNode } from "react";
-import { Modal, Pressable, Text, TouchableOpacity, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
+import { Modal, Pressable, ScrollView, Text, TouchableOpacity, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "./icons";
@@ -154,9 +154,10 @@ export function Input({
   );
 }
 
-/* 웹의 <select> 대응. iOS 네이티브 액션시트를 쓴다 — 피커 라이브러리를 새로 들이지 않는다. */
 /* 하단 시트 표면. 공유 시트와 Select 가 같은 표면을 쓴다 — 두 곳에서 따로 만들면
    라운드·핸들바·스크림이 어긋난다.
+   높이는 화면의 80% 로 묶고 내용은 스크롤시킨다. 묶지 않으면 큰 글씨 설정에서 표면이 화면
+   밖으로 밀려 스크림도 닫기 버튼도 사라진다 — iOS 는 onRequestClose 가 안 오므로 갇힌다.
    ponytail: 원본 cwUp(translateY 20 → 0)은 Modal 의 native slide 로 대신한다. Animated 로 20px
    만 띄우려면 표면을 직접 애니메이트해야 하는데, 눈에 보이는 차이가 그만큼은 아니다. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
@@ -164,15 +165,18 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(24,24,54,.45)" }} />
-      <View style={[{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingHorizontal: 20, paddingBottom: 26 + insets.bottom }, shadow.lg]}>
+      <View style={[{ maxHeight: "80%", backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingHorizontal: 20, paddingBottom: 26 + insets.bottom }, shadow.lg]}>
         <View style={{ width: 38, height: 4, borderRadius: 99, backgroundColor: colors.gray[150], alignSelf: "center", marginBottom: 16 }} />
-        {title ? <Text style={[base, { fontSize: 16.5, fontWeight: "800", color: colors.strong, marginBottom: 4 }]}>{title}</Text> : null}
-        {children}
+        {title ? <Text style={[base, { fontSize: 16.5, fontWeight: "800", color: colors.strong }]}>{title}</Text> : null}
+        <ScrollView style={{ flexShrink: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
+          {children}
+        </ScrollView>
       </View>
     </Modal>
   );
 }
 
+/* 웹의 <select> 대응. 공용 Sheet 로 띄운다 — 피커 라이브러리를 새로 들이지 않는다. */
 export function Select({
   label,
   options,

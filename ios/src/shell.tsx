@@ -62,24 +62,22 @@ function TabItem({ icon, label, active, onPress, badge }: { icon: IconName; labe
 export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boolean; url: string; copied: boolean; onCopy: () => void; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title="에타에 공유">
-      <>
-        <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 청원에 공감할 수 있습니다.</Text>
+      <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 청원에 공감할 수 있습니다.</Text>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14 }}>
-          <Text numberOfLines={1} style={[t, { flex: 1, fontSize: 12.5, fontWeight: "700", color: colors.indigo[700] }]}>
-            {url}
-          </Text>
-        </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14 }}>
+        <Text numberOfLines={1} style={[t, { flex: 1, fontSize: 12.5, fontWeight: "700", color: colors.indigo[700] }]}>
+          {url}
+        </Text>
+      </View>
 
-        <View style={{ gap: 9, marginTop: 14 }}>
-          <Button variant="gradient" size="lg" block onPress={onCopy}>
-            {copied ? "링크가 복사되었습니다" : "링크 복사 후 에타에 붙여넣기"}
-          </Button>
-          <Button variant="outline" block onPress={onClose}>
-            닫기
-          </Button>
-        </View>
-      </>
+      <View style={{ gap: 9, marginTop: 14 }}>
+        <Button variant="gradient" size="lg" block onPress={onCopy}>
+          {copied ? "링크가 복사되었습니다" : "링크 복사 후 에타에 붙여넣기"}
+        </Button>
+        <Button variant="outline" block onPress={onClose}>
+          닫기
+        </Button>
+      </View>
     </Sheet>
   );
 }
