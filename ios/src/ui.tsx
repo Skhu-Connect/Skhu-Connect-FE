@@ -1,7 +1,7 @@
 /* 디자인 시스템 프리미티브 RN 이식.
    스펙 원본: design-handoff 의 _ds_bundle.js (웹 이식본은 ../../src/components/ui/index.jsx).
    원본이 픽셀을 인라인으로 정의하므로 수치를 그대로 옮긴다 — 유틸리티 클래스로 반올림하면 값이 드리프트한다. */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
@@ -325,7 +325,7 @@ export function CategoryTag({ category, size = "md" }: { category: CategoryKey; 
         paddingHorizontal: d.padH,
         borderRadius: radius.pill,
         backgroundColor: mixWhite(color, 0.14),
-        /* 원본은 soft 에도 1px 투명 테두리를 둔다 — 빼면 태그가 옆의 StatusBadge 보다 2px 작아진다. */
+        /* 원본은 CategoryTag 에만 1px 투명 테두리를 둔다(StatusBadge 에는 없다) — 빼면 원본보다 2px 작아진다. */
         borderWidth: 1,
         borderColor: "transparent",
       }}
@@ -445,7 +445,7 @@ export function ThresholdBar({
 
   /* 원본의 transition: width .5s cubic-bezier(.4,0,.2,1). RN 내장 Animated 로 낸다 —
      폭은 레이아웃 값이라 네이티브 드라이버로 못 넘긴다(useNativeDriver: false). */
-  const anim = useRef(new Animated.Value(pct)).current;
+  const [anim] = useState(() => new Animated.Value(pct));
   useEffect(() => {
     Animated.timing(anim, { toValue: pct, duration: 500, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: false }).start();
   }, [anim, pct]);
