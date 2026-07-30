@@ -1,4 +1,4 @@
-# 청원시스템 (SKHU Petition System)
+# Skhu-Connect — 성공회대 익명 건의·청원 시스템
 
 성공회대학교 익명 건의·청원 시스템. 학생이 익명으로 건의를 올리고, 다른 학생이 **공감**을 누른다.
 공감 수가 임계치(학과 정원 또는 전체 학생 대비 %)를 넘으면 담당 부서로 자동 전달되고 공식 답변이 등록된다.
@@ -11,6 +11,13 @@
 Vite + React 19 + Tailwind CSS v4 + React Router 7 + zustand 5. 디자인 토큰은 Tailwind `@theme` 으로 이식.
 
 **배포**: https://petition-system-two.vercel.app (Vercel · production)
+> 프로젝트 이름을 `skhu-connect` 로 바꿨지만 **Vercel 프로젝트명과 GitHub 리포명(`skhu-petition`)은
+> 그대로다.** 둘은 외부 서비스에서 각각 바꿔야 하고, 바꾸면 배포 URL 과 remote 가 함께 바뀐다.
+
+## 백엔드 연동
+
+- API 명세는 백엔드가 관리한다 (프런트 레포에는 없음)
+- 화면 보드: Figma 채널 `ga2ate9v` (화면 24셀 + 요청/응답 패널 24개)
 
 ## 실행
 
