@@ -8,11 +8,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#34348A",
-      "resizeMode": "contain",
-      "image": "./assets/splash-icon.png"
-    },
     "ios": {
       "bundleIdentifier": "ac.skhu.petition",
       "supportsTablet": false
@@ -29,6 +24,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1D1F52",
+          "image": "./assets/icon.png",
+          "imageWidth": 200
+        }
+      ]
+    ]
   }
 }

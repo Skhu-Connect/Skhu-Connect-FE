@@ -1,33 +1,19 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, ScrollView, Text, View } from "react-native";
+import { Image, KeyboardAvoidingView, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Button, Input } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
-/* 로고 마크 — 막대 3개 + 마젠타 점. 피드 헤더에도 작은 버전이 들어간다. */
+/* 로고 마크 — 앱 아이콘과 같은 브랜드 마크다. 화면마다 다르게 그리지 않는다.
+   assets/icon.png(1024px) 이 아니라 별도 256px 에셋을 쓴다 — 66pt 뷰에 1024px 을 넣으면
+   4MB 로 디코드된다. 코너는 투명이라 borderRadius 가 그대로 먹는다. */
 export function LogoMark({ size = 66 }: { size?: number }) {
-  const k = size / 66;
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 20 * k,
-        backgroundColor: "rgba(255,255,255,.14)",
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,.34)",
-        flexDirection: "row",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        gap: 5 * k,
-        paddingBottom: 17 * k,
-      }}
-    >
-      <View style={{ width: 6 * k, height: 13 * k, borderRadius: 3 * k, backgroundColor: "rgba(255,255,255,.55)" }} />
-      <View style={{ width: 6 * k, height: 21 * k, borderRadius: 3 * k, backgroundColor: "rgba(255,255,255,.8)" }} />
-      <View style={{ width: 6 * k, height: 29 * k, borderRadius: 3 * k, backgroundColor: "#fff" }} />
-      <View style={{ position: "absolute", right: 15 * k, top: 14 * k, width: 8 * k, height: 8 * k, borderRadius: 4 * k, backgroundColor: "#D64098" }} />
-    </View>
+    <Image
+      source={require("../../assets/logo-mark.png")}
+      style={{ width: size, height: size, borderRadius: 20 * (size / 66) }}
+      accessibilityIgnoresInvertColors
+    />
   );
 }
 
