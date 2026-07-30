@@ -1,7 +1,7 @@
 /* 관리자 콘솔 셸: 232px navy 사이드바 고정 + 본문만 스크롤.
    목 단계에서 /admin 에는 인증 게이트가 없다 — Phase 3-2 security review 에 기록할 항목.
    원본: design-handoff/project/app/admin-app-v4.jsx 63–83행.
-   "청" 타일은 Web 과 달리 --gradient-mileage 다 — --gradient-hero 와 섞지 않는다.
+   로고 타일은 Web 과 같은 /logo.png 다 — 브랜드 마크는 화면마다 다르게 그리지 않는다.
    Sidebar 는 이 레이아웃에서만 쓰이므로 파일을 쪼개지 않는다. */
 
 import { useEffect } from "react";
@@ -27,7 +27,7 @@ export default function AdminLayout() {
     <div style={{ display: "flex", height: "100vh", background: "var(--surface-page)" }}>
       <aside style={{ width: 232, background: "var(--navy-900)", color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0, padding: "22px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 22px" }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: "var(--gradient-mileage)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>청</div>
+          <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 9, display: "block" }} />
           <div style={{ lineHeight: 1.1 }}>
             <div style={{ fontWeight: 800, fontSize: 15 }}>청원 관리자</div>
             <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.55)" }}>ADMIN CONSOLE</div>

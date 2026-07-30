@@ -44,7 +44,7 @@ export default function LoginScreen() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--gradient-hero)", padding: 20 }}>
       <div style={{ width: 400, maxWidth: "100%", background: "#fff", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-lg)", padding: 36 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 24 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: "var(--gradient-hero)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 26 }}>청</div>
+          <img src="/logo.png" alt="" width={52} height={52} style={{ borderRadius: 14, display: "block" }} />
           <h1 style={{ margin: "8px 0 0", fontSize: 22, fontWeight: 800, color: "var(--indigo-600)" }}>청원시스템</h1>
           <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>성공회대학교 학생 인증 후 이용</p>
         </div>

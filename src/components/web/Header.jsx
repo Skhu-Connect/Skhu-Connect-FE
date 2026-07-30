@@ -14,7 +14,7 @@ import SettingsModal from "./SettingsModal";
 function WordMark() {
   return (
     <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-      <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--gradient-hero)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 18 }}>청</div>
+      <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
       <div style={{ lineHeight: 1.05 }}>
         <div style={{ fontWeight: 800, fontSize: 18, color: "var(--indigo-600)", letterSpacing: "-.01em" }}>청원시스템</div>
         <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>성공회대학교</div>
