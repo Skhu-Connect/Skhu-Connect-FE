@@ -27,7 +27,6 @@ Pillow 가 아는 청크만 다시 쓰므로 새 에셋에도 그런 게 섞여 
 
   python3 scripts/mklogo.py assets/brand-logo.png 256  public/logo.png
   python3 scripts/mklogo.py assets/brand-logo.png 1024 ios/assets/icon.png '#1D1F52'
-  python3 scripts/mklogo.py assets/brand-logo.png 1024 ios/assets/splash-icon.png '#1D1F52'
   python3 scripts/mklogo.py assets/brand-logo.png 256  ios/assets/logo-mark.png
   python3 scripts/mklogo.py assets/brand-logo.png 48   ios/assets/favicon.png
   python3 scripts/test_mklogo.py

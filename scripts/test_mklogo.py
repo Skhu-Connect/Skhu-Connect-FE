@@ -22,8 +22,7 @@ lum = lambda p: 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
 # (경로, 알파 있어야 하나)
 ASSETS = [
     ("public/logo.png", True),
-    ("ios/assets/icon.png", False),
-    ("ios/assets/splash-icon.png", False),  # 불투명 — 아래 주석 참고
+    ("ios/assets/icon.png", False),  # 스플래시도 이 파일을 쓴다 (app.json) — 별도 splash-icon.png 없음
     ("ios/assets/favicon.png", True),
     ("ios/assets/logo-mark.png", True),
 ]
