@@ -1,25 +1,14 @@
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Button, Input } from "../ui";
+import { Button, Input, LogoMark, Select } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
-
-/* 로고 마크 — 앱 아이콘과 같은 브랜드 마크다. 화면마다 다르게 그리지 않는다.
-   assets/icon.png(1024px) 이 아니라 별도 256px 에셋을 쓴다 — 66pt 뷰에 1024px 을 넣으면
-   4MB 로 디코드된다. 코너는 투명이라 borderRadius 가 그대로 먹는다. */
-export function LogoMark({ size = 66 }: { size?: number }) {
-  return (
-    <Image
-      source={require("../../assets/logo-mark.png")}
-      style={{ width: size, height: size, borderRadius: 20 * (size / 66) }}
-      accessibilityIgnoresInvertColors
-    />
-  );
-}
+import { MAJORS } from "../data";
 
 export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogin: () => void }) {
   const [sid, setSid] = useState("202214139");
   const [pw, setPw] = useState("password");
+  const [major, setMajor] = useState("");
 
   return (
     /* LinearGradient 는 서드파티라 NativeWind 의 className 이 닿지 않는다 — style 로 준다. */
@@ -46,7 +35,8 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
 
             <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" keyboardType="number-pad" />
             <Input label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
-            <Button variant="primary" size="lg" block onPress={onLogin}>
+            <Select label="학부" options={MAJORS} value={major} onChange={setMajor} placeholder="학부를 선택하세요" />
+            <Button variant="primary" size="lg" block onPress={onLogin} disabled={!major}>
               {deepTitle ? "로그인하고 공감하기" : "로그인"}
             </Button>
 

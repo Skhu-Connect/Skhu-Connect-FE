@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -46,6 +47,19 @@ const PRESS_95: ViewStyle = { transform: [{ scale: 0.95 }] };
 function usePressed() {
   const [pressed, setPressed] = useState(false);
   return { pressed, onPressIn: () => setPressed(true), onPressOut: () => setPressed(false) };
+}
+
+/* 로고 마크 — 앱 아이콘과 같은 브랜드 마크다. 화면마다 다르게 그리지 않는다.
+   assets/icon.png(1024px) 이 아니라 별도 256px 에셋을 쓴다 — 66pt 뷰에 1024px 을 넣으면
+   4MB 로 디코드된다. 코너는 투명이라 borderRadius 가 그대로 먹는다. */
+export function LogoMark({ size = 66 }: { size?: number }) {
+  return (
+    <Image
+      source={require("../assets/logo-mark.png")}
+      style={{ width: size, height: size, borderRadius: 20 * (size / 66) }}
+      accessibilityIgnoresInvertColors
+    />
+  );
 }
 
 /* ───────────────────────── core ───────────────────────── */

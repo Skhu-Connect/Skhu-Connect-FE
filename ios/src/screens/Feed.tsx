@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
 import { CAT_CHIPS, STATUS_CHIPS, type CategoryKey, type Petition, type StatusKey } from "../data";
 import { count, remain, type Filter, type Sort, type Tab } from "../logic";
-import { Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar, fmt } from "../ui";
+import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
@@ -60,11 +60,7 @@ export function FeedScreen(p: FeedProps) {
 function Header({ title, hasUnread, onToggleSearch, onOpenMy }: { title: string; hasUnread: boolean; onToggleSearch: () => void; onOpenMy: () => void }) {
   return (
     <View className="flex-row items-center gap-[10px] px-[14px] bg-card border-b border-subtle" style={{ height: 52 }}>
-      <LinearGradient {...gradient.hero} style={{ width: 32, height: 32, borderRadius: 10, flexDirection: "row", alignItems: "flex-end", justifyContent: "center", gap: 2.5, paddingBottom: 8 }}>
-        <View style={{ width: 3.5, height: 7, borderRadius: 2, backgroundColor: "rgba(255,255,255,.55)" }} />
-        <View style={{ width: 3.5, height: 11, borderRadius: 2, backgroundColor: "rgba(255,255,255,.8)" }} />
-        <View style={{ width: 3.5, height: 15, borderRadius: 2, backgroundColor: "#fff" }} />
-      </LinearGradient>
+      <LogoMark size={32} />
       <Text style={[t, { fontWeight: "800", fontSize: 17, color: colors.strong, letterSpacing: -0.17 }]}>{title}</Text>
 
       <View className="ml-auto flex-row items-center">

@@ -50,6 +50,16 @@ export const STATUS_CHIPS: { key: StatusKey | "all"; label: string }[] = [
   { key: "answered", label: "답변 완료" },
 ];
 
+/** 로그인 화면의 학부/전공 선택지. 학교 포털의 전공 목록을 그대로 옮겼다. */
+export const MAJORS: string[] = [
+  "경영학부",
+  "미디어콘텐츠융합학부(미디어콘텐츠융합자율학부)",
+  "미래융합학부",
+  "사회융합학부(사회융합자율학부)",
+  "소프트웨어융합학부(IT융합자율학부)",
+  "인문융합콘텐츠학부(인문융합자율학부)",
+];
+
 export const BASIS_NOTE: Record<BasisLabel, string> = {
   "전체 학생": "전체 재학생 4,800명의 10% 기준 · 480명",
   "학과 정원": "소프트웨어융합학부 정원 360명의 50% 기준 · 180명",
@@ -199,8 +209,8 @@ export const NOTIFS: Notification[] = [
   },
   {
     petitionId: 3,
-    title: "공감 알림",
-    body: "내 청원이 공감 50개를 넘었습니다.",
+    title: "임계치 도달",
+    body: "'중앙도서관 24시간 개방’이 임계치의 50프로를 넘었습니다.",
     date: "2일 전",
     read: true,
     iconBg: "#FCE7E9",
@@ -212,8 +222,7 @@ export const USER = { name: "김석환", initial: "석환", dept: "소프트웨�
 
 export const PREF_ROWS: { key: PrefKey; title: string; desc: string }[] = [
   { key: "threshold", title: "임계치 도달 알림", desc: "내 청원이 임계치에 도달하면 알려드립니다." },
-  { key: "answer", title: "답변 등록 알림", desc: "공감한 청원에 공식 답변이 등록되면 알려드립니다." },
-  { key: "empathy", title: "공감 알림", desc: "내 청원의 공감 수 변화를 알려드립니다." },
+  { key: "answer", title: "답변 등록 알림", desc: "청원에 공식 답변이 등록되면 알려드립니다." },
 ];
 
 export type PrefKey = "threshold" | "answer" | "empathy";
