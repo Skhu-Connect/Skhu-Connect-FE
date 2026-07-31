@@ -30,8 +30,8 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
           <View className="items-center gap-[10px] mb-[22px]">
             <LogoMark />
             <View className="items-center">
-              <Text style={[{ fontFamily: font }, { color: "#fff", fontWeight: "800", fontSize: 22, letterSpacing: -0.22 }]}>청원시스템</Text>
-              <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.72)", fontSize: 10.5, fontWeight: "700", letterSpacing: 1.68, marginTop: 4 }]}>SKHU PETITION</Text>
+              <Text style={[{ fontFamily: font }, { color: "#fff", fontWeight: "800", fontSize: 22, letterSpacing: -0.22 }]}>SKHU-CONNECT</Text>
+              <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.72)", fontSize: 10.5, fontWeight: "700", letterSpacing: 1.68, marginTop: 4 }]}>성공회대학교 청원시스템</Text>
             </View>
           </View>
 
