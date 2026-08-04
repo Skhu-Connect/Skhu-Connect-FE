@@ -3,7 +3,7 @@
    504–511행(북마크 머리말 — PageIntro 와 같은 마크업, 문구만 다르다). */
 
 import { useNavigate } from "react-router-dom";
-import { Icon, PetitionCard } from "../ui";
+import { Icon, PetitionCard, petitionStatus } from "../ui";
 import { usePetitions } from "../../stores/petitions";
 import { toast } from "../Toast";
 
@@ -46,7 +46,7 @@ export function PetitionGrid({ list, authorOf }) {
           title={p.title}
           excerpt={p.excerpt}
           category={p.category}
-          status={p.status}
+          status={petitionStatus(p)}
           current={p.current}
           threshold={p.threshold}
           basisLabel={p.basis}

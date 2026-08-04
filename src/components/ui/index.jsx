@@ -536,6 +536,14 @@ export function StatusBadge({ status = "received", size = "md", style, ...rest }
 }
 StatusBadge.STATUS = STATUS;
 
+/** 답변 완료가 만료보다 우선한다 — 이미 결론이 난 청원에 "만료됨"을 얹지 않는다.
+    카드·상세 양쪽이 이 값을 그대로 StatusBadge status 로 넘긴다. */
+export function petitionStatus(p) {
+  if (p.status === "answered") return "answered";
+  if (p.expired) return "expired";
+  return p.status;
+}
+
 /* 공감 임계치까지의 진행도. 임계치는 학과 정원 또는 전체 학생 대비 %.
    주의: Admin 테이블의 진행바는 이것을 쓰지 않는다(높이 7px, 별개 산출물 — ROADMAP 의존 E). */
 export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학과 정원", reached, showMeta = true, size = "md", style, ...rest }) {
