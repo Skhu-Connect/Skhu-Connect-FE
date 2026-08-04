@@ -9,6 +9,9 @@ import { db, DEPARTMENTS } from "./mockDb.js";
 const delay = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 const copy = (v) => structuredClone(v);
 
+const EXPIRY_DAYS = 30;
+const isExpired = (p) => Date.now() - new Date(p.createdAt).getTime() > EXPIRY_DAYS * 86400000;
+
 const category = (key) => db.categories.find((c) => c.key === key);
 const record = (id) => db.petitions.find((p) => p.id === Number(id));
 
@@ -31,6 +34,7 @@ function view(p, { admin = false } = {}) {
     bookmarked: db.bookmarked.has(p.id),
     answered: !!db.answers[p.id],
     answer: db.answers[p.id] ?? null,
+    expired: isExpired(p),
   });
 }
 
@@ -134,6 +138,7 @@ export async function createPetition({ category: categoryKey, title, body }) {
     current: 0,
     author: "익명",
     date: "방금 전",
+    createdAt: new Date().toISOString(),
     views: 0,
     mine: true,
   };

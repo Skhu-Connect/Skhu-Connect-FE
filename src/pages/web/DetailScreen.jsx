@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
-import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar } from "../../components/ui";
+import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 
 function ShareLink({ url }) {
@@ -142,7 +142,7 @@ export default function DetailScreen() {
       <Card padding="var(--pad-card-lg)" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} />
-          <StatusBadge status={p.status} />
+          <StatusBadge status={petitionStatus(p)} />
           <div style={{ marginLeft: "auto" }}>
             <IconButton variant="ghost" ariaLabel="더보기"><Icon name="more" size={20} /></IconButton>
           </div>

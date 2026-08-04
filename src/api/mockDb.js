@@ -29,6 +29,10 @@ export const DEPARTMENTS = [
   "IT융합자율학부",
 ];
 
+// 시드 청원의 date 표시 문구와 맞춘 실제 시각. 만료(30일) 판정은 src/api/index.js view() 가 이 값으로 한다.
+const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+const hoursAgo = (n) => new Date(Date.now() - n * 3600000).toISOString();
+
 export const db = {
   session: null, // login 이 user 를 넣는다
 
@@ -90,6 +94,7 @@ export const db = {
       current: 512,
       author: "익명",
       date: "2일 전",
+      createdAt: daysAgo(2),
       views: 1204,
     },
     {
@@ -102,6 +107,7 @@ export const db = {
       current: 243,
       author: "익명",
       date: "4일 전",
+      createdAt: daysAgo(4),
       views: 862,
     },
     {
@@ -114,6 +120,7 @@ export const db = {
       current: 88,
       author: "익명",
       date: "6시간 전",
+      createdAt: hoursAgo(6),
       views: 341,
       mine: true,
     },
@@ -127,6 +134,7 @@ export const db = {
       current: 631,
       author: "익명",
       date: "2주 전",
+      createdAt: daysAgo(14),
       views: 2417,
       mine: true,
     },
@@ -140,6 +148,7 @@ export const db = {
       current: 154,
       author: "익명",
       date: "1일 전",
+      createdAt: daysAgo(1),
       views: 508,
     },
     {
@@ -152,7 +161,23 @@ export const db = {
       current: 96,
       author: "익명",
       date: "3일 전",
+      createdAt: daysAgo(3),
       views: 297,
+    },
+    {
+      // 만료(30일 경과) 확인용 시드. 기본 피드에는 안 보이고 /mine·검색에만 남는다.
+      id: 7,
+      title: "동아리방 냉난방기 노후 교체 요청",
+      excerpt: "동아리방 냉난방기가 오래돼 여름·겨울마다 사용이 어렵습니다. 순차 교체를 요청합니다.",
+      body: "동아리방 냉난방기가 오래돼 여름·겨울마다 사용이 어렵습니다. 순차 교체를 요청합니다.\n\n작동은 하지만 소음이 크고 온도 조절이 잘 안 됩니다. 예산이 한정적이라면 사용 빈도가 높은 동아리방부터 우선 교체해 주시기 바랍니다.",
+      category: "facility",
+      status: "received",
+      current: 41,
+      author: "익명",
+      date: "40일 전",
+      createdAt: daysAgo(40),
+      views: 190,
+      mine: true,
     },
   ],
 
