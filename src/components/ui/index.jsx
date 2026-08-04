@@ -5,6 +5,7 @@
    export 이름은 원본과 동일하다. */
 
 export { Icon, ICON_NAMES } from "./Icon.jsx";
+import { Icon } from "./Icon.jsx";
 
 /* ───────────────────────── core ───────────────────────── */
 
@@ -390,40 +391,36 @@ export function Textarea({ label, hint, error, maxLength, value, id, style, wrap
 
 /* ───────────────────────── petition ───────────────────────── */
 
-/* 다섯 카테고리와 브랜드 액센트 색. 임계치·담당자는 여기가 아니라 src/api 에 있다. */
+/* 다섯 카테고리. 아이콘 + 라벨만 쓰고 색으로 구분하지 않는다 — skhu_tag_components/category
+   에셋이 전부 무채색(#1F2937) 선 아이콘 + 텍스트라, 카테고리마다 다른 색을 칠하지 않는 게
+   이 태그 시스템의 의도다(구분은 아이콘 모양이 한다). 임계치·담당자는 src/api 에 있다. */
 export const CATEGORIES = {
-  scholarship: { label: "장학", color: "var(--cat-scholarship)" },
-  facility: { label: "시설", color: "var(--cat-facility)" },
-  dorm: { label: "기숙사", color: "var(--cat-dorm)" },
-  library: { label: "도서관", color: "var(--cat-library)" },
-  department: { label: "학부", color: "var(--cat-department)" },
+  scholarship: { label: "장학", icon: "graduationCap" },
+  facility: { label: "시설", icon: "facilityBuilding" },
+  dorm: { label: "기숙사", icon: "dormHouse" },
+  library: { label: "도서관", icon: "bookOpen" },
+  department: { label: "학부", icon: "peopleGroup" },
 };
 
-export function CategoryTag({ category = "facility", variant = "soft", size = "md", style, ...rest }) {
+export function CategoryTag({ category = "facility", size = "md", style, ...rest }) {
   const c = CATEGORIES[category] || CATEGORIES.facility;
-  const dims = size === "sm" ? { padding: "3px 10px", fontSize: 11, dot: 5 } : { padding: "5px 12px", fontSize: "var(--fs-sm)", dot: 6 };
-  const soft = variant === "soft";
+  const dims = size === "sm" ? { icon: 15, fontSize: 12.5 } : { icon: 18, fontSize: "var(--fs-body)" };
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
+        gap: 5,
         fontFamily: "var(--font-sans)",
         fontWeight: "var(--fw-semibold)",
         lineHeight: 1.3,
-        borderRadius: "var(--radius-pill)",
-        padding: dims.padding,
+        color: "var(--text-strong)",
         fontSize: dims.fontSize,
-        background: soft ? `color-mix(in srgb, ${c.color} 14%, #fff)` : c.color,
-        color: soft ? c.color : "#fff",
-        border: variant === "outline" ? `1.5px solid ${c.color}` : "1px solid transparent",
-        ...(variant === "outline" ? { background: "transparent" } : null),
         ...style,
       }}
       {...rest}
     >
-      <span style={{ width: dims.dot, height: dims.dot, borderRadius: "50%", background: soft || variant === "outline" ? c.color : "rgba(255,255,255,.85)", flexShrink: 0 }} />
+      <Icon name={c.icon} size={dims.icon} stroke={2.2} color="var(--text-strong)" />
       {c.label}
     </span>
   );
@@ -476,16 +473,47 @@ export function EmpathyButton({ count = 0, active = false, onToggle, size = "md"
   );
 }
 
-/* 청원 라이프사이클: received (접수) → reviewing (검토중) → answered (답변 완료) */
+/* 청원 라이프사이클: received (진행중) → reviewing (검토중) → answered (답변 완료), + 파생 상태 expired (만료됨).
+   원본: skhu_tag_components/status/icon_only/*.svg — 색을 채운 원 안에 흰 글리프, 라벨은 중립 텍스트.
+   received 는 원본 에셋에 대응 항목이 없어(진행중=in_progress) 라벨을 "진행중"으로 옮겼다. */
 const STATUS = {
-  received: { label: "접수", fg: "var(--status-received-fg)", bg: "var(--status-received-bg)", dot: "var(--indigo-500)" },
-  reviewing: { label: "검토중", fg: "var(--status-review-fg)", bg: "var(--status-review-bg)", dot: "var(--warning-500)" },
-  answered: { label: "답변 완료", fg: "var(--status-answered-fg)", bg: "var(--status-answered-bg)", dot: "var(--success-500)" },
+  received: { label: "진행중", tone: "in-progress" },
+  reviewing: { label: "검토중", tone: "reviewing" },
+  answered: { label: "답변 완료", tone: "answered" },
+  expired: { label: "만료됨", tone: "expired" },
 };
+
+const STATUS_GLYPH = {
+  "in-progress": <path d="m10 8 6 4-6 4Z" fill="#fff" stroke="none" />,
+  reviewing: (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 8v4l3 2" />
+    </>
+  ),
+  answered: <path d="m7.5 12.2 3 3.1 6-7" />,
+  expired: (
+    <>
+      <rect x="7.5" y="8.5" width="9" height="8" rx="1.5" />
+      <path d="M9.5 6.5v3M14.5 6.5v3M7.5 11h9" />
+    </>
+  ),
+};
+
+function StatusDot({ tone, size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="10" fill={`var(--status-dot-${tone})`} />
+      <g fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        {STATUS_GLYPH[tone]}
+      </g>
+    </svg>
+  );
+}
 
 export function StatusBadge({ status = "received", size = "md", style, ...rest }) {
   const s = STATUS[status] || STATUS.received;
-  const dims = size === "sm" ? { padding: "3px 10px", fontSize: 11, dot: 5 } : { padding: "5px 13px", fontSize: "var(--fs-sm)", dot: 6 };
+  const dims = size === "sm" ? { dot: 18, fontSize: 12.5 } : { dot: 22, fontSize: "var(--fs-body)" };
   return (
     <span
       style={{
@@ -493,18 +521,15 @@ export function StatusBadge({ status = "received", size = "md", style, ...rest }
         alignItems: "center",
         gap: 6,
         fontFamily: "var(--font-sans)",
-        fontWeight: "var(--fw-bold)",
+        fontWeight: "var(--fw-semibold)",
         lineHeight: 1.3,
-        borderRadius: "var(--radius-pill)",
-        background: s.bg,
-        color: s.fg,
-        padding: dims.padding,
+        color: "var(--text-strong)",
         fontSize: dims.fontSize,
         ...style,
       }}
       {...rest}
     >
-      <span style={{ width: dims.dot, height: dims.dot, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+      <StatusDot tone={s.tone} size={dims.dot} />
       {s.label}
     </span>
   );
