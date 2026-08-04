@@ -46,11 +46,14 @@
   --magenta-500: #e12e6d;
   --blue-500: #4c6ef5;
 
-  /* ===== Semantic / status — 접수 → 검토중 → 답변 완료 ===== */
-  --status-received-fg: #3d3a94;
-  --status-received-bg: #e7e7f7;
-  --status-review-fg: #b26a00;
-  --status-review-bg: #fcefd6;
+  /* ===== Semantic / status — 접수 → 검토중 → 답변 완료 =====
+     인디고(접수)·바이올렛·밝은 블루가 뒤섞인 이전 조합이 흔한 "AI 생성 대시보드" 팔레트로
+     읽힌다는 지적에 따라 재배치했다. 접수는 브랜드 인디고 대신 중립 슬레이트로 빼고,
+     검토중은 더 짙은 오커로 무게를 준다. 답변 완료(그린)는 "완료" 의미가 보편적이라 유지. */
+  --status-received-fg: #52596b;
+  --status-received-bg: #eceef2;
+  --status-review-fg: #9a5b00;
+  --status-review-bg: #fbead2;
   --status-answered-fg: #1b8f5e;
   --status-answered-bg: #ddf3e7;
   --success-500: #22a06b;
@@ -85,12 +88,15 @@
   --border-subtle: var(--gray-200);
   --border-strong: var(--gray-300);
 
-  /* ===== Category accents ===== */
-  --cat-scholarship: #e8912b; /* 장학 */
-  --cat-facility: #23b3a0; /* 시설 */
-  --cat-dorm: #6c63c7; /* 기숙사 */
-  --cat-library: #f0808a; /* 도서관 */
-  --cat-department: #4c6ef5; /* 학부 */
+  /* ===== Category accents =====
+     보라(기숙사)·밝은 블루(학부)를 빼고 5개 전부 보라·밝은 파랑 없이 재배치했다.
+     학부는 --blue-500/--info-500 과, 도서관은 --coral-500(공감 액센트)과 값이 겹치던
+     것도 이번에 갈라놨다. */
+  --cat-scholarship: #b6611c; /* 장학 — 테라코타 */
+  --cat-facility: #0f8a7a; /* 시설 — 딥 틸 */
+  --cat-dorm: #b5462e; /* 기숙사 — 브릭레드 */
+  --cat-library: #9d2b4f; /* 도서관 — 와인 */
+  --cat-department: #3a5068; /* 학부 — 스틸 네이비 */
 
   /* ===== Radii — cards 18px, pill buttons fully round ===== */
   --radius-xs: 6px;

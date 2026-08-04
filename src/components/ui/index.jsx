@@ -478,8 +478,8 @@ export function EmpathyButton({ count = 0, active = false, onToggle, size = "md"
 
 /* 청원 라이프사이클: received (접수) → reviewing (검토중) → answered (답변 완료) */
 const STATUS = {
-  received: { label: "접수", fg: "var(--status-received-fg)", bg: "var(--status-received-bg)", dot: "var(--indigo-500)" },
-  reviewing: { label: "검토중", fg: "var(--status-review-fg)", bg: "var(--status-review-bg)", dot: "var(--warning-500)" },
+  received: { label: "접수", fg: "var(--status-received-fg)", bg: "var(--status-received-bg)", dot: "var(--status-received-fg)" },
+  reviewing: { label: "검토중", fg: "var(--status-review-fg)", bg: "var(--status-review-bg)", dot: "var(--status-review-fg)" },
   answered: { label: "답변 완료", fg: "var(--status-answered-fg)", bg: "var(--status-answered-bg)", dot: "var(--success-500)" },
 };
 
