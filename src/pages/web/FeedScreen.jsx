@@ -10,21 +10,13 @@ import { usePetitions } from "../../stores/petitions";
 import { Button, Icon } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
 
-function HeroBanner({ stats }) {
+function HeroBanner() {
   return (
-    <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "34px 40px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 560 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.85, marginBottom: 8 }}>익명 건의 · 공감으로 움직이는 캠퍼스</div>
-        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.2 }}>당신의 건의가<br />임계치를 넘으면 학교가 답합니다</h1>
-        <p style={{ margin: "12px 0 0", fontSize: 14.5, opacity: 0.9, lineHeight: 1.6 }}>공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
-      </div>
-      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 40, marginTop: 26 }}>
-        {stats.map((s) => (
-          <div key={s.label}>
-            <div style={{ fontSize: 30, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
-            <div style={{ fontSize: 12.5, opacity: 0.82, fontWeight: 500 }}>{s.label}</div>
-          </div>
-        ))}
+    <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "48px 44px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 620 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>익명 건의 · 공감으로 움직이는 캠퍼스</div>
+        <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.22 }}>당신의 건의가<br />임계치를 넘으면 학교가 답합니다</h1>
+        <p style={{ margin: "16px 0 0", fontSize: 16, opacity: 0.9, lineHeight: 1.65 }}>공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
       </div>
       <div style={{ position: "absolute", right: -60, top: -40, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,.06)" }} />
       <div style={{ position: "absolute", right: 80, bottom: -90, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,.05)" }} />
@@ -90,16 +82,10 @@ export default function FeedScreen({ nav = "feed" }) {
   else if (nav !== "mine") list = list.filter((p) => !p.expired);
   list = [...list].sort((a, b) => (sort === "hot" ? b.current - a.current : b.id - a.id));
 
-  const stats = [
-    { value: `${petitions.length}건`, label: "이번 학기 청원" },
-    { value: `${petitions.filter((p) => p.status !== "received").length}건`, label: "검토·답변 진행" },
-    { value: "88%", label: "평균 답변률" },
-  ];
-
   const intro = q ? (
     <SearchIntro query={query.trim()} count={list.length} />
   ) : nav === "feed" ? (
-    <HeroBanner stats={stats} />
+    <HeroBanner />
   ) : nav === "answered" ? (
     <PageIntro icon="checkCircle" bg="var(--status-answered-bg)" fg="var(--status-answered-fg)" title="답변 완료" count={base.length} desc="학교가 공식 답변을 등록한 청원입니다." />
   ) : (

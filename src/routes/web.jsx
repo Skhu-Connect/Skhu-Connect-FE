@@ -9,6 +9,7 @@ import FeedScreen from "../pages/web/FeedScreen";
 import DetailScreen from "../pages/web/DetailScreen";
 import SubmitScreen from "../pages/web/SubmitScreen";
 import BookmarkScreen from "../pages/web/BookmarkScreen";
+import MyPageScreen from "../pages/web/MyPageScreen";
 
 export function webRoutes() {
   return (
@@ -20,6 +21,7 @@ export function webRoutes() {
         <Route path="/answered" element={<FeedScreen nav="answered" />} />
         <Route path="/mine" element={<FeedScreen nav="mine" />} />
         <Route path="/bookmarks" element={<BookmarkScreen />} />
+        <Route path="/mypage" element={<MyPageScreen />} />
         <Route path="/p/:id" element={<DetailScreen />} />
         <Route path="/submit" element={<SubmitScreen />} />
       </Route>

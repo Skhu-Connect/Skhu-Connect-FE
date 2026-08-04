@@ -174,6 +174,7 @@ function AvatarMenu({ user, onSelect }) {
           <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--text-strong)" }}>{user.name}</div>
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{user.dept} · {user.year}학년</div>
         </div>
+        {item("user", "마이페이지", "mypage")}
         {item("bookmark", "북마크", "bookmarks")}
         {item("sliders", "환경설정", "settings")}
         <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
@@ -205,7 +206,8 @@ export default function Header({ search, onSearch }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const onMenu = (key) => {
-    if (key === "bookmarks") navigate("/bookmarks");
+    if (key === "mypage") navigate("/mypage");
+    else if (key === "bookmarks") navigate("/bookmarks");
     else if (key === "settings") setSettingsOpen(true);
     else if (key === "logout") logout();
   };

@@ -44,7 +44,6 @@ export function PetitionGrid({ list, authorOf }) {
         <PetitionCard
           key={p.id}
           title={p.title}
-          excerpt={p.excerpt}
           category={p.category}
           status={petitionStatus(p)}
           current={p.current}

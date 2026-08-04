@@ -84,6 +84,13 @@ export async function getMe() {
   return db.session ? copy(db.session) : null;
 }
 
+export async function updateProfile(patch) {
+  await delay();
+  db.user = { ...db.user, ...patch };
+  if (db.session) db.session = db.user;
+  return copy(db.user);
+}
+
 export async function getPrefs() {
   await delay();
   return copy(db.prefs);
