@@ -31,4 +31,10 @@ export const useSession = create((set) => ({
     set({ prefs });
     return prefs;
   },
+
+  updateProfile: async (patch) => {
+    const user = await api.updateProfile(patch);
+    set({ user });
+    return user;
+  },
 }));
