@@ -553,6 +553,7 @@ export function PetitionCard({
   excerpt,
   category = "facility",
   status = "received",
+  expired = false,
   current = 0,
   threshold = 100,
   basisLabel = "학과 정원",
@@ -598,6 +599,7 @@ export function PetitionCard({
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <CategoryTag category={category} size="sm" />
         <StatusBadge status={status} size="sm" />
+        {expired && <Badge tone="neutral" size="sm">만료됨</Badge>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <h3 style={{ margin: 0, font: "var(--text-h3)", color: "var(--text-strong)" }}>{title}</h3>

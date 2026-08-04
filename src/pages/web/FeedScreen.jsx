@@ -86,6 +86,8 @@ export default function FeedScreen({ nav = "feed" }) {
   let list = base.filter((p) => cat === "all" || p.category === cat);
   const q = query.trim().toLowerCase();
   if (q) list = list.filter((p) => `${p.title} ${p.excerpt}`.toLowerCase().includes(q));
+  // 만료(30일 경과) 청원은 기본 피드에서 뺀다. 검색 결과와 /mine(마이페이지 진입 지점)에는 남긴다.
+  else if (nav !== "mine") list = list.filter((p) => !p.expired);
   list = [...list].sort((a, b) => (sort === "hot" ? b.current - a.current : b.id - a.id));
 
   const stats = [

@@ -47,6 +47,7 @@ export function PetitionGrid({ list, authorOf }) {
           excerpt={p.excerpt}
           category={p.category}
           status={p.status}
+          expired={p.expired}
           current={p.current}
           threshold={p.threshold}
           basisLabel={p.basis}
