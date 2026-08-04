@@ -1,10 +1,13 @@
-/* 로그인 (ROADMAP 1-1). 원본: web-app-v7.jsx 467–492행.
+/* 로그인 (ROADMAP 1-1 → Phase 5-1 데스크톱 레이아웃으로 교체).
    원본 우하단 "에타 공유 링크 진입 데모" 토글은 디자인 툴 데모 장치라 옮기지 않는다 —
-   그 시나리오는 /login?next=/p/1 실제 경로가 재현한다(의존 G). */
+   그 시나리오는 /login?next=/p/1 실제 경로가 재현한다(의존 G).
+   딥링크 진입 시 뜨던 "로그인하면 바로 공감할 수 있어요" 배너는 디자인이 별로라는
+   피드백으로 지웠다 — next 리다이렉트 자체는 그대로 동작한다. */
 
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
+import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input } from "../../components/ui";
 
 export default function LoginScreen() {
@@ -16,7 +19,6 @@ export default function LoginScreen() {
   const raw = params.get("next") || "/";
   // 오픈 리다이렉트 방지: 앱 내부 절대경로만 허용한다(//evil.com 은 브라우저가 외부로 읽는다).
   const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
-  const deepLink = next !== "/";
 
   if (authed) return <Navigate to={next} replace />;
 
@@ -41,32 +43,29 @@ export default function LoginScreen() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--gradient-hero)", padding: 20 }}>
-      <div style={{ width: 400, maxWidth: "100%", background: "#fff", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-lg)", padding: 36 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 24 }}>
-          <img src="/logo.png" alt="" width={52} height={52} style={{ borderRadius: 14, display: "block" }} />
-          <h1 style={{ margin: "8px 0 0", fontSize: 22, fontWeight: 800, color: "var(--indigo-600)" }}>청원시스템</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>성공회대학교 학생 인증 후 이용</p>
-        </div>
+    <AuthLayout
+      eyebrow="익명 건의 · 공감으로 움직이는 캠퍼스"
+      title={<>로그인하고<br />청원에 참여하세요</>}
+      desc="공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면 담당 부서로 자동 전달됩니다."
+    >
+      <h2 style={{ margin: "0 0 22px", fontSize: 22, fontWeight: 800, color: "var(--text-strong)" }}>로그인</h2>
 
-        {deepLink && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--indigo-50)", borderRadius: "var(--radius-md)", padding: "10px 12px", marginBottom: 18, fontSize: 12.5, color: "var(--indigo-700)", fontWeight: 600 }}>
-            <Icon name="heart" size={15} color="var(--coral-500)" /> 로그인하면 바로 <b>&nbsp;공감&nbsp;</b>할 수 있어요
-          </div>
+      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <Input label="학번" name="sid" placeholder="학번을 입력하세요" prefix={<Icon name="user" size={16} />} required />
+        <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
+        {error && (
+          <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
         )}
+        <Button type="submit" variant="primary" size="lg" block style={{ marginTop: 4 }}>로그인</Button>
+      </form>
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Input label="학번" name="sid" placeholder="학번을 입력하세요" prefix={<Icon name="user" size={16} />} required />
-          <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
-          {error && (
-            <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
-          )}
-          <Button type="submit" variant="primary" size="lg" block style={{ marginTop: 4 }}>로그인</Button>
-        </form>
-        <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
-          종합정보시스템 계정으로 로그인합니다.<br />개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
-        </p>
-      </div>
-    </div>
+      <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 20 }}>
+        아직 계정이 없으신가요? <Link to="/signup" style={{ color: "var(--indigo-600)", fontWeight: 700 }}>회원가입</Link>
+      </p>
+
+      <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
+        종합정보시스템 계정으로 로그인합니다.<br />개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
+      </p>
+    </AuthLayout>
   );
 }

@@ -13,6 +13,22 @@
    - answers: 전역 단일 객체가 아니라 petitionId 키로 정규화한다 (ROADMAP 의존 B).
    - comments: petitionId 키. */
 
+/* 소속 학부 11개. 교육과정이 두 벌이고 재학생이 양쪽에 걸쳐 있어 전부 들어간다(이슈 #16 결정, 교무처 교무팀 페이지 출처).
+   회원가입·마이페이지가 이 목록을 같이 쓴다 — src/api/index.js listDepartments() 로만 노출한다. */
+export const DEPARTMENTS = [
+  "인문융합콘텐츠학부",
+  "경영학부",
+  "사회융합학부",
+  "미디어콘텐츠융합학부",
+  "미래융합학부",
+  "소프트웨어융합학부",
+  "국제학부",
+  "인문융합자율학부",
+  "사회융합자율학부",
+  "미디어콘텐츠융합자율학부",
+  "IT융합자율학부",
+];
+
 export const db = {
   session: null, // login 이 user 를 넣는다
 
