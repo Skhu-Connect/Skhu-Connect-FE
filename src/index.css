@@ -88,15 +88,14 @@
   --border-subtle: var(--gray-200);
   --border-strong: var(--gray-300);
 
-  /* ===== Category accents =====
-     보라(기숙사)·밝은 블루(학부)를 빼고 5개 전부 보라·밝은 파랑 없이 재배치했다.
-     학부는 --blue-500/--info-500 과, 도서관은 --coral-500(공감 액센트)과 값이 겹치던
-     것도 이번에 갈라놨다. */
-  --cat-scholarship: #b6611c; /* 장학 — 테라코타 */
-  --cat-facility: #0f8a7a; /* 시설 — 딥 틸 */
-  --cat-dorm: #b5462e; /* 기숙사 — 브릭레드 */
-  --cat-library: #9d2b4f; /* 도서관 — 와인 */
-  --cat-department: #3a5068; /* 학부 — 스틸 네이비 */
+  /* ===== Status dot (StatusBadge 원형 아이콘 배경) =====
+     원본: skhu_tag_components/status/*.svg 의 circle fill 그대로. 분류(CategoryTag)는
+     이제 색을 쓰지 않고 아이콘 모양으로만 구분해 --cat-* 토큰은 삭제했다 — 자세한 이유는
+     CategoryTag/StatusBadge 주석(src/components/ui/index.jsx) 참고. */
+  --status-dot-in-progress: #3778d8;
+  --status-dot-reviewing: #e09a13;
+  --status-dot-answered: #22a559;
+  --status-dot-expired: #8e949e;
 
   /* ===== Radii — cards 18px, pill buttons fully round ===== */
   --radius-xs: 6px;

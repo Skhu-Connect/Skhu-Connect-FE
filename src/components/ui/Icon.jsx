@@ -41,6 +41,13 @@ const LUCIDE = {
   bookmark: [["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }]],
   shield: [["path", { d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" }], ["path", { d: "m9 12 2 2 4-4" }]],
   sparkles: [["path", { d: "M9.94 14.66A2 2 0 0 1 8.66 13L7 11.34a2 2 0 0 1 0-2.68L8.66 7A2 2 0 0 1 10 5.34L11.66 4" }], ["path", { d: "M12 3v18" }]],
+
+  /* 청원 카테고리 5종. 원본: skhu_tag_components/category/icon_only/*.svg (translate(12,12) 오프셋을 뺀 24x24 좌표). */
+  peopleGroup: [["circle", { cx: 8, cy: 8, r: 3 }], ["circle", { cx: 16, cy: 8, r: 3 }], ["path", { d: "M2.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" }], ["path", { d: "M10.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" }]],
+  dormHouse: [["path", { d: "M3 10.5 12 3l9 7.5" }], ["path", { d: "M5 9.5V21h14V9.5" }], ["path", { d: "M9 21v-7h6v7" }]],
+  facilityBuilding: [["path", { d: "M4 21V5h7v16" }], ["path", { d: "M11 9h9v12" }], ["path", { d: "M7 8h1M7 12h1M7 16h1M15 12h1M15 16h1" }], ["path", { d: "M2 21h20" }]],
+  bookOpen: [["path", { d: "M3 5.5c3-1 6-.4 9 2v13c-3-2.4-6-3-9-2V5.5Z" }], ["path", { d: "M21 5.5c-3-1-6-.4-9 2v13c3-2.4 6-3 9-2V5.5Z" }]],
+  graduationCap: [["path", { d: "M3 9l9-5 9 5-9 5-9-5Z" }], ["path", { d: "M7 11.5V16c0 1.4 2.2 3 5 3s5-1.6 5-3v-4.5" }], ["path", { d: "M21 9v6" }]],
 };
 
 export const ICON_NAMES = Object.keys(LUCIDE);
