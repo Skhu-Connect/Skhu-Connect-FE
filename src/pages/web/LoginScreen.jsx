@@ -3,7 +3,7 @@
    그 시나리오는 /login?next=/p/1 실제 경로가 재현한다(의존 G). */
 
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { Button, Icon, Input } from "../../components/ui";
 
@@ -63,7 +63,14 @@ export default function LoginScreen() {
           )}
           <Button type="submit" variant="primary" size="lg" block style={{ marginTop: 4 }}>로그인</Button>
         </form>
-        <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
+
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 18, fontSize: 13 }}>
+          <Link to="/signup" style={{ color: "var(--indigo-600)", fontWeight: 600 }}>회원가입</Link>
+          <span style={{ color: "var(--border-strong)" }}>|</span>
+          <a href="https://skhu.ac.kr" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontWeight: 600 }}>계정을 모르시나요?</a>
+        </div>
+
+        <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 14, lineHeight: 1.6 }}>
           종합정보시스템 계정으로 로그인합니다.<br />개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
         </p>
       </div>

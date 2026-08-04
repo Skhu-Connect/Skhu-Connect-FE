@@ -4,6 +4,7 @@
 import { Route } from "react-router-dom";
 import WebLayout from "../layouts/WebLayout";
 import LoginScreen from "../pages/web/LoginScreen";
+import SignupScreen from "../pages/web/SignupScreen";
 import FeedScreen from "../pages/web/FeedScreen";
 import DetailScreen from "../pages/web/DetailScreen";
 import SubmitScreen from "../pages/web/SubmitScreen";
@@ -13,6 +14,7 @@ export function webRoutes() {
   return (
     <>
       <Route path="/login" element={<LoginScreen />} />
+      <Route path="/signup" element={<SignupScreen />} />
       <Route element={<WebLayout />}>
         <Route path="/" element={<FeedScreen nav="feed" />} />
         <Route path="/answered" element={<FeedScreen nav="answered" />} />

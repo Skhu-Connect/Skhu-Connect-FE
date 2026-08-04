@@ -4,7 +4,7 @@
    모든 함수는 async 이고 목 지연 150ms 를 갖는다(로딩 경로가 실제로 존재하게).
    반환값은 db 와 분리된 복사본이다 — 호출자가 상태를 직접 변형할 수 없다. */
 
-import { db } from "./mockDb.js";
+import { db, DEPARTMENTS } from "./mockDb.js";
 
 const delay = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 const copy = (v) => structuredClone(v);
@@ -55,6 +55,21 @@ export async function login(sid, password) {
   return { user: copy(db.session), prefs: copy(db.prefs) };
 }
 
+export async function signup({ sid, password, name, dept }) {
+  const s = String(sid ?? "").trim();
+  const pw = String(password ?? "").trim();
+  const n = String(name ?? "").trim();
+  if (!s || !pw) throw new Error("학번과 비밀번호를 입력해 주세요.");
+  if (!n) throw new Error("이름을 입력해 주세요.");
+  if (!DEPARTMENTS.includes(dept)) throw new Error("소속 학부를 선택해 주세요.");
+  await delay();
+  // ponytail: 목 단계라 자격 증명·중복 학번을 검증하지 않는다(login 과 동일한 한계). 학년은
+  // sid 로 산출할 방법이 없어 1로 둔다 — 실제 계산은 백엔드 연동 시 여기만 고치면 된다.
+  db.user = { name: n, dept, year: 1, sid: s };
+  db.session = db.user;
+  return { user: copy(db.session), prefs: copy(db.prefs) };
+}
+
 export async function logout() {
   await delay(0);
   db.session = null;
@@ -74,6 +89,12 @@ export async function savePrefs(patch) {
   await delay();
   db.prefs = { ...db.prefs, ...patch };
   return copy(db.prefs);
+}
+
+/** 소속 학부 11개. 회원가입·마이페이지가 같은 출처를 읽는다. */
+export async function listDepartments() {
+  await delay();
+  return copy(DEPARTMENTS);
 }
 
 /* ───────────────── 청원 ───────────────── */

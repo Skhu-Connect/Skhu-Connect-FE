@@ -15,6 +15,12 @@ export const useSession = create((set) => ({
     return user;
   },
 
+  signup: async (form) => {
+    const { user, prefs } = await api.signup(form);
+    set({ authed: true, user, prefs });
+    return user;
+  },
+
   logout: async () => {
     await api.logout();
     set({ authed: false, user: null, prefs: null });
