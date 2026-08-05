@@ -43,11 +43,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthLayout
-      eyebrow="익명 건의 · 공감으로 움직이는 캠퍼스"
-      title={<>로그인하고<br />청원에 참여하세요</>}
-      desc="공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면 담당 부서로 자동 전달됩니다."
-    >
+    <AuthLayout>
       <h2 style={{ margin: "0 0 22px", fontSize: 22, fontWeight: 800, color: "var(--text-strong)" }}>로그인</h2>
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -60,11 +56,11 @@ export default function LoginScreen() {
       </form>
 
       <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 20 }}>
-        아직 계정이 없으신가요? <Link to="/signup" style={{ color: "var(--indigo-600)", fontWeight: 700 }}>회원가입</Link>
+        아직 계정이 없으신가요? <Link to="/signup" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
       </p>
 
       <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
-        종합정보시스템 계정으로 로그인합니다.<br />개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
+        재학생 인증을 통해 당신의 목소리를 들려주세요
       </p>
     </AuthLayout>
   );
