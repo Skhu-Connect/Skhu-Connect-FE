@@ -1,6 +1,6 @@
 /* 마이페이지 (ROADMAP Phase 5-2). WebLayout 안(인증 필요). 이름은 읽기 전용,
    소속 학부만 수정 가능하다 — 그 외 필드는 수정 대상이 아니다.
-   학번·학년은 표시하지 않는다 — 사용자가 확인할 수 없는 값이라 보여줘도 의미가 없다. */
+   학번·학년은 여기서는 표시하지 않는다 — 헤더 아바타 메뉴·환경설정 모달에는 그대로 남아 있다. */
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

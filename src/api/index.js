@@ -150,7 +150,6 @@ export async function createPetition({ category: categoryKey, title, body }) {
     status: "received",
     current: 0,
     author: "익명",
-    date: "방금 전",
     createdAt: new Date().toISOString(),
     views: 0,
     mine: true,

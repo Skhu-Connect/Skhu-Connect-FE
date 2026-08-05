@@ -29,7 +29,7 @@ export const DEPARTMENTS = [
   "IT융합자율학부",
 ];
 
-// 시드 청원의 date 표시 문구와 맞춘 실제 시각. 만료(30일) 판정은 src/api/index.js view() 가 이 값으로 한다.
+// 청원 등록 시각. D-day 표시와 만료(30일) 판정 모두 src/api/index.js view() 가 이 값으로 계산한다.
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
 const hoursAgo = (n) => new Date(Date.now() - n * 3600000).toISOString();
 
@@ -93,7 +93,6 @@ export const db = {
       status: "reviewing",
       current: 512,
       author: "익명",
-      date: "2일 전",
       createdAt: daysAgo(2),
       views: 1204,
     },
@@ -106,7 +105,6 @@ export const db = {
       status: "reviewing",
       current: 243,
       author: "익명",
-      date: "4일 전",
       createdAt: daysAgo(4),
       views: 862,
     },
@@ -119,7 +117,6 @@ export const db = {
       status: "received",
       current: 88,
       author: "익명",
-      date: "6시간 전",
       createdAt: hoursAgo(6),
       views: 341,
       mine: true,
@@ -133,7 +130,6 @@ export const db = {
       status: "answered",
       current: 631,
       author: "익명",
-      date: "2주 전",
       createdAt: daysAgo(14),
       views: 2417,
       mine: true,
@@ -147,7 +143,6 @@ export const db = {
       status: "received",
       current: 154,
       author: "익명",
-      date: "1일 전",
       createdAt: daysAgo(1),
       views: 508,
     },
@@ -160,7 +155,6 @@ export const db = {
       status: "received",
       current: 96,
       author: "익명",
-      date: "3일 전",
       createdAt: daysAgo(3),
       views: 297,
     },
@@ -174,7 +168,6 @@ export const db = {
       status: "received",
       current: 41,
       author: "익명",
-      date: "40일 전",
       createdAt: daysAgo(40),
       views: 190,
       mine: true,
