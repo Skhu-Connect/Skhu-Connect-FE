@@ -67,6 +67,7 @@ const SLOGAN = [
   { text: "더불어 사는 큰 사람을 키우는 곳,", weight: 500 },
   { text: "인권과 평화의 대학", weight: 800 },
 ];
+const VOICE_LINE = "당신의 목소리를 들려주세요";
 const SERVICE_NAME = "성공잇다";
 
 // 글자 하나가 늦게 들어오는 정도. 뒤의 항은 순서를 살짝 흐트러뜨리는 지터다 — 완전한 좌→우
@@ -220,8 +221,13 @@ export default function AuthLayout({ children }) {
               </h1>
             </div>
 
-            {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
-            <div>
+            {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다.
+                marginBottom: justify-content:space-between 이 이 블록을 컨테이너 맨 아래까지
+                붙이므로, 바닥에서 살짝 띄워 위로 당긴다. */}
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ margin: "0 0 16px", fontSize: 32, fontWeight: 800, lineHeight: 1.42, letterSpacing: "-.02em", ...rise(shown, MARK_DELAY - 0.55, 10) }}>
+                {VOICE_LINE}
+              </p>
               <div
                 aria-hidden="true"
                 style={{

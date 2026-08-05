@@ -15,7 +15,7 @@ function HeroBanner() {
     <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "48px 44px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
       <div style={{ position: "relative", zIndex: 1, maxWidth: 620 }}>
         <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>익명 건의 · 공감으로 움직이는 캠퍼스</div>
-        <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.22 }}>당신의 건의가<br />임계치를 넘으면 학교가 답합니다</h1>
+        <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.22 }}>당신의 목소리를 들려주세요</h1>
         <p style={{ margin: "16px 0 0", fontSize: 16, opacity: 0.9, lineHeight: 1.65 }}>공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
       </div>
       <div style={{ position: "absolute", right: -60, top: -40, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,.06)" }} />
@@ -30,6 +30,51 @@ function SearchIntro({ query, count }) {
       <Icon name="search" size={18} color="var(--indigo-600)" />
       <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-strong)" }}>&lsquo;{query}&rsquo; 검색 결과</h1>
       <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--indigo-600)", fontVariantNumeric: "tabular-nums" }}>{count}건</span>
+    </div>
+  );
+}
+
+const SORT_OPTIONS = [
+  { key: "hot", label: "공감순" },
+  { key: "new", label: "최신순" },
+];
+
+/** 헤더의 알림·메뉴 드롭다운과 같은 패턴(트리거+바깥 클릭 닫기) — 정렬 옵션을 리스트로 보여준다. */
+function SortMenu({ sort, onChange }) {
+  const [open, setOpen] = useState(false);
+  const current = SORT_OPTIONS.find((o) => o.key === sort) ?? SORT_OPTIONS[0];
+  return (
+    <div style={{ marginLeft: "auto", position: "relative" }}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+      >
+        <Icon name="sliders" size={16} />
+        {current.label}
+        <Icon name="chevronDown" size={14} />
+      </button>
+      {open && (
+        <>
+          <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
+          <div role="listbox" aria-label="정렬 방식" style={{ position: "absolute", right: 0, top: 26, minWidth: 120, background: "var(--surface-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-lg)", zIndex: 31, overflow: "hidden" }}>
+            {SORT_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                role="option"
+                aria-selected={o.key === sort}
+                onClick={() => { onChange(o.key); setOpen(false); }}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", background: o.key === sort ? "var(--indigo-50)" : "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: o.key === sort ? 700 : 500, color: o.key === sort ? "var(--indigo-600)" : "var(--text-body)" }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -53,14 +98,7 @@ function FilterBar({ categories, active, onChange, sort, onSort }) {
           );
         })}
       </div>
-      <button
-        type="button"
-        onClick={onSort}
-        style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-      >
-        <Icon name="sliders" size={16} />
-        {sort === "hot" ? "공감순" : "최신순"}
-      </button>
+      <SortMenu sort={sort} onChange={onSort} />
     </div>
   );
 }
@@ -87,9 +125,9 @@ export default function FeedScreen({ nav = "feed" }) {
   ) : nav === "feed" ? (
     <HeroBanner />
   ) : nav === "answered" ? (
-    <PageIntro icon="checkCircle" bg="var(--status-answered-bg)" fg="var(--status-answered-fg)" title="답변 완료" count={base.length} desc="학교가 공식 답변을 등록한 청원입니다." />
+    <PageIntro icon="checkCircle" bg="var(--status-answered-bg)" fg="var(--status-answered-fg)" title="답변 완료" count={base.length} desc="학교가 공식 답변을 등록한 건의입니다." />
   ) : (
-    <PageIntro icon="user" bg="var(--indigo-50)" fg="var(--indigo-600)" title="내 청원" count={base.length} desc="내가 등록한 청원의 진행 상황입니다. 목록은 본인에게만 표시되며, 다른 학생에게는 익명으로 보입니다." />
+    <PageIntro icon="user" bg="var(--indigo-50)" fg="var(--indigo-600)" title="내 건의" count={base.length} desc="내가 등록한 건의의 진행 상황입니다. 목록은 본인에게만 표시되며, 다른 학생에게는 익명으로 보입니다." />
   );
 
   return (
@@ -100,17 +138,17 @@ export default function FeedScreen({ nav = "feed" }) {
         active={cat}
         onChange={setCat}
         sort={sort}
-        onSort={() => setSort((s) => (s === "hot" ? "new" : "hot"))}
+        onSort={setSort}
       />
       {list.length === 0 ? (
         <EmptyState
-          title={q ? `‘${query.trim()}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 청원이 없습니다" : "해당 조건의 청원이 없습니다"}
-          desc={q ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 청원을 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
+          title={q ? `‘${query.trim()}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 건의가 없습니다" : "해당 조건의 건의가 없습니다"}
+          desc={q ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 건의를 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
         >
-          {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>청원 등록</Button>}
+          {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>건의 등록</Button>}
         </EmptyState>
       ) : (
-        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 청원" : undefined} />
+        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} />
       )}
     </div>
   );

@@ -11,6 +11,11 @@ const copy = (v) => structuredClone(v);
 
 const EXPIRY_DAYS = 30;
 const isExpired = (p) => Date.now() - new Date(p.createdAt).getTime() > EXPIRY_DAYS * 86400000;
+// "2주 전" 같은 상대 시간 대신, 30일 만료까지 남은 기간을 D-day 로 보여준다.
+const ddayLabel = (p) => {
+  const daysLeft = EXPIRY_DAYS - Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000);
+  return daysLeft > 0 ? `D-${daysLeft}` : "만료";
+};
 
 const category = (key) => db.categories.find((c) => c.key === key);
 const record = (id) => db.petitions.find((p) => p.id === Number(id));
@@ -27,6 +32,7 @@ function view(p, { admin = false } = {}) {
     ...p,
     threshold: c.threshold,
     basis: c.basis,
+    date: ddayLabel(p),
     // 댓글 수는 목록에서 파생한다 — 별도 카운트 필드를 두면 카드(47)와 상세(0)가 어긋난다.
     comments: (db.comments[p.id] ?? []).length,
     owner: admin ? c.owner : { team: c.owner.team },
@@ -144,7 +150,6 @@ export async function createPetition({ category: categoryKey, title, body }) {
     status: "received",
     current: 0,
     author: "익명",
-    date: "방금 전",
     createdAt: new Date().toISOString(),
     views: 0,
     mine: true,
@@ -156,7 +161,7 @@ export async function createPetition({ category: categoryKey, title, body }) {
 export async function toggleEmpathy(id) {
   await delay();
   const p = record(id);
-  if (!p) throw new Error(`청원 ${id} 을(를) 찾을 수 없습니다.`);
+  if (!p) throw new Error(`건의 ${id} 을(를) 찾을 수 없습니다.`);
   if (db.voted.has(p.id)) {
     db.voted.delete(p.id);
     p.current -= 1;
@@ -171,7 +176,7 @@ export async function toggleEmpathy(id) {
 export async function toggleBookmark(id) {
   await delay();
   const p = record(id);
-  if (!p) throw new Error(`청원 ${id} 을(를) 찾을 수 없습니다.`);
+  if (!p) throw new Error(`건의 ${id} 을(를) 찾을 수 없습니다.`);
   if (db.bookmarked.has(p.id)) db.bookmarked.delete(p.id);
   else db.bookmarked.add(p.id);
   return view(p);

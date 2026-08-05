@@ -29,7 +29,7 @@ export const DEPARTMENTS = [
   "IT융합자율학부",
 ];
 
-// 시드 청원의 date 표시 문구와 맞춘 실제 시각. 만료(30일) 판정은 src/api/index.js view() 가 이 값으로 한다.
+// 청원 등록 시각. D-day 표시와 만료(30일) 판정 모두 src/api/index.js view() 가 이 값으로 계산한다.
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
 const hoursAgo = (n) => new Date(Date.now() - n * 3600000).toISOString();
 
@@ -37,7 +37,7 @@ export const db = {
   session: null, // login 이 user 를 넣는다
 
   // 가상 학생. 실제 학번·실명을 목데이터에 두지 않는다 — 번들에 박혀 공개 배포로 새 나간다.
-  user: { name: "김한울", dept: "소프트웨어융합학부", year: 3, sid: "20260000" },
+  user: { name: "김석환", dept: "소프트웨어융합학부", year: 3, sid: "20260000" },
 
   prefs: { threshold: true, answer: true, empathy: false },
 
@@ -93,7 +93,6 @@ export const db = {
       status: "reviewing",
       current: 512,
       author: "익명",
-      date: "2일 전",
       createdAt: daysAgo(2),
       views: 1204,
     },
@@ -106,7 +105,6 @@ export const db = {
       status: "reviewing",
       current: 243,
       author: "익명",
-      date: "4일 전",
       createdAt: daysAgo(4),
       views: 862,
     },
@@ -119,7 +117,6 @@ export const db = {
       status: "received",
       current: 88,
       author: "익명",
-      date: "6시간 전",
       createdAt: hoursAgo(6),
       views: 341,
       mine: true,
@@ -133,7 +130,6 @@ export const db = {
       status: "answered",
       current: 631,
       author: "익명",
-      date: "2주 전",
       createdAt: daysAgo(14),
       views: 2417,
       mine: true,
@@ -147,7 +143,6 @@ export const db = {
       status: "received",
       current: 154,
       author: "익명",
-      date: "1일 전",
       createdAt: daysAgo(1),
       views: 508,
     },
@@ -160,7 +155,6 @@ export const db = {
       status: "received",
       current: 96,
       author: "익명",
-      date: "3일 전",
       createdAt: daysAgo(3),
       views: 297,
     },
@@ -174,7 +168,6 @@ export const db = {
       status: "received",
       current: 41,
       author: "익명",
-      date: "40일 전",
       createdAt: daysAgo(40),
       views: 190,
       mine: true,
@@ -226,8 +219,8 @@ export const db = {
 
   notifications: [
     { id: 1, type: "answer", petitionId: 4, title: "공식 답변 등록", body: "‘교내 장학금 신청 절차 간소화’에 학생지원팀의 답변이 등록되었습니다.", date: "3시간 전", read: false },
-    { id: 2, type: "threshold", petitionId: 1, title: "임계치 도달", body: "‘중앙도서관 시험기간 24시간 개방 요청’이 임계치를 넘어 검토가 시작되었습니다.", date: "1일 전", read: false },
-    { id: 3, type: "empathy", petitionId: 3, title: "공감 알림", body: "내 청원 ‘소프트웨어융합학부 실습실 야간 개방’이 공감 50개를 넘었습니다.", date: "2일 전", read: true },
+    { id: 2, type: "threshold", petitionId: 1, title: "도달률 달성", body: "‘중앙도서관 시험기간 24시간 개방 요청’이 도달률 100%를 달성해 검토가 시작되었습니다.", date: "1일 전", read: false },
+    { id: 3, type: "empathy", petitionId: 3, title: "공감 알림", body: "내 건의 ‘소프트웨어융합학부 실습실 야간 개방’이 공감 50개를 넘었습니다.", date: "2일 전", read: true },
   ],
 
   notifLogs: [

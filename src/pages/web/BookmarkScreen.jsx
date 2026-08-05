@@ -18,10 +18,10 @@ export default function BookmarkScreen() {
         fg="var(--indigo-600)"
         title="북마크"
         count={list.length}
-        desc="저장해 둔 청원입니다. 상세 화면의 북마크 버튼으로 추가·해제할 수 있습니다."
+        desc="저장해 둔 건의입니다. 상세 화면의 북마크 버튼으로 추가·해제할 수 있습니다."
       />
       {list.length === 0 ? (
-        <EmptyState title="저장한 청원이 없습니다" desc="청원 상세 화면에서 북마크 버튼을 눌러 저장해 보세요." />
+        <EmptyState title="저장한 건의가 없습니다" desc="건의 상세 화면에서 북마크 버튼을 눌러 저장해 보세요." />
       ) : (
         <PetitionGrid list={list} />
       )}
