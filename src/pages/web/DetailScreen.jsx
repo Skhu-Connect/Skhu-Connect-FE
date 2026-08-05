@@ -122,9 +122,9 @@ export default function DetailScreen() {
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "22px var(--page-gutter) 90px", textAlign: "center", color: "var(--text-muted)" }}>
         {missing ? (
           <Card padding="var(--pad-card-lg)">
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>청원을 찾을 수 없습니다</p>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>건의를 찾을 수 없습니다</p>
             <p style={{ margin: "6px 0 18px", fontSize: 13.5 }}>삭제되었거나 잘못된 주소입니다.</p>
-            <Button variant="primary" onClick={() => navigate("/")}>전체 청원으로</Button>
+            <Button variant="primary" onClick={() => navigate("/")}>전체 건의로</Button>
           </Card>
         ) : (
           "불러오는 중…"

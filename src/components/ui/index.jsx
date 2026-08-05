@@ -555,7 +555,7 @@ export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학�
     <div style={{ display: "flex", flexDirection: "column", gap: 8, ...style }} {...rest}>
       {showMeta && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ font: "var(--text-caption-role)", color: "var(--text-muted)" }}>{basisLabel} 대비 임계치</span>
+          <span style={{ font: "var(--text-caption-role)", color: "var(--text-muted)" }}>{basisLabel} 대비 도달률</span>
           <span
             style={{
               fontFamily: "var(--font-sans)",
@@ -574,7 +574,7 @@ export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학�
         <div style={{ width: `${pct}%`, height: "100%", borderRadius: "var(--radius-pill)", background: fill, transition: "width .5s cubic-bezier(.4,0,.2,1)" }} />
       </div>
       {showMeta && isReached && (
-        <span style={{ font: "var(--text-caption-role)", fontWeight: "var(--fw-semibold)", color: "var(--success-500)" }}>임계치 도달 · 담당자 검토 요청됨</span>
+        <span style={{ font: "var(--text-caption-role)", fontWeight: "var(--fw-semibold)", color: "var(--success-500)" }}>도달률 100% 달성 · 담당자 검토 요청됨</span>
       )}
     </div>
   );

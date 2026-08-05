@@ -29,7 +29,7 @@ export default function LoginScreen() {
     const password = String(form.get("password") ?? "").trim();
     setError("");
     if (!sid || !password) {
-      setError("학번과 비밀번호를 입력해 주세요.");
+      setError("아이디와 비밀번호를 입력해 주세요.");
       return;
     }
     try {
@@ -38,7 +38,7 @@ export default function LoginScreen() {
       // 서버 문구(err.message)를 그대로 띄우지 않는다. 백엔드가 "등록되지 않은 학번" 과
       // "비밀번호 불일치" 를 구분해 던지면 학번 순차 대입으로 재학생 명단을 만들 수 있고,
       // 500 응답 본문이 로그인 카드에 렌더될 수도 있다. 화면이 문구를 소유한다.
-      setError("학번 또는 비밀번호가 올바르지 않습니다.");
+      setError("아이디 또는 비밀번호가 올바르지 않습니다.");
     }
   };
 
@@ -47,7 +47,7 @@ export default function LoginScreen() {
       <h2 style={{ margin: "0 0 22px", fontSize: 22, fontWeight: 800, color: "var(--text-strong)" }}>로그인</h2>
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Input label="학번" name="sid" placeholder="학번을 입력하세요" prefix={<Icon name="user" size={16} />} required />
+        <Input label="아이디" name="sid" placeholder="아이디를 입력하세요" prefix={<Icon name="user" size={16} />} required />
         <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>

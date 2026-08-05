@@ -23,9 +23,9 @@ function Toggle({ on, label, onClick }) {
 }
 
 const ROWS = [
-  ["threshold", "임계치 도달 알림", "내 청원이 임계치에 도달하면 알려드립니다."],
-  ["answer", "답변 등록 알림", "공감한 청원에 공식 답변이 등록되면 알려드립니다."],
-  ["empathy", "공감 알림", "내 청원의 공감 수 변화를 알려드립니다."],
+  ["threshold", "도달률 알림", "내 건의가 도달률 100%에 도달하면 알려드립니다."],
+  ["answer", "답변 등록 알림", "공감한 건의에 공식 답변이 등록되면 알려드립니다."],
+  ["empathy", "공감 알림", "내 건의의 공감 수 변화를 알려드립니다."],
 ];
 
 export default function SettingsModal({ user, onClose }) {
@@ -60,7 +60,7 @@ export default function SettingsModal({ user, onClose }) {
         </div>
         <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "13px 16px", marginBottom: 18, fontSize: 13.5, color: "var(--text-body)" }}>
           <b style={{ color: "var(--text-strong)" }}>{user.name}</b> · {user.dept} {user.year}학년 · {user.sid}
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>개인정보는 인증에만 사용되며 건의는 익명 처리됩니다.</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {ROWS.map(([key, title, desc]) => (

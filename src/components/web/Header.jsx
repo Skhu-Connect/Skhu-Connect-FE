@@ -40,8 +40,8 @@ function SearchBox({ value, onChange }) {
               setOpen(false);
             }
           }}
-          placeholder="청원 검색"
-          aria-label="청원 검색"
+          placeholder="건의 검색"
+          aria-label="건의 검색"
           style={{ width: 180, border: "none", background: "transparent", outline: "none", fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--text-strong)" }}
         />
       )}
@@ -217,14 +217,14 @@ export default function Header({ search, onSearch }) {
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "0 var(--page-gutter)", height: 66, display: "flex", alignItems: "center", gap: 28 }}>
         <WordMark />
         <nav style={{ display: "flex", alignItems: "center", gap: 22, marginLeft: 8 }}>
-          <NavLink to="/" end style={navLinkStyle} onClick={() => onSearch("")}>전체 청원</NavLink>
+          <NavLink to="/" end style={navLinkStyle} onClick={() => onSearch("")}>전체 건의</NavLink>
           <NavLink to="/answered" style={navLinkStyle} onClick={() => onSearch("")}>답변 완료</NavLink>
-          <NavLink to="/mine" style={navLinkStyle} onClick={() => onSearch("")}>내 청원</NavLink>
+          <NavLink to="/mine" style={navLinkStyle} onClick={() => onSearch("")}>내 건의</NavLink>
         </nav>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <SearchBox value={search} onChange={onSearch} />
           <NotifBell />
-          <Button variant="primary" size="sm" leadingIcon={<Icon name="plus" size={16} />} onClick={() => navigate("/submit")}>청원 등록</Button>
+          <Button variant="primary" size="sm" leadingIcon={<Icon name="plus" size={16} />} onClick={() => navigate("/submit")}>건의 등록</Button>
           {user && <AvatarMenu user={user} onSelect={onMenu} />}
         </div>
       </div>
