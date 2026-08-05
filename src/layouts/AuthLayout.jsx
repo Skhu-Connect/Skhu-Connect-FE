@@ -66,6 +66,7 @@ const EYEBROW = "SUNGKONGHOE UNIVERSITY";
 const SLOGAN = [
   { text: "더불어 사는 큰 사람을 키우는 곳,", weight: 500 },
   { text: "인권과 평화의 대학", weight: 800 },
+  { text: "당신의 목소리를 들려주세요", weight: 800 },
 ];
 const SERVICE_NAME = "성공잇다";
 
