@@ -27,3 +27,9 @@ dist-ssr
 # Python (scripts/)
 __pycache__/
 *.pyc
+
+# 하네스가 남기는 리뷰·로드맵 게이트 로컬 상태
+.claude/
+
+# 목 화면 스크린샷(2.6MB). docs/ 는 열어둔다 — 실제 문서는 커밋 대상이다
+docs/screens/
