@@ -223,7 +223,7 @@ export default function AuthLayout({ children }) {
 
             {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
             <div>
-              <p style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700, ...rise(shown, MARK_DELAY - 0.55, 10), opacity: shown ? 0.92 : 0 }}>
+              <p style={{ margin: "0 0 16px", fontSize: 32, fontWeight: 800, lineHeight: 1.42, letterSpacing: "-.02em", ...rise(shown, MARK_DELAY - 0.55, 10) }}>
                 {VOICE_LINE}
               </p>
               <div
