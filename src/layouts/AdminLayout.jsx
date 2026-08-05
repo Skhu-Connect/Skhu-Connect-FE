@@ -29,7 +29,7 @@ export default function AdminLayout() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 22px" }}>
           <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 9, display: "block" }} />
           <div style={{ lineHeight: 1.1 }}>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>청원 관리자</div>
+            <div style={{ fontWeight: 800, fontSize: 15 }}>성공잇다 관리자</div>
             <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.55)" }}>ADMIN CONSOLE</div>
           </div>
         </div>

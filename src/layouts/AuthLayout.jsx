@@ -175,7 +175,7 @@ export default function AuthLayout({ children }) {
 
       <Link to="/" style={{ position: "absolute", top: 40, left: EDGE, display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", ...rise(shown, 0.1, 8) }}>
         <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
-        <span style={{ fontWeight: 800, fontSize: 17 }}>청원시스템</span>
+        <span style={{ fontWeight: 800, fontSize: 17 }}>{SERVICE_NAME}</span>
       </Link>
 
       {/* 두 칸의 높이를 맞추는 장치다. 행 높이는 더 큰 쪽(폼)이 정하고 grid 가 두 칸을 거기 맞춰

@@ -38,7 +38,7 @@ export type FeedProps = {
 
 export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
-  const title = tab === "soon" ? "임계치 임박" : tab === "mine" ? "내 청원" : "청원시스템";
+  const title = tab === "soon" ? "임계치 임박" : tab === "mine" ? "내 청원" : "성공잇다";
 
   return (
     <View className="flex-1 bg-page">
