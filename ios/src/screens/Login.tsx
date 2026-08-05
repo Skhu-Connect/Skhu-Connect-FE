@@ -20,7 +20,7 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
             <LogoMark />
             <View className="items-center">
               <Text style={[{ fontFamily: font }, { color: "#fff", fontWeight: "800", fontSize: 22, letterSpacing: -0.22 }]}>SKHU-CONNECT</Text>
-              <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.72)", fontSize: 10.5, fontWeight: "700", letterSpacing: 1.68, marginTop: 4 }]}>성공회대학교 청원시스템</Text>
+              <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.72)", fontSize: 10.5, fontWeight: "700", letterSpacing: 1.68, marginTop: 4 }]}>성공회대학교 성공잇다</Text>
             </View>
           </View>
 
