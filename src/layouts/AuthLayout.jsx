@@ -221,8 +221,10 @@ export default function AuthLayout({ children }) {
               </h1>
             </div>
 
-            {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
-            <div>
+            {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다.
+                marginBottom: justify-content:space-between 이 이 블록을 컨테이너 맨 아래까지
+                붙이므로, 바닥에서 살짝 띄워 위로 당긴다. */}
+            <div style={{ marginBottom: 24 }}>
               <p style={{ margin: "0 0 16px", fontSize: 32, fontWeight: 800, lineHeight: 1.42, letterSpacing: "-.02em", ...rise(shown, MARK_DELAY - 0.55, 10) }}>
                 {VOICE_LINE}
               </p>
