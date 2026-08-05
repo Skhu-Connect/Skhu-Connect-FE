@@ -82,15 +82,23 @@ const MARK_DELAY =
 const rise = (shown, delay, dy = 14) => ({
   opacity: shown ? 1 : 0,
   transform: shown ? "none" : `translateY(${dy}px)`,
-  transition: reduceMotion ? "none" : `opacity ${FADE}s ease, transform ${FADE}s cubic-bezier(.2,.7,.3,1)`,
+  // opacity 0 은 그리지만 않을 뿐 클릭·포커스·자동완성이 그대로 닿는다. 폼이 아직 안 보이는
+  // 동안 안 보이는 입력칸에 포커스가 가는 걸 막으려면 visibility 가 필요하다.
+  // 전환 시간을 0s 로 두고 지연만 주면, 페이드가 시작되는 바로 그 순간 보이면서 조작 가능해진다
+  // (페이드 도중에는 눈에 보이므로 막지 않는다).
+  visibility: shown ? "visible" : "hidden",
+  transition: reduceMotion
+    ? "none"
+    : `opacity ${FADE}s ease, transform ${FADE}s cubic-bezier(.2,.7,.3,1), visibility 0s`,
   transitionDelay: `${delay}s`,
 });
 
 // 글자 단위 등장. 조각을 span 으로 쪼개면 보조기술이 한 자씩 읽으므로, 부모 쪽에서 원문을
-// 통째로 노출하고(h1 의 aria-label · role="img") 조각은 접근성 트리에서 뺀다.
+// 통째로 노출하고(h1 의 aria-label · role="img") 조각마다 aria-hidden 을 박아 트리에서 뺀다.
+// role="img" 가 자식을 알아서 지워줄 거라 믿으면 안 된다 — Chromium AX 트리에는 그대로 남는다.
 function Chars({ text, shown, start }) {
   return [...text].map((ch, i) => (
-    <span key={i} style={{ display: "inline-block", whiteSpace: "pre", ...rise(shown, start + charOffset(i), 18) }}>
+    <span key={i} aria-hidden="true" style={{ display: "inline-block", whiteSpace: "pre", ...rise(shown, start + charOffset(i), 18) }}>
       {ch}
     </span>
   ));
