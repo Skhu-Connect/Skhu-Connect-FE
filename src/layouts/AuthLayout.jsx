@@ -175,7 +175,10 @@ export default function AuthLayout({ children }) {
           <span style={{ fontWeight: 800, fontSize: 17 }}>청원시스템</span>
         </Link>
 
-        <div style={{ maxWidth: 480, textShadow: "0 2px 24px rgba(0,0,0,.5)" }}>
+        {/* fit-content 라 이 블록의 폭이 가장 긴 줄(슬로건 1행 "…곳,")에 딱 맞춰진다.
+            밑줄이 width:100% 로 그 폭을 그대로 쓰므로 문구를 고쳐도 길이를 다시 재지 않는다.
+            (flex 아이템이라 display:inline-block 은 block 으로 뭉개진다 — width 로 잡아야 한다.) */}
+        <div style={{ width: "fit-content", maxWidth: 480, textShadow: "0 2px 24px rgba(0,0,0,.5)" }}>
           <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".07em", marginBottom: 14, ...rise(shown, 0.3, 10), opacity: shown ? 0.92 : 0 }}>
             {EYEBROW}
           </div>
@@ -193,10 +196,8 @@ export default function AuthLayout({ children }) {
             ))}
           </h1>
 
-          {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다.
-              inline-block 이라 폭이 이름 글자 폭으로 줄어들고, 밑줄이 width:100% 로 그 폭을 그대로
-              따라간다 — 글자 수나 크기를 바꿔도 밑줄 길이를 다시 재지 않는다. */}
-          <div style={{ marginTop: 30, display: "inline-block" }}>
+          {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
+          <div style={{ marginTop: 30 }}>
             <div
               aria-hidden="true"
               style={{
@@ -211,7 +212,7 @@ export default function AuthLayout({ children }) {
               }}
             />
             {/* role="img" + aria-label 이면 쪼갠 글자 조각이 접근성 트리에서 자동으로 빠진다. */}
-            <div role="img" aria-label={SERVICE_NAME} style={{ fontSize: 39, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.15 }}>
+            <div role="img" aria-label={SERVICE_NAME} style={{ fontSize: 58, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.15 }}>
               <Chars text={SERVICE_NAME} shown={shown} start={MARK_DELAY} />
             </div>
           </div>
