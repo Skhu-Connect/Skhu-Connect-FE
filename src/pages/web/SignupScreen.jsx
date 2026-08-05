@@ -56,7 +56,7 @@ function EmailStep({ onVerified }) {
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, fontSize: 13 }}>
         <Link to="/login" style={{ color: "var(--text-muted)", fontWeight: 600 }}>로그인으로 돌아가기</Link>
         <span style={{ color: "var(--border-strong)" }}>|</span>
-        <a href="https://skhu.ac.kr" target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700 }}>학교 이메일을 모르시나요?</a>
+        <a href="https://skhu.ac.kr" target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>학교 이메일을 모르시나요?</a>
       </div>
     </>
   );
@@ -133,11 +133,7 @@ export default function SignupScreen() {
   if (authed) return <Navigate to="/" replace />;
 
   return (
-    <AuthLayout
-      eyebrow="익명 건의 · 공감으로 움직이는 캠퍼스"
-      title={<>회원가입하고<br />첫 청원을 시작하세요</>}
-      desc="학교 이메일로 재학생 여부를 확인한 뒤, 아이디와 비밀번호만 정하면 바로 시작할 수 있어요."
-    >
+    <AuthLayout>
       {email ? (
         <AccountStep email={email} onBack={() => setEmail(null)} />
       ) : (

@@ -244,3 +244,10 @@ button {
 p {
   margin-block: 1em;
 }
+
+/* 로그인·회원가입 폼(layouts/AuthLayout.jsx)은 배경 영상 위에 얹혀 밝은 팔레트로 뒤집힌다.
+   나머지는 전부 인라인 스타일로 처리했는데 placeholder 만 가상 요소라 그게 안 된다 —
+   color-scheme: dark 가 주는 UA 기본값(흰색 50%)이 대비 3.5:1 로 AA 미달이라 여기서만 올린다. */
+.auth-on-video input::placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
