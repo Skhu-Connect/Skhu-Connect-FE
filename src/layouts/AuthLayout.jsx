@@ -9,13 +9,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+// 화면 가장자리 여백. 왼쪽 문구와 오른쪽 폼이 같은 값을 써야 좌우가 대칭으로 앉는다.
+const EDGE = 56;
+const FORM_WIDTH = 400;
+
 // 영상 위에 얹는 스크림 두 겹. 뒤의 linear 는 화면 전체 바닥 톤이고, 앞의 radial 은 흰 카드를
 // 대신해 폼 뒤에만 고이는 어둠이다 — 테두리 없이 대비만 주므로 뺀 흰 배경을 다시 들여오지
 // 않는다(폼이 앉는 오른쪽 71% 지점이 중심).
 // 값은 영상에서 가장 밝은 프레임(한낮) 기준으로 잡았다. 인디고로 물들이지 않고 어둡게만 깐다 —
 // 브랜드 색을 겹치면 노을이 통째로 보라로 죽는다.
 const SCRIM =
-  "radial-gradient(58% 82% at 71% 50%, rgba(8,8,22,.8) 0%, rgba(8,8,22,.46) 55%, rgba(8,8,22,0) 80%)," +
+  // 폼이 오른쪽 끝(EDGE + 폼폭 400 의 절반)에 앉으므로 그 자리를 px 로 따라간다. % 로 잡으면
+  // 창 폭이 바뀔 때 어둠이 폼에서 미끄러진다.
+  `radial-gradient(58% 82% at calc(100% - ${EDGE + FORM_WIDTH / 2}px) 50%, rgba(8,8,22,.8) 0%, rgba(8,8,22,.46) 55%, rgba(8,8,22,0) 80%),` +
   "linear-gradient(100deg, rgba(10,10,26,.9) 0%, rgba(14,14,36,.76) 24%, rgba(14,14,36,.5) 46%, rgba(12,12,30,.56) 74%, rgba(10,10,26,.7) 100%)";
 
 // 카드가 사라지면서 폼 글자가 영상 위에 바로 앉는다. 프리미티브(Input·Select)를 고치는 대신
@@ -136,7 +142,7 @@ export default function AuthLayout({ children }) {
     // 배경 그라디언트는 영상 뒤에 깔아두는 안전판이다. 영상이 아직 안 왔거나, 못 틀거나,
     // 전체화면 전환 중에 비디오 레이어가 한 프레임 늦게 따라오면 그 사이 흰 페이지 배경이
     // 오른쪽에 드러났다 — 뒤가 브랜드 색이면 그 순간에도 화면이 안 깨진다.
-    <div style={{ position: "relative", isolation: "isolate", minHeight: "100vh", display: "flex", background: "var(--gradient-hero)" }}>
+    <div style={{ position: "relative", isolation: "isolate", minHeight: "100vh", display: "flex", alignItems: "center", background: "var(--gradient-hero)" }}>
       {/* poster 가 있어 영상이 버퍼링되는 동안에도 같은 구도가 보인다. reduce 면 그 정지 화면에서
           멈추고, 틀지도 않을 4.1MB 를 받지 않도록 preload 도 같이 끈다.
           fixed 라 컨테이너 높이·너비와 무관하게 항상 뷰포트를 덮는다(회원가입 2단계처럼 세로로
@@ -159,72 +165,85 @@ export default function AuthLayout({ children }) {
       />
       <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: -1, background: SCRIM }} />
 
-      <div
-        style={{
-          flex: "0 0 42%",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "0 56px",
-          color: "#fff",
-        }}
-      >
-        <Link to="/" style={{ position: "absolute", top: 40, left: 56, display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", ...rise(shown, 0.1, 8) }}>
-          <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
-          <span style={{ fontWeight: 800, fontSize: 17 }}>청원시스템</span>
-        </Link>
+      <Link to="/" style={{ position: "absolute", top: 40, left: EDGE, display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", ...rise(shown, 0.1, 8) }}>
+        <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
+        <span style={{ fontWeight: 800, fontSize: 17 }}>청원시스템</span>
+      </Link>
 
-        {/* fit-content 라 이 블록의 폭이 가장 긴 줄(슬로건 1행 "…곳,")에 딱 맞춰진다.
-            밑줄이 width:100% 로 그 폭을 그대로 쓰므로 문구를 고쳐도 길이를 다시 재지 않는다.
-            (flex 아이템이라 display:inline-block 은 block 으로 뭉개진다 — width 로 잡아야 한다.) */}
-        <div style={{ width: "fit-content", maxWidth: 480, textShadow: "0 2px 24px rgba(0,0,0,.5)" }}>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".07em", marginBottom: 14, ...rise(shown, 0.3, 10), opacity: shown ? 0.92 : 0 }}>
-            {EYEBROW}
-          </div>
-
-          <h1
-            aria-label={SLOGAN.map((l) => l.text).join(" ")}
-            // 슬로건 1행이 15자라 36px 이면 1280px 화면에서 좌측 패널(42%)을 넘겨 줄이 접힌다.
-            // 접히면 글자 단위 등장이 두 줄로 흩어져 무너지므로 32px 로 잡았다(1280 에서 394/425px).
-            style={{ margin: 0, fontSize: 32, lineHeight: 1.42, letterSpacing: "-.02em" }}
+      {/* 두 칸의 높이를 맞추는 장치다. 행 높이는 더 큰 쪽(폼)이 정하고 grid 가 두 칸을 거기 맞춰
+          늘린다 — 그래서 왼쪽 문구가 폼과 같은 세로 구간을 차지한다. flex 로는 형제의 높이를
+          알 수 없어 안 된다. */}
+      {/* 세로 여백 100px 은 좌상단 로고(top 40 + 34px) 를 피하려는 값이다. 화면이 넉넉하면 행이
+          가운데 정렬돼 이 여백이 화면에 안 나타나고, 회원가입 2단계처럼 넘칠 때만 벌어진다. */}
+      <div style={{ width: "100%", display: "grid", gridTemplateColumns: "42% 1fr", padding: "100px 0" }}>
+        <div style={{ display: "flex", padding: `0 ${EDGE}px`, color: "#fff" }}>
+          {/* fit-content 라 이 블록의 폭이 가장 긴 줄(슬로건 1행 "…곳,")에 딱 맞춰진다.
+              밑줄이 width:100% 로 그 폭을 그대로 쓰므로 문구를 고쳐도 길이를 다시 재지 않는다.
+              (flex 아이템이라 display:inline-block 은 block 으로 뭉개진다 — width 로 잡아야 한다.)
+              세로로는 stretch 로 칸 전체를 받고 space-between 이 슬로건을 위·서비스명을 아래로
+              민다. gap 은 폼이 짧을 때 둘이 붙지 않게 하는 최소 간격이다. */}
+          <div
+            style={{
+              width: "fit-content",
+              maxWidth: 480,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              gap: 30,
+              textShadow: "0 2px 24px rgba(0,0,0,.5)",
+            }}
           >
-            {SLOGAN.map((line, li) => (
-              <span key={line.text} aria-hidden="true" style={{ display: "block", fontWeight: line.weight }}>
-                <Chars text={line.text} shown={shown} start={lineDelay(li)} />
-              </span>
-            ))}
-          </h1>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".07em", marginBottom: 14, ...rise(shown, 0.3, 10), opacity: shown ? 0.92 : 0 }}>
+                {EYEBROW}
+              </div>
 
-          {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
-          <div style={{ marginTop: 30 }}>
-            <div
-              aria-hidden="true"
-              style={{
-                width: "100%",
-                height: 3,
-                marginBottom: 16,
-                background: "rgba(255,255,255,.55)",
-                transformOrigin: "left center",
-                transform: shown ? "scaleX(1)" : "scaleX(0)",
-                transition: reduceMotion ? "none" : "transform .7s cubic-bezier(.2,.7,.3,1)",
-                transitionDelay: `${MARK_DELAY - 0.25}s`,
-              }}
-            />
-            {/* role="img" + aria-label 이면 쪼갠 글자 조각이 접근성 트리에서 자동으로 빠진다. */}
-            <div role="img" aria-label={SERVICE_NAME} style={{ fontSize: 58, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.15 }}>
-              <Chars text={SERVICE_NAME} shown={shown} start={MARK_DELAY} />
+              <h1
+                aria-label={SLOGAN.map((l) => l.text).join(" ")}
+                // 슬로건 1행이 15자라 36px 이면 1280px 화면에서 좌측 칸(42%)을 넘겨 줄이 접힌다.
+                // 접히면 글자 단위 등장이 두 줄로 흩어져 무너지므로 32px 로 잡았다(1280 에서 394/425px).
+                style={{ margin: 0, fontSize: 32, lineHeight: 1.42, letterSpacing: "-.02em" }}
+              >
+                {SLOGAN.map((line, li) => (
+                  <span key={line.text} aria-hidden="true" style={{ display: "block", fontWeight: line.weight }}>
+                    <Chars text={line.text} shown={shown} start={lineDelay(li)} />
+                  </span>
+                ))}
+              </h1>
+            </div>
+
+            {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
+            <div>
+              <div
+                aria-hidden="true"
+                style={{
+                  width: "100%",
+                  height: 3,
+                  marginBottom: 16,
+                  background: "rgba(255,255,255,.55)",
+                  transformOrigin: "left center",
+                  transform: shown ? "scaleX(1)" : "scaleX(0)",
+                  transition: reduceMotion ? "none" : "transform .7s cubic-bezier(.2,.7,.3,1)",
+                  transitionDelay: `${MARK_DELAY - 0.25}s`,
+                }}
+              />
+              {/* role="img" + aria-label 이면 쪼갠 글자 조각이 접근성 트리에서 자동으로 빠진다. */}
+              <div role="img" aria-label={SERVICE_NAME} style={{ fontSize: 58, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.15 }}>
+                <Chars text={SERVICE_NAME} shown={shown} start={MARK_DELAY} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-        {/* 폼은 글자 단위로 쪼개지 않는다 — 헤드라인이 다 앉기 전에 바로 입력할 수 있어야 하므로
-            한 덩어리로 짧게 떠오르고 끝낸다. */}
-        {/* className 은 placeholder 하나 때문이다 — 가상 요소라 인라인 스타일로 못 준다. */}
-        <div className="auth-on-video" style={{ width: 400, maxWidth: "100%", ...LIGHT_ON_VIDEO, ...rise(shown, 0.6, 16) }}>
-          {children}
+        {/* 폼은 가운데가 아니라 오른쪽 끝에 붙는다 — 왼쪽 문구가 화면 왼쪽에서 EDGE 만큼 떨어져
+            있으므로 같은 값을 오른쪽에 줘서 좌우 여백을 맞춘다.
+            폼은 글자 단위로 쪼개지 않는다 — 헤드라인이 다 앉기 전에 바로 입력할 수 있어야 하므로
+            한 덩어리로 짧게 떠오르고 끝낸다.
+            className 은 placeholder 하나 때문이다 — 가상 요소라 인라인 스타일로 못 준다. */}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: `0 ${EDGE}px` }}>
+          <div className="auth-on-video" style={{ width: FORM_WIDTH, maxWidth: "100%", ...LIGHT_ON_VIDEO, ...rise(shown, 0.6, 16) }}>
+            {children}
+          </div>
         </div>
       </div>
 

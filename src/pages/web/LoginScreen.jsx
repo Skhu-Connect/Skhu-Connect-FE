@@ -60,7 +60,7 @@ export default function LoginScreen() {
       </p>
 
       <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
-        종합정보시스템 계정으로 로그인합니다.<br />개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
+        재학생 인증을 통해 당신의 목소리를 들려주세요
       </p>
     </AuthLayout>
   );
