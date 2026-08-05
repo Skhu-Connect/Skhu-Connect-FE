@@ -66,8 +66,8 @@ const EYEBROW = "SUNGKONGHOE UNIVERSITY";
 const SLOGAN = [
   { text: "더불어 사는 큰 사람을 키우는 곳,", weight: 500 },
   { text: "인권과 평화의 대학", weight: 800 },
-  { text: "당신의 목소리를 들려주세요", weight: 800 },
 ];
+const VOICE_LINE = "당신의 목소리를 들려주세요";
 const SERVICE_NAME = "성공잇다";
 
 // 글자 하나가 늦게 들어오는 정도. 뒤의 항은 순서를 살짝 흐트러뜨리는 지터다 — 완전한 좌→우
@@ -223,6 +223,9 @@ export default function AuthLayout({ children }) {
 
             {/* 서비스명. 슬로건이 다 앉은 뒤 밑줄이 왼쪽에서 그어지고 이름이 따라 나온다. */}
             <div>
+              <p style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700, ...rise(shown, MARK_DELAY - 0.55, 10), opacity: shown ? 0.92 : 0 }}>
+                {VOICE_LINE}
+              </p>
               <div
                 aria-hidden="true"
                 style={{
