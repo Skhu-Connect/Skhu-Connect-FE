@@ -12,11 +12,11 @@ export type IconName =
   | "heart"
   | "heartSolid"
   | "home"
-  | "target"
   | "inbox"
   | "user"
   | "plus"
   | "check"
+  | "checkCircle"
   | "sort"
   | "lock"
   | "link"
@@ -103,14 +103,6 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
           <Path d="M9 22V12h6v10" {...p} />
         </>
       );
-    case "target":
-      return (
-        <>
-          <Circle cx={12} cy={12} r={9} {...p} />
-          <Circle cx={12} cy={12} r={4} {...p} />
-          <Path d="M12 3v2M12 19v2M3 12h2M19 12h2" {...p} />
-        </>
-      );
     case "inbox":
       return (
         <>
@@ -129,6 +121,13 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       return <Path d="M5 12h14M12 5v14" {...p} />;
     case "check":
       return <Path d="M20 6 9 17l-5-5" {...p} />;
+    case "checkCircle":
+      return (
+        <>
+          <Path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" {...p} />
+          <Path d="m9 11 3 3L22 4" {...p} />
+        </>
+      );
     case "sort":
       return (
         <>

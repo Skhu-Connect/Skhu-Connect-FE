@@ -2,8 +2,8 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
 import { CAT_CHIPS, type CategoryKey, type Petition } from "../data";
-import { count, ddayLabel, remain, type Filter, type Sort, type Tab } from "../logic";
-import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
+import { count, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
+import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
@@ -14,8 +14,8 @@ export type FeedProps = {
   votes: Votes;
   filter: Filter;
   list: Petition[];
-  soonCount: number;
   mineCount: number;
+  answeredCount: number;
   hasUnread: boolean;
   searchOpen: boolean;
   onToggleSearch: () => void;
@@ -29,17 +29,17 @@ export type FeedProps = {
 
 export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
-  const title = tab === "soon" ? "도달률 임박" : tab === "mine" ? "내 건의" : "성공잇다";
 
   return (
     <View className="flex-1 bg-page">
-      <Header title={title} hasUnread={p.hasUnread} onToggleSearch={p.onToggleSearch} onOpenMy={p.onOpenMy} />
+      {/* 제목은 탭과 무관하게 서비스 이름으로 고정한다 — 무슨 목록인지는 아래 머리말이 말한다. */}
+      <Header title="성공잇다" hasUnread={p.hasUnread} onToggleSearch={p.onToggleSearch} onOpenMy={p.onOpenMy} />
       <ScrollView stickyHeaderIndices={[1]} showsVerticalScrollIndicator={false}>
-        <Banner tab={tab} petitions={p.petitions} mineCount={p.mineCount} />
+        <Banner tab={tab} petitions={p.petitions} mineCount={p.mineCount} answeredCount={p.answeredCount} />
         <FilterBar {...p} />
         <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 26 }}>
           {p.list.map((item) => (
-            <PetitionCard key={item.id} p={item} votes={p.votes} tab={tab} onOpen={p.onOpen} onVote={p.onVote} />
+            <PetitionCard key={item.id} p={item} votes={p.votes} onOpen={p.onOpen} onVote={p.onVote} />
           ))}
           {p.list.length === 0 ? <Empty tab={tab} /> : null}
         </View>
@@ -67,13 +67,29 @@ function Header({ title, hasUnread, onToggleSearch, onOpenMy }: { title: string;
   );
 }
 
-function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]; mineCount: number }) {
-  if (tab === "soon") {
+function Banner({
+  tab,
+  petitions,
+  mineCount,
+  answeredCount,
+}: {
+  tab: Tab;
+  petitions: Petition[];
+  mineCount: number;
+  answeredCount: number;
+}) {
+  /* 답변 완료·내 건의 머리말은 웹 PageIntro 와 같은 문구다.
+     건수는 카테고리·검색 필터 전 전체 기준이다(mineCount 와 같은 방식) — 웹 PageIntro 의
+     count 도 필터 전 base.length 를 쓴다(FeedScreen.jsx:128,130). 필터된 p.list.length 를
+     쓰면 카테고리를 바꿀 때마다 이 숫자가 요동친다. */
+  if (tab === "answered") {
     return (
-      <LinearGradient {...gradient.mileage} style={{ padding: 18 }}>
-        <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.18 }]}>도달률 임박 건의</Text>
-        <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.88)", marginTop: 5, lineHeight: 19.4 }]}>도달률 40% 이상인 건의입니다. 남은 인원이 적은 순으로 보여드립니다.</Text>
-      </LinearGradient>
+      <View className="bg-card border-b border-subtle" style={{ paddingVertical: 16, paddingHorizontal: 18 }}>
+        <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>
+          답변 완료 <Text style={{ color: colors.success }}>{answeredCount}건</Text>
+        </Text>
+        <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 4, lineHeight: 19.4 }]}>학교가 공식 답변을 등록한 건의입니다.</Text>
+      </View>
     );
   }
 
@@ -113,7 +129,7 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
 
 function FilterBar(p: FeedProps) {
   const { category, sort, tab, query } = p.filter;
-  const resultLabel = tab === "soon" ? `${p.list.length}건 · 남은 인원 적은 순` : `${p.list.length}건`;
+  const resultLabel = `${p.list.length}건`;
 
   return (
     /* 원본은 rgba(255,255,255,.94) + backdrop-filter 다. RN 에 blur 가 없어 반투명만 남기면
@@ -160,17 +176,15 @@ function FilterBar(p: FeedProps) {
 
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 17 }}>
         <Text style={[t, { fontSize: 12, color: colors.muted, fontWeight: "600" }]}>{resultLabel}</Text>
-        {tab !== "soon" ? (
-          <Pressable
-            onPress={() => askSort(sort, p.onSort)}
-            accessibilityRole="button"
-            accessibilityLabel={`정렬 방식 · 현재 ${sortLabel(sort)}`}
-            style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}
-          >
-            <Icon name="sort" size={14} color={colors.indigo[600]} />
-            <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>{sortLabel(sort)}</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => askSort(sort, p.onSort)}
+          accessibilityRole="button"
+          accessibilityLabel={`정렬 방식 · 현재 ${sortLabel(sort)}`}
+          style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}
+        >
+          <Icon name="sort" size={14} color={colors.indigo[600]} />
+          <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>{sortLabel(sort)}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -202,9 +216,8 @@ function ChipRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: Votes; tab: Tab; onOpen: (id: number) => void; onVote: (id: number) => void }) {
+function PetitionCard({ p, votes, onOpen, onVote }: { p: Petition; votes: Votes; onOpen: (id: number) => void; onVote: (id: number) => void }) {
   const c = count(p, votes);
-  const left = remain(p, votes);
 
   return (
     <Pressable onPress={() => onOpen(p.id)} accessibilityRole="button">
@@ -218,8 +231,6 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
         <Text style={[t, { fontWeight: "700", fontSize: 15.5, color: colors.strong, lineHeight: 21.7, letterSpacing: -0.155 }]}>{p.title}</Text>
 
         <ThresholdBar current={c} threshold={p.threshold} basisLabel={p.basis} size="sm" />
-
-        {tab === "soon" && left > 0 ? <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.magenta[600] }]}>목표까지 {fmt(left)}명 남음</Text> : null}
 
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -239,8 +250,8 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
 }
 
 function Empty({ tab }: { tab: Tab }) {
-  const title = tab === "soon" ? "임박한 건의가 없습니다" : "조건에 맞는 건의가 없습니다";
-  const body = tab === "soon" ? "도달률 40% 이상인 건의가 아직 없습니다." : "다른 상태나 카테고리를 선택해 주세요.";
+  const title = tab === "answered" ? "답변 완료된 건의가 없습니다" : "조건에 맞는 건의가 없습니다";
+  const body = tab === "answered" ? "학교가 공식 답변을 등록하면 여기에 모입니다." : "다른 분류를 선택해 주세요.";
   return (
     <View style={{ backgroundColor: "#fff", borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.line, borderRadius: radius.lg, paddingVertical: 44, paddingHorizontal: 20, alignItems: "center" }}>
       <Text style={[t, { fontSize: 14.5, fontWeight: "700", color: colors.strong }]}>{title}</Text>

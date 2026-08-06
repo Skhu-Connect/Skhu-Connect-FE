@@ -2,23 +2,12 @@
 import type { BasisLabel, CategoryKey, Petition, StatusKey } from "./data";
 
 export type Votes = Record<number, boolean>;
-export type Tab = "home" | "soon" | "mine" | "my";
+export type Tab = "home" | "answered" | "mine" | "my";
 export type Sort = "hot" | "new";
 
 /** 내가 누른 공감 1건을 더한 표시용 공감 수. */
 export function count(p: Petition, votes: Votes): number {
   return p.current + (votes[p.id] ? 1 : 0);
-}
-
-/** 임계치까지 남은 인원. 넘겼으면 0. */
-export function remain(p: Petition, votes: Votes): number {
-  return Math.max(0, p.threshold - count(p, votes));
-}
-
-/** 임계치의 40% 이상 모였고 아직 도달하지 않은 청원 = "임박". */
-export function isSoon(p: Petition, votes: Votes): boolean {
-  const r = remain(p, votes);
-  return r > 0 && r <= p.threshold * 0.6;
 }
 
 export type Filter = {
@@ -31,15 +20,14 @@ export type Filter = {
 export function visibleList(petitions: Petition[], f: Filter, votes: Votes): Petition[] {
   let list = petitions.slice();
   if (f.tab === "mine") list = list.filter((p) => p.mine);
-  if (f.tab === "soon") list = list.filter((p) => isSoon(p, votes));
+  // 답변 완료 탭은 웹 /answered 와 같은 조건이다 — 공식 답변이 등록된 건의만.
+  if (f.tab === "answered") list = list.filter((p) => p.status === "answered");
   if (f.category !== "all") list = list.filter((p) => p.category === f.category);
 
   const q = f.query.trim();
   if (q) list = list.filter((p) => (p.title + p.excerpt).includes(q));
 
-  // 임박 탭은 정렬 토글이 없다 — 남은 인원이 적은 순으로 고정한다.
-  if (f.tab === "soon") list.sort((a, b) => remain(a, votes) - remain(b, votes));
-  else list.sort((a, b) => (f.sort === "hot" ? count(b, votes) - count(a, votes) : b.id - a.id));
+  list.sort((a, b) => (f.sort === "hot" ? count(b, votes) - count(a, votes) : b.id - a.id));
 
   return list;
 }

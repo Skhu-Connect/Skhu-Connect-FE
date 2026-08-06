@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
 import { NOTIFS, SEED, SEED_COMMENTS, type CategoryKey, type Comment, type Petition, type PrefKey } from "./src/data";
-import { basisFor, isSoon, thresholdFor, visibleList, type Sort, type Tab, type Votes } from "./src/logic";
+import { basisFor, thresholdFor, visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
 import { LoginScreen } from "./src/screens/Login";
@@ -89,8 +89,9 @@ export default function App() {
   const deepPetition = useMemo(() => (deepId == null ? null : (petitions.find((p) => p.id === deepId) ?? null)), [petitions, deepId]);
 
   const list = useMemo(() => visibleList(petitions, { tab, category, query, sort }, votes), [petitions, tab, category, query, sort, votes]);
-  const soonCount = useMemo(() => petitions.filter((p) => isSoon(p, votes)).length, [petitions, votes]);
   const mineCount = useMemo(() => petitions.filter((p) => p.mine).length, [petitions]);
+  /* MyScreen 의 answeredCount(내 건의 중 답변받은 것)와 다르다 — 이건 전체 답변 완료 건수다. */
+  const totalAnsweredCount = useMemo(() => petitions.filter((p) => p.status === "answered").length, [petitions]);
 
   const vote = useCallback(
     (id: number) => {
@@ -209,8 +210,8 @@ export default function App() {
               votes={votes}
               filter={{ tab, category, query, sort }}
               list={list}
-              soonCount={soonCount}
               mineCount={mineCount}
+              answeredCount={totalAnsweredCount}
               hasUnread={NOTIFS.some((n) => !n.read)}
               searchOpen={searchOpen}
               onToggleSearch={() => {
@@ -275,7 +276,7 @@ export default function App() {
           <Toast message={toast} bottom={showTabs ? 88 : 100} />
         </View>
 
-        {showTabs ? <TabBar tab={tab} screen={screen} soonCount={soonCount} onTab={onTab} onCompose={() => setScreen("submit")} /> : null}
+        {showTabs ? <TabBar tab={tab} screen={screen} onTab={onTab} onCompose={() => setScreen("submit")} /> : null}
       </SafeAreaView>
 
       <ShareSheet open={shareOpen} url={shareUrl} copied={copied} onCopy={onCopy} onClose={() => setShareOpen(false)} />

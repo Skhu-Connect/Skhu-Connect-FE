@@ -12,13 +12,11 @@ const t = { fontFamily: font };
 export function TabBar({
   tab,
   screen,
-  soonCount,
   onTab,
   onCompose,
 }: {
   tab: Tab;
   screen: string;
-  soonCount: number;
   onTab: (t: Tab) => void;
   onCompose: () => void;
 }) {
@@ -28,7 +26,7 @@ export function TabBar({
   return (
     <View style={{ flexDirection: "row", alignItems: "center", height: 64 + insets.bottom, paddingBottom: insets.bottom + 6, borderTopWidth: 1, borderTopColor: colors.subtle, backgroundColor: "#fff" }}>
       <TabItem icon="home" label="홈" active={active("home")} onPress={() => onTab("home")} />
-      <TabItem icon="target" label="도달률 임박" active={active("soon")} onPress={() => onTab("soon")} badge={soonCount} />
+      <TabItem icon="checkCircle" label="답변 완료" active={active("answered")} onPress={() => onTab("answered")} />
 
       <View style={{ flex: 1, alignItems: "center" }}>
         <Pressable onPress={onCompose} accessibilityRole="button" accessibilityLabel="건의 등록" style={[{ marginTop: -12 }, shadow.magenta]}>
@@ -44,17 +42,12 @@ export function TabBar({
   );
 }
 
-function TabItem({ icon, label, active, onPress, badge }: { icon: IconName; label: string; active: boolean; onPress: () => void; badge?: number }) {
+function TabItem({ icon, label, active, onPress }: { icon: IconName; label: string; active: boolean; onPress: () => void }) {
   const color = active ? colors.indigo[600] : colors.gray[400];
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: active }} style={{ flex: 1, alignItems: "center", gap: 3 }}>
       <Icon name={icon} size={21} color={color} />
       <Text style={[t, { fontWeight: "700", fontSize: 10.5, color }]}>{label}</Text>
-      {badge ? (
-        <View style={{ position: "absolute", top: -1, right: 14, minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 8, backgroundColor: colors.coral[500], alignItems: "center", justifyContent: "center" }}>
-          <Text style={[t, { fontSize: 9.5, fontWeight: "800", color: "#fff" }]}>{badge}</Text>
-        </View>
-      ) : null}
     </Pressable>
   );
 }
