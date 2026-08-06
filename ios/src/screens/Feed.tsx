@@ -38,7 +38,7 @@ export type FeedProps = {
 
 export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
-  const title = tab === "soon" ? "임계치 임박" : tab === "mine" ? "내 건의" : "성공잇다";
+  const title = tab === "soon" ? "도달률 임박" : tab === "mine" ? "내 건의" : "성공잇다";
 
   return (
     <View className="flex-1 bg-page">
@@ -80,8 +80,8 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
   if (tab === "soon") {
     return (
       <LinearGradient {...gradient.mileage} style={{ padding: 18 }}>
-        <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.18 }]}>임계치 임박 건의</Text>
-        <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.88)", marginTop: 5, lineHeight: 19.4 }]}>임계치의 40% 이상 모인 건의입니다. 남은 인원이 적은 순으로 보여드립니다.</Text>
+        <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.18 }]}>도달률 임박 건의</Text>
+        <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.88)", marginTop: 5, lineHeight: 19.4 }]}>도달률 40% 이상인 건의입니다. 남은 인원이 적은 순으로 보여드립니다.</Text>
       </LinearGradient>
     );
   }
@@ -242,7 +242,7 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
 
         <ThresholdBar current={c} threshold={p.threshold} basisLabel={p.basis} size="sm" />
 
-        {tab === "soon" && left > 0 ? <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.magenta[600] }]}>임계치까지 {fmt(left)}명 남음</Text> : null}
+        {tab === "soon" && left > 0 ? <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.magenta[600] }]}>목표까지 {fmt(left)}명 남음</Text> : null}
 
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>
@@ -257,7 +257,7 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
 
 function Empty({ tab }: { tab: Tab }) {
   const title = tab === "soon" ? "임박한 건의가 없습니다" : "조건에 맞는 건의가 없습니다";
-  const body = tab === "soon" ? "임계치의 40% 이상 모인 건의가 아직 없습니다." : "다른 상태나 카테고리를 선택해 주세요.";
+  const body = tab === "soon" ? "도달률 40% 이상인 건의가 아직 없습니다." : "다른 상태나 카테고리를 선택해 주세요.";
   return (
     <View style={{ backgroundColor: "#fff", borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.line, borderRadius: radius.lg, paddingVertical: 44, paddingHorizontal: 20, alignItems: "center" }}>
       <Text style={[t, { fontSize: 14.5, fontWeight: "700", color: colors.strong }]}>{title}</Text>

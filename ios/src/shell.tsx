@@ -28,7 +28,7 @@ export function TabBar({
   return (
     <View style={{ flexDirection: "row", alignItems: "center", height: 64 + insets.bottom, paddingBottom: insets.bottom + 6, borderTopWidth: 1, borderTopColor: colors.subtle, backgroundColor: "#fff" }}>
       <TabItem icon="home" label="홈" active={active("home")} onPress={() => onTab("home")} />
-      <TabItem icon="target" label="임계치 임박" active={active("soon")} onPress={() => onTab("soon")} badge={soonCount} />
+      <TabItem icon="target" label="도달률 임박" active={active("soon")} onPress={() => onTab("soon")} badge={soonCount} />
 
       <View style={{ flex: 1, alignItems: "center" }}>
         <Pressable onPress={onCompose} accessibilityRole="button" accessibilityLabel="건의 등록" style={[{ marginTop: -12 }, shadow.magenta]}>

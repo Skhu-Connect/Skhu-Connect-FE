@@ -127,7 +127,7 @@ export default function App() {
     if (!key || !title) return;
 
     const basis = basisFor(key);
-    const text = formBody.trim() || "방금 등록된 청원입니다.";
+    const text = formBody.trim() || "방금 등록된 건의입니다.";
     const id = Math.max(...petitions.map((p) => p.id)) + 1;
     const created: Petition = {
       id,
