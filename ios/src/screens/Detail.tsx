@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
 import { ANSWER, BASIS_NOTE, CAT_LABEL, type Comment, type Petition } from "../data";
-import { count } from "../logic";
+import { count, ddayLabel, ymd } from "../logic";
 import type { Votes } from "../logic";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
@@ -32,7 +32,7 @@ export function DetailScreen(p: DetailProps) {
   const answered = !!d.answered;
 
   const steps = [
-    { label: "접수", note: `${d.date} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
+    { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
     {
       label: "검토중",
       note: reached ? "도달률 100% 달성 · 담당 부서에 이메일·SMS로 전달되었습니다." : "도달률 100% 달성 시 담당 부서로 전달됩니다.",
@@ -72,7 +72,7 @@ export function DetailScreen(p: DetailProps) {
             <Text style={[t, { fontWeight: "800", fontSize: 21, color: colors.strong, lineHeight: 28.6, letterSpacing: -0.315 }]}>{d.title}</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>{d.author}</Text>
-              <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>{d.date}</Text>
+              <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>{ddayLabel(d)}</Text>
               <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>조회 {d.views}</Text>
             </View>
             <Text style={[t, { fontSize: 14.5, color: colors.body, lineHeight: 25.8 }]}>{d.body}</Text>

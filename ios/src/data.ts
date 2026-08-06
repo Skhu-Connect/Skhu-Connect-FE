@@ -16,7 +16,8 @@ export type Petition = {
   threshold: number;
   basis: BasisLabel;
   author: string;
-  date: string;
+  /** 등록 시각(ISO). 표시 문구는 `logic.ts` 의 `ddayLabel` 이 만든다 — 30일 만료 기준 D-day. */
+  createdAt: string;
   comments: number;
   views: string;
   answered?: boolean;
@@ -66,6 +67,10 @@ export const BASIS_NOTE: Record<BasisLabel, string> = {
   "기숙사 정원": "기숙사 정원 800명의 30% 기준 · 240명",
 };
 
+/* 시드 등록 시각은 앱을 켠 시점 기준으로 만든다 — 고정 날짜를 박으면 시간이 지날수록 전부 만료된다. */
+const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+const hoursAgo = (n: number) => new Date(Date.now() - n * 3600000).toISOString();
+
 export const SEED: Petition[] = [
   {
     id: 1,
@@ -78,7 +83,7 @@ export const SEED: Petition[] = [
     threshold: 480,
     basis: "전체 학생",
     author: "익명",
-    date: "2일 전",
+    createdAt: daysAgo(2),
     comments: 47,
     views: "1,204",
   },
@@ -93,7 +98,7 @@ export const SEED: Petition[] = [
     threshold: 240,
     basis: "기숙사 정원",
     author: "익명",
-    date: "4일 전",
+    createdAt: daysAgo(4),
     comments: 31,
     views: "742",
   },
@@ -108,7 +113,7 @@ export const SEED: Petition[] = [
     threshold: 180,
     basis: "학과 정원",
     author: "익명",
-    date: "6시간 전",
+    createdAt: hoursAgo(6),
     comments: 12,
     views: "318",
     mine: true,
@@ -124,7 +129,7 @@ export const SEED: Petition[] = [
     threshold: 480,
     basis: "전체 학생",
     author: "익명",
-    date: "2주 전",
+    createdAt: daysAgo(14),
     comments: 58,
     views: "2,391",
     answered: true,
@@ -141,7 +146,7 @@ export const SEED: Petition[] = [
     threshold: 480,
     basis: "전체 학생",
     author: "익명",
-    date: "1일 전",
+    createdAt: daysAgo(1),
     comments: 19,
     views: "486",
   },
@@ -156,7 +161,7 @@ export const SEED: Petition[] = [
     threshold: 480,
     basis: "전체 학생",
     author: "익명",
-    date: "3일 전",
+    createdAt: daysAgo(3),
     comments: 8,
     views: "271",
   },
@@ -218,7 +223,8 @@ export const NOTIFS: Notification[] = [
   },
 ];
 
-export const USER = { name: "김석환", initial: "석환", dept: "소프트웨어융합학부", year: 3, sid: "202214139" };
+/* 학번·학년은 화면에서 뺐다 — 익명 건의 앱이라 본인 식별 정보를 띄우지 않는다. */
+export const USER = { name: "김석환", initial: "석환", dept: "소프트웨어융합학부" };
 
 export const PREF_ROWS: { key: PrefKey; title: string; desc: string }[] = [
   { key: "threshold", title: "도달률 알림", desc: "내 건의가 도달률 100%에 도달하면 알려드립니다." },

@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
 import { CAT_CHIPS, STATUS_CHIPS, type CategoryKey, type Petition, type StatusKey } from "../data";
-import { count, remain, type Filter, type Sort, type Tab } from "../logic";
+import { count, ddayLabel, remain, type Filter, type Sort, type Tab } from "../logic";
 import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
@@ -30,7 +30,7 @@ export type FeedProps = {
   onQuery: (q: string) => void;
   onStatus: (s: StatusKey | "all") => void;
   onCategory: (c: CategoryKey | "all") => void;
-  onSort: () => void;
+  onSort: (s: Sort) => void;
   onOpen: (id: number) => void;
   onVote: (id: number) => void;
   onOpenMy: () => void;
@@ -199,7 +199,12 @@ function FilterBar(p: FeedProps) {
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 17 }}>
         <Text style={[t, { fontSize: 12, color: colors.muted, fontWeight: "600" }]}>{resultLabel}</Text>
         {tab !== "soon" ? (
-          <Pressable onPress={p.onSort} accessibilityRole="button" style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <Pressable
+            onPress={() => askSort(sort, p.onSort)}
+            accessibilityRole="button"
+            accessibilityLabel={`정렬 방식 · 현재 ${sortLabel(sort)}`}
+            style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}
+          >
             <Icon name="sort" size={14} color={colors.indigo[600]} />
             <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>{sortLabel(sort)}</Text>
           </Pressable>
@@ -209,8 +214,22 @@ function FilterBar(p: FeedProps) {
   );
 }
 
+const SORT_OPTIONS: { key: Sort; label: string }[] = [
+  { key: "hot", label: "공감순" },
+  { key: "new", label: "최신순" },
+];
+
 function sortLabel(s: Sort) {
-  return s === "hot" ? "공감순" : "최신순";
+  return (SORT_OPTIONS.find((o) => o.key === s) ?? SORT_OPTIONS[0]).label;
+}
+
+/* 웹은 드롭다운으로 정렬을 고른다. RN 에는 그 부품이 없고, 기본 Alert 의 버튼 목록이
+   iOS 에서 액션시트처럼 뜬다 — ponytail: 새 라이브러리 없이 이걸 쓴다. */
+function askSort(current: Sort, onSort: (s: Sort) => void) {
+  Alert.alert("정렬 방식", undefined, [
+    ...SORT_OPTIONS.map((o) => ({ text: o.key === current ? `${o.label} ✓` : o.label, onPress: () => onSort(o.key) })),
+    { text: "취소", style: "cancel" as const },
+  ]);
 }
 
 function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -234,7 +253,7 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <CategoryTag category={p.category} size="sm" />
           <StatusBadge status={p.status} size="sm" />
-          <Text style={[t, { marginLeft: "auto", fontSize: 11.5, color: colors.muted, fontWeight: "600" }]}>{p.date}</Text>
+          <Text style={[t, { marginLeft: "auto", fontSize: 11.5, color: colors.muted, fontWeight: "600" }]}>{ddayLabel(p)}</Text>
         </View>
 
         <Text style={[t, { fontWeight: "700", fontSize: 15.5, color: colors.strong, lineHeight: 21.7, letterSpacing: -0.155 }]}>{p.title}</Text>

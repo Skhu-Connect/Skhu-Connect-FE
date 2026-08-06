@@ -140,7 +140,7 @@ export default function App() {
       threshold: thresholdFor(basis),
       basis,
       author: "익명",
-      date: "방금 전",
+      createdAt: new Date().toISOString(),
       comments: 0,
       views: "1",
       mine: true,
@@ -221,7 +221,7 @@ export default function App() {
               onQuery={setQuery}
               onStatus={setStatus}
               onCategory={setCategory}
-              onSort={() => setSort((s) => (s === "hot" ? "new" : "hot"))}
+              onSort={setSort}
               onOpen={openPetition}
               onVote={vote}
               onOpenMy={() => {

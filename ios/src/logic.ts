@@ -46,6 +46,29 @@ export function visibleList(petitions: Petition[], f: Filter, votes: Votes): Pet
   return list;
 }
 
+/* 건의는 등록 30일 뒤 만료된다 — 웹 `src/api/index.js` 와 같은 규칙이다.
+   목록·상세는 "2일 전" 같은 상대 시간 대신 만료까지 남은 기간을 보여준다. */
+export const EXPIRY_DAYS = 30;
+const DAY_MS = 86400000;
+
+/** 만료까지 남은 일수. 0 이하면 만료. */
+export function daysLeft(p: Petition, now = Date.now()): number {
+  return EXPIRY_DAYS - Math.floor((now - new Date(p.createdAt).getTime()) / DAY_MS);
+}
+
+/** 게시 시각 자리에 들어가는 문구. */
+export function ddayLabel(p: Petition, now = Date.now()): string {
+  const left = daysLeft(p, now);
+  return left > 0 ? `D-${left}` : "만료";
+}
+
+/** 등록 날짜(상세 "접수" 단계). `ANSWER.date` 와 같은 2026.05.22 꼴. */
+export function ymd(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+}
+
 /** 카테고리마다 임계치 산정 기준이 다르다. */
 export function basisFor(category: CategoryKey): BasisLabel {
   if (category === "department") return "학과 정원";

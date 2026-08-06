@@ -35,9 +35,7 @@ export function MyScreen(p: MyProps) {
           <Avatar name={USER.initial} size={56} ring />
           <View>
             <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff" }]}>{USER.name}</Text>
-            <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.85)", marginTop: 3 }]}>
-              {USER.dept} · {USER.year}학년 · {USER.sid}
-            </Text>
+            <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.85)", marginTop: 3 }]}>{USER.dept}</Text>
           </View>
         </LinearGradient>
 
