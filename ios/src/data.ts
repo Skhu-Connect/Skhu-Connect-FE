@@ -200,8 +200,8 @@ export const NOTIFS: Notification[] = [
   },
   {
     petitionId: 1,
-    title: "임계치 도달",
-    body: "‘중앙도서관 24시간 개방’이 임계치를 넘어 검토가 시작되었습니다.",
+    title: "도달률 달성",
+    body: "‘중앙도서관 24시간 개방’이 도달률 100%를 달성해 검토가 시작되었습니다.",
     date: "1일 전",
     read: false,
     iconBg: "#FCEFD6",
@@ -209,8 +209,8 @@ export const NOTIFS: Notification[] = [
   },
   {
     petitionId: 3,
-    title: "임계치 도달",
-    body: "'중앙도서관 24시간 개방’이 임계치의 50프로를 넘었습니다.",
+    title: "도달률 달성",
+    body: "'중앙도서관 24시간 개방’이 도달률 50%를 넘었습니다.",
     date: "2일 전",
     read: true,
     iconBg: "#FCE7E9",
@@ -221,8 +221,8 @@ export const NOTIFS: Notification[] = [
 export const USER = { name: "김석환", initial: "석환", dept: "소프트웨어융합학부", year: 3, sid: "202214139" };
 
 export const PREF_ROWS: { key: PrefKey; title: string; desc: string }[] = [
-  { key: "threshold", title: "임계치 도달 알림", desc: "내 청원이 임계치에 도달하면 알려드립니다." },
-  { key: "answer", title: "답변 등록 알림", desc: "청원에 공식 답변이 등록되면 알려드립니다." },
+  { key: "threshold", title: "도달률 알림", desc: "내 건의가 도달률 100%에 도달하면 알려드립니다." },
+  { key: "answer", title: "답변 등록 알림", desc: "공감한 건의에 공식 답변이 등록되면 알려드립니다." },
 ];
 
 export type PrefKey = "threshold" | "answer" | "empathy";

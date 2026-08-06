@@ -469,7 +469,7 @@ export function ThresholdBar({
     <View style={[{ gap: 8 }, style]}>
       {showMeta ? (
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
-          <Text style={[base, { fontSize: 12, lineHeight: 18, color: colors.muted }]}>{basisLabel} 대비 임계치</Text>
+          <Text style={[base, { fontSize: 12, lineHeight: 18, color: colors.muted }]}>{basisLabel} 대비 도달률</Text>
           <Text style={[base, { fontSize: 13, fontWeight: "700", color: reached ? colors.success : colors.indigo[600], fontVariant: ["tabular-nums"] }]}>
             {fmt(current)} / {fmt(threshold)}
             <Text style={[base, { fontSize: 13, fontWeight: "500", color: colors.muted }]}> · {Math.round(pct)}%</Text>
@@ -484,7 +484,7 @@ export function ThresholdBar({
       </View>
 
       {showMeta && reached ? (
-        <Text style={[base, { fontSize: 12, lineHeight: 18, fontWeight: "600", color: colors.success }]}>임계치 도달 · 담당자 검토 요청됨</Text>
+        <Text style={[base, { fontSize: 12, lineHeight: 18, fontWeight: "600", color: colors.success }]}>도달률 100% 달성 · 담당자 검토 요청됨</Text>
       ) : null}
     </View>
   );

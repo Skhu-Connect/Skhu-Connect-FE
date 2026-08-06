@@ -21,6 +21,7 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
             <View className="items-center">
               <Text style={[{ fontFamily: font }, { color: "#fff", fontWeight: "800", fontSize: 22, letterSpacing: -0.22 }]}>SKHU-CONNECT</Text>
               <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.72)", fontSize: 10.5, fontWeight: "700", letterSpacing: 1.68, marginTop: 4 }]}>성공회대학교 성공잇다</Text>
+              <Text style={[{ fontFamily: font }, { color: "rgba(255,255,255,.9)", fontSize: 13, fontWeight: "600", marginTop: 8 }]}>당신의 목소리를 들려주세요</Text>
             </View>
           </View>
 
@@ -29,11 +30,11 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
               <View style={{ backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 13, paddingHorizontal: 14, gap: 6 }}>
                 <Text style={[{ fontFamily: font }, { fontSize: 11, fontWeight: "800", color: colors.indigo[600], letterSpacing: 0.44 }]}>에타 공유 링크로 접속</Text>
                 <Text style={[{ fontFamily: font }, { fontSize: 13.5, fontWeight: "700", color: colors.strong, lineHeight: 19.6 }]}>{deepTitle}</Text>
-                <Text style={[{ fontFamily: font }, { fontSize: 12, color: colors.indigo[700], fontWeight: "600", lineHeight: 18 }]}>로그인하면 이 청원에 바로 공감할 수 있습니다.</Text>
+                <Text style={[{ fontFamily: font }, { fontSize: 12, color: colors.indigo[700], fontWeight: "600", lineHeight: 18 }]}>로그인하면 이 건의에 바로 공감할 수 있습니다.</Text>
               </View>
             ) : null}
 
-            <Input label="학번" value={sid} onChangeText={setSid} placeholder="202214139" keyboardType="number-pad" />
+            <Input label="아이디" value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" keyboardType="number-pad" />
             <Input label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
             <Select label="학부" options={MAJORS} value={major} onChange={setMajor} placeholder="학부를 선택하세요" />
             <Button variant="primary" size="lg" block onPress={onLogin} disabled={!major}>
@@ -41,7 +42,7 @@ export function LoginScreen({ deepTitle, onLogin }: { deepTitle?: string; onLogi
             </Button>
 
             <Text style={[{ fontFamily: font }, { textAlign: "center", fontSize: 11.5, color: colors.muted, lineHeight: 18.4 }]}>
-              종합정보시스템 계정으로 로그인합니다.{"\n"}개인정보는 인증에만 사용되며 청원은 익명 처리됩니다.
+              종합정보시스템 계정으로 로그인합니다.{"\n"}개인정보는 인증에만 사용되며 건의는 익명 처리됩니다.
             </Text>
           </View>
         </ScrollView>

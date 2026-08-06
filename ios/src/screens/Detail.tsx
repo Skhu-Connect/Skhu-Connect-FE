@@ -35,7 +35,7 @@ export function DetailScreen(p: DetailProps) {
     { label: "접수", note: `${d.date} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
     {
       label: "검토중",
-      note: reached ? "임계치 도달 · 담당 부서에 이메일·SMS로 전달되었습니다." : `임계치 ${d.threshold.toLocaleString()}명 도달 시 담당 부서로 전달됩니다.`,
+      note: reached ? "도달률 100% 달성 · 담당 부서에 이메일·SMS로 전달되었습니다." : "도달률 100% 달성 시 담당 부서로 전달됩니다.",
       done: reached,
     },
     { label: "답변 완료", note: answered ? `${ANSWER.dept} 공식 답변 등록 · ${ANSWER.date}` : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered },
@@ -49,7 +49,7 @@ export function DetailScreen(p: DetailProps) {
         <Pressable onPress={p.onBack} accessibilityRole="button" accessibilityLabel="뒤로" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="arrowLeft" size={20} color={colors.strong} />
         </Pressable>
-        <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>청원 상세</Text>
+        <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 상세</Text>
         <Pressable onPress={p.onOpenShare} accessibilityRole="button" accessibilityLabel="공유" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
           <Icon name="share" size={19} color={colors.body} />
         </Pressable>
@@ -82,7 +82,7 @@ export function DetailScreen(p: DetailProps) {
             <Card style={{ gap: 12 }}>
               <ThresholdBar current={c} threshold={d.threshold} basisLabel={d.basis} size="lg" />
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.sunken, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 13 }}>
-                <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.indigo[600] }]}>임계치 기준</Text>
+                <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.indigo[600] }]}>도달률 기준</Text>
                 <Text style={[t, { flex: 1, fontSize: 12, color: colors.body, lineHeight: 18 }]}>{BASIS_NOTE[d.basis]}</Text>
               </View>
             </Card>

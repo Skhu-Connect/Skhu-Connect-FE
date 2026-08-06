@@ -40,7 +40,7 @@ export function SubmitScreen(p: SubmitProps) {
         <Pressable onPress={p.onBack} accessibilityRole="button" accessibilityLabel="닫기" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="x" size={19} color={colors.strong} />
         </Pressable>
-        <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>청원 등록</Text>
+        <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 등록</Text>
       </View>
 
       <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={insets.top + 52} className="flex-1">
@@ -50,7 +50,7 @@ export function SubmitScreen(p: SubmitProps) {
               <Icon name="lock" size={16} color={colors.indigo[600]} />
             </View>
             <Text style={[t, { flex: 1, fontSize: 12.5, color: colors.indigo[700], lineHeight: 20 }]}>
-              모든 청원은 <Text style={{ fontWeight: "700" }}>익명</Text>으로 등록됩니다. 공감이 임계치를 넘으면 카테고리 담당 부서로 자동 전달됩니다.
+              당신의 목소리를 들려주세요. 모든 건의는 <Text style={{ fontWeight: "700" }}>익명</Text>으로 등록되며, 공감이 도달률 100%를 달성하면 담당 부서로 전달됩니다.
             </Text>
           </View>
 
@@ -61,7 +61,7 @@ export function SubmitScreen(p: SubmitProps) {
           {key && basis ? (
             <Card style={{ gap: 11 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                <Text style={[t, { fontSize: 12, color: colors.muted, fontWeight: "700" }]}>적용될 임계치</Text>
+                <Text style={[t, { fontSize: 12, color: colors.muted, fontWeight: "700" }]}>적용될 도달률</Text>
                 <CategoryTag category={key} size="sm" />
               </View>
               <ThresholdBar current={0} threshold={thresholdFor(basis)} basisLabel={basis} />

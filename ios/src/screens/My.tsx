@@ -18,7 +18,7 @@ export type MyProps = {
 
 export function MyScreen(p: MyProps) {
   const stats = [
-    { value: p.mineCount, label: "등록한 청원" },
+    { value: p.mineCount, label: "등록한 건의" },
     { value: p.voteCount, label: "누른 공감" },
     { value: p.answeredCount, label: "받은 답변" },
   ];

@@ -154,7 +154,7 @@ export default function App() {
     setFormCat("");
     setFormTitle("");
     setFormBody("");
-    flash("청원이 익명으로 등록되었습니다");
+    flash("건의가 익명으로 등록되었습니다");
   }, [formCat, formTitle, formBody, petitions, flash]);
 
   const shareUrl = `${SHARE_HOST}/p/${detail.id}`;

@@ -38,7 +38,7 @@ export type FeedProps = {
 
 export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
-  const title = tab === "soon" ? "임계치 임박" : tab === "mine" ? "내 청원" : "성공잇다";
+  const title = tab === "soon" ? "임계치 임박" : tab === "mine" ? "내 건의" : "성공잇다";
 
   return (
     <View className="flex-1 bg-page">
@@ -64,7 +64,7 @@ function Header({ title, hasUnread, onToggleSearch, onOpenMy }: { title: string;
       <Text style={[t, { fontWeight: "800", fontSize: 17, color: colors.strong, letterSpacing: -0.17 }]}>{title}</Text>
 
       <View className="ml-auto flex-row items-center">
-        <Pressable onPress={onToggleSearch} accessibilityRole="button" accessibilityLabel="청원 검색" className="w-9 h-9 items-center justify-center rounded-full">
+        <Pressable onPress={onToggleSearch} accessibilityRole="button" accessibilityLabel="건의 검색" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="search" size={19} color={colors.body} />
         </Pressable>
         <Pressable onPress={onOpenMy} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
@@ -80,8 +80,8 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
   if (tab === "soon") {
     return (
       <LinearGradient {...gradient.mileage} style={{ padding: 18 }}>
-        <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.18 }]}>임계치 임박 청원</Text>
-        <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.88)", marginTop: 5, lineHeight: 19.4 }]}>임계치의 40% 이상 모인 청원입니다. 남은 인원이 적은 순으로 보여드립니다.</Text>
+        <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.18 }]}>임계치 임박 건의</Text>
+        <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.88)", marginTop: 5, lineHeight: 19.4 }]}>임계치의 40% 이상 모인 건의입니다. 남은 인원이 적은 순으로 보여드립니다.</Text>
       </LinearGradient>
     );
   }
@@ -90,7 +90,7 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
     return (
       <View className="bg-card border-b border-subtle" style={{ paddingVertical: 16, paddingHorizontal: 18 }}>
         <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>
-          내 청원 <Text style={{ color: colors.indigo[600] }}>{mineCount}건</Text>
+          내 건의 <Text style={{ color: colors.indigo[600] }}>{mineCount}건</Text>
         </Text>
         <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 4, lineHeight: 19.4 }]}>이 목록은 본인에게만 보입니다. 다른 학생에게는 익명으로 표시됩니다.</Text>
       </View>
@@ -98,7 +98,7 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
   }
 
   const stats = [
-    { value: `${petitions.length}건`, label: "진행 중 청원" },
+    { value: `${petitions.length}건`, label: "진행 중 건의" },
     { value: `${petitions.filter((x) => x.status !== "received").length}건`, label: "검토·답변" },
     { value: "88%", label: "답변률" },
   ];
@@ -107,7 +107,7 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
     <LinearGradient {...gradient.hero} style={{ paddingTop: 20, paddingHorizontal: 18, paddingBottom: 22, overflow: "hidden" }}>
       <View style={{ position: "absolute", right: -50, top: -40, width: 190, height: 190, borderRadius: 95, backgroundColor: "rgba(255,255,255,.07)" }} />
       <Text style={[t, { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,.85)" }]}>익명 건의 · 공감으로 움직이는 캠퍼스</Text>
-      <Text style={[t, { fontSize: 21, fontWeight: "800", color: "#fff", lineHeight: 27.7, marginTop: 5, letterSpacing: -0.21 }]}>공감이 임계치를 넘으면{"\n"}학교가 답합니다</Text>
+      <Text style={[t, { fontSize: 21, fontWeight: "800", color: "#fff", lineHeight: 27.7, marginTop: 5, letterSpacing: -0.21 }]}>당신의 목소리를 들려주세요</Text>
       <View style={{ flexDirection: "row", gap: 26, marginTop: 16 }}>
         {stats.map((s) => (
           <View key={s.label}>
@@ -134,7 +134,7 @@ function FilterBar(p: FeedProps) {
           <TextInput
             value={query}
             onChangeText={p.onQuery}
-            placeholder="청원 검색"
+            placeholder="건의 검색"
             placeholderTextColor={colors.muted}
             autoFocus
             style={[t, { flex: 1, fontSize: 14, color: colors.strong, padding: 0 }]}
@@ -256,8 +256,8 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
 }
 
 function Empty({ tab }: { tab: Tab }) {
-  const title = tab === "soon" ? "임박한 청원이 없습니다" : "조건에 맞는 청원이 없습니다";
-  const body = tab === "soon" ? "임계치의 40% 이상 모인 청원이 아직 없습니다." : "다른 상태나 카테고리를 선택해 주세요.";
+  const title = tab === "soon" ? "임박한 건의가 없습니다" : "조건에 맞는 건의가 없습니다";
+  const body = tab === "soon" ? "임계치의 40% 이상 모인 건의가 아직 없습니다." : "다른 상태나 카테고리를 선택해 주세요.";
   return (
     <View style={{ backgroundColor: "#fff", borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.line, borderRadius: radius.lg, paddingVertical: 44, paddingHorizontal: 20, alignItems: "center" }}>
       <Text style={[t, { fontSize: 14.5, fontWeight: "700", color: colors.strong }]}>{title}</Text>

@@ -31,14 +31,14 @@ export function TabBar({
       <TabItem icon="target" label="임계치 임박" active={active("soon")} onPress={() => onTab("soon")} badge={soonCount} />
 
       <View style={{ flex: 1, alignItems: "center" }}>
-        <Pressable onPress={onCompose} accessibilityRole="button" accessibilityLabel="청원 등록" style={[{ marginTop: -12 }, shadow.magenta]}>
+        <Pressable onPress={onCompose} accessibilityRole="button" accessibilityLabel="건의 등록" style={[{ marginTop: -12 }, shadow.magenta]}>
           <LinearGradient {...gradient.mileage} style={{ width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" }}>
             <Icon name="plus" size={24} color="#fff" />
           </LinearGradient>
         </Pressable>
       </View>
 
-      <TabItem icon="inbox" label="내 청원" active={active("mine")} onPress={() => onTab("mine")} />
+      <TabItem icon="inbox" label="내 건의" active={active("mine")} onPress={() => onTab("mine")} />
       <TabItem icon="user" label="MY" active={active("my")} onPress={() => onTab("my")} />
     </View>
   );
@@ -62,7 +62,7 @@ function TabItem({ icon, label, active, onPress, badge }: { icon: IconName; labe
 export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boolean; url: string; copied: boolean; onCopy: () => void; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title="에타에 공유">
-      <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 청원에 공감할 수 있습니다.</Text>
+      <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 건의에 공감할 수 있습니다.</Text>
 
       <View style={{ flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14 }}>
         <Text numberOfLines={1} style={[t, { flex: 1, fontSize: 12.5, fontWeight: "700", color: colors.indigo[700] }]}>
