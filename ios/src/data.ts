@@ -44,13 +44,6 @@ export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "department", label: "학부" },
 ];
 
-export const STATUS_CHIPS: { key: StatusKey | "all"; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "received", label: "접수" },
-  { key: "reviewing", label: "검토중" },
-  { key: "answered", label: "답변 완료" },
-];
-
 /** 로그인 화면의 학부/전공 선택지. 학교 포털의 전공 목록을 그대로 옮겼다. */
 export const MAJORS: string[] = [
   "경영학부",

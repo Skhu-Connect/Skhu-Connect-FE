@@ -23,7 +23,6 @@ export function isSoon(p: Petition, votes: Votes): boolean {
 
 export type Filter = {
   tab: Tab;
-  status: StatusKey | "all";
   category: CategoryKey | "all";
   query: string;
   sort: Sort;
@@ -33,7 +32,6 @@ export function visibleList(petitions: Petition[], f: Filter, votes: Votes): Pet
   let list = petitions.slice();
   if (f.tab === "mine") list = list.filter((p) => p.mine);
   if (f.tab === "soon") list = list.filter((p) => isSoon(p, votes));
-  if (f.status !== "all") list = list.filter((p) => p.status === f.status);
   if (f.category !== "all") list = list.filter((p) => p.category === f.category);
 
   const q = f.query.trim();

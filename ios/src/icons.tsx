@@ -20,7 +20,13 @@ export type IconName =
   | "sort"
   | "lock"
   | "link"
-  | "chevronDown";
+  | "chevronDown"
+  | "message"
+  | "graduationCap"
+  | "facilityBuilding"
+  | "dormHouse"
+  | "bookOpen"
+  | "peopleGroup";
 
 type Props = {
   name: IconName;
@@ -148,5 +154,51 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       );
     case "chevronDown":
       return <Polyline points="6 9 12 15 18 9" {...p} />;
+    case "message":
+      return <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" {...p} />;
+
+    /* 건의 분류 5종. 웹 src/components/ui/Icon.jsx 의 같은 이름 지오메트리를 그대로 옮겼다
+       (원본: skhu_tag_components/category/icon_only/*.svg). */
+    case "graduationCap":
+      return (
+        <>
+          <Path d="M3 9l9-5 9 5-9 5-9-5Z" {...p} />
+          <Path d="M7 11.5V16c0 1.4 2.2 3 5 3s5-1.6 5-3v-4.5" {...p} />
+          <Path d="M21 9v6" {...p} />
+        </>
+      );
+    case "facilityBuilding":
+      return (
+        <>
+          <Path d="M4 21V5h7v16" {...p} />
+          <Path d="M11 9h9v12" {...p} />
+          <Path d="M7 8h1M7 12h1M7 16h1M15 12h1M15 16h1" {...p} />
+          <Path d="M2 21h20" {...p} />
+        </>
+      );
+    case "dormHouse":
+      return (
+        <>
+          <Path d="M3 10.5 12 3l9 7.5" {...p} />
+          <Path d="M5 9.5V21h14V9.5" {...p} />
+          <Path d="M9 21v-7h6v7" {...p} />
+        </>
+      );
+    case "bookOpen":
+      return (
+        <>
+          <Path d="M3 5.5c3-1 6-.4 9 2v13c-3-2.4-6-3-9-2V5.5Z" {...p} />
+          <Path d="M21 5.5c-3-1-6-.4-9 2v13c3-2.4 6-3 9-2V5.5Z" {...p} />
+        </>
+      );
+    case "peopleGroup":
+      return (
+        <>
+          <Circle cx={8} cy={8} r={3} {...p} />
+          <Circle cx={16} cy={8} r={3} {...p} />
+          <Path d="M2.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" {...p} />
+          <Path d="M10.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" {...p} />
+        </>
+      );
   }
 }

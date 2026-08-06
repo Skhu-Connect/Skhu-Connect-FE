@@ -19,20 +19,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Icon } from "./icons";
+import Svg, { Circle, Path } from "react-native-svg";
+import { Icon, type IconName } from "./icons";
 import { CAT_LABEL, type CategoryKey, type StatusKey } from "./data";
 import { colors, font, gradient, radius, shadow } from "./theme";
 
 /* Hermes 의 Intl 유무에 기대지 않는 천단위 구분. */
 export function fmt(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-/* CSS 의 color-mix(in srgb, C 14%, #fff) 를 그대로 계산한다. CategoryTag soft 배경에 쓴다. */
-function mixWhite(hex: string, ratio: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c * ratio + 255 * (1 - ratio)));
-  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 const base: TextStyle = { fontFamily: font };
@@ -325,55 +319,63 @@ export function Textarea({
 
 type TagSize = "sm" | "md";
 
+/* 분류는 색이 아니라 아이콘 모양으로 구분한다 — 웹 CATEGORIES 와 같은 짝이다
+   (원본 태그 에셋이 전부 무채색 선 아이콘 + 텍스트다). */
+const CAT_ICON: Record<CategoryKey, IconName> = {
+  scholarship: "graduationCap",
+  facility: "facilityBuilding",
+  dorm: "dormHouse",
+  library: "bookOpen",
+  department: "peopleGroup",
+};
+
 export function CategoryTag({ category, size = "md" }: { category: CategoryKey; size?: TagSize }) {
-  const color = colors.cat[category];
-  const d = size === "sm" ? { padV: 3, padH: 10, fontSize: 11, dot: 5 } : { padV: 5, padH: 12, fontSize: 13, dot: 6 };
+  const d = size === "sm" ? { icon: 15, fontSize: 12.5 } : { icon: 18, fontSize: 14 };
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        alignSelf: "flex-start",
-        paddingVertical: d.padV,
-        paddingHorizontal: d.padH,
-        borderRadius: radius.pill,
-        backgroundColor: mixWhite(color, 0.14),
-        /* 원본은 CategoryTag 에만 1px 투명 테두리를 둔다(StatusBadge 에는 없다) — 빼면 원본보다 2px 작아진다. */
-        borderWidth: 1,
-        borderColor: "transparent",
-      }}
-    >
-      <View style={{ width: d.dot, height: d.dot, borderRadius: d.dot / 2, backgroundColor: color }} />
-      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "600", color }]}>{CAT_LABEL[category]}</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start" }}>
+      <Icon name={CAT_ICON[category]} size={d.icon} color={colors.strong} strokeWidth={2.2} />
+      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "600", color: colors.strong }]}>{CAT_LABEL[category]}</Text>
     </View>
   );
 }
 
-const STATUS: Record<StatusKey, { label: string; fg: string; bg: string; dot: string }> = {
-  received: { label: "접수", fg: colors.status["received-fg"], bg: colors.status["received-bg"], dot: colors.indigo[500] },
-  reviewing: { label: "검토중", fg: colors.status["review-fg"], bg: colors.status["review-bg"], dot: colors.warning },
-  answered: { label: "답변 완료", fg: colors.status["answered-fg"], bg: colors.status["answered-bg"], dot: colors.success },
+/* 상태는 색을 채운 원 안의 흰 글리프로 구분한다(웹 StatusDot 과 같은 지오메트리).
+   received 라벨이 "진행중" 인 것도 웹을 따른다 — 원본 에셋의 in_progress 에 대응한다. */
+const STATUS: Record<StatusKey, { label: string; dot: string }> = {
+  received: { label: "진행중", dot: colors.status["dot-received"] },
+  reviewing: { label: "검토중", dot: colors.status["dot-reviewing"] },
+  answered: { label: "답변 완료", dot: colors.status["dot-answered"] },
 };
 
-export function StatusBadge({ status, size = "md" }: { status: StatusKey; size?: TagSize }) {
-  const s = STATUS[status];
-  const d = size === "sm" ? { padV: 3, padH: 10, fontSize: 11, dot: 5 } : { padV: 5, padH: 13, fontSize: 13, dot: 6 };
+function StatusDot({ status, size }: { status: StatusKey; size: number }) {
+  const glyph = {
+    stroke: "#fff",
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    fill: "none",
+  };
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        alignSelf: "flex-start",
-        paddingVertical: d.padV,
-        paddingHorizontal: d.padH,
-        borderRadius: radius.pill,
-        backgroundColor: s.bg,
-      }}
-    >
-      <View style={{ width: d.dot, height: d.dot, borderRadius: d.dot / 2, backgroundColor: s.dot }} />
-      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "700", color: s.fg }]}>{s.label}</Text>
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={12} r={10} fill={STATUS[status].dot} />
+      {status === "received" ? <Path d="m10 8 6 4-6 4Z" fill="#fff" stroke="none" /> : null}
+      {status === "reviewing" ? (
+        <>
+          <Circle cx={12} cy={12} r={7} {...glyph} />
+          <Path d="M12 8v4l3 2" {...glyph} />
+        </>
+      ) : null}
+      {status === "answered" ? <Path d="m7.5 12.2 3 3.1 6-7" {...glyph} /> : null}
+    </Svg>
+  );
+}
+
+export function StatusBadge({ status, size = "md" }: { status: StatusKey; size?: TagSize }) {
+  const d = size === "sm" ? { dot: 18, fontSize: 12.5 } : { dot: 22, fontSize: 14 };
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" }}>
+      <StatusDot status={status} size={d.dot} />
+      <Text style={[base, { fontSize: d.fontSize, lineHeight: d.fontSize * 1.3, fontWeight: "600", color: colors.strong }]}>{STATUS[status].label}</Text>
     </View>
   );
 }

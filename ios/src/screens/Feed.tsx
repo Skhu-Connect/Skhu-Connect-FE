@@ -1,21 +1,13 @@
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
-import { CAT_CHIPS, STATUS_CHIPS, type CategoryKey, type Petition, type StatusKey } from "../data";
+import { CAT_CHIPS, type CategoryKey, type Petition } from "../data";
 import { count, ddayLabel, remain, type Filter, type Sort, type Tab } from "../logic";
 import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
 const t = { fontFamily: font };
-
-/* 상태 칩의 점 색은 StatusBadge 의 점과 다르다 — 원본 STATUS_DOT 을 그대로 따른다. */
-const STATUS_DOT: Record<StatusKey | "all", string> = {
-  all: colors.gray[300],
-  received: colors.gray[400],
-  reviewing: colors.status["review-fg"],
-  answered: colors.success,
-};
 
 export type FeedProps = {
   petitions: Petition[];
@@ -28,7 +20,6 @@ export type FeedProps = {
   searchOpen: boolean;
   onToggleSearch: () => void;
   onQuery: (q: string) => void;
-  onStatus: (s: StatusKey | "all") => void;
   onCategory: (c: CategoryKey | "all") => void;
   onSort: (s: Sort) => void;
   onOpen: (id: number) => void;
@@ -121,7 +112,7 @@ function Banner({ tab, petitions, mineCount }: { tab: Tab; petitions: Petition[]
 }
 
 function FilterBar(p: FeedProps) {
-  const { status, category, sort, tab, query } = p.filter;
+  const { category, sort, tab, query } = p.filter;
   const resultLabel = tab === "soon" ? `${p.list.length}건 · 남은 인원 적은 순` : `${p.list.length}건`;
 
   return (
@@ -142,37 +133,8 @@ function FilterBar(p: FeedProps) {
         </View>
       ) : null}
 
-      <ChipRow label="상태">
-        {STATUS_CHIPS.map((c) => {
-          const active = status === c.key;
-          return (
-            <Pressable
-              key={c.key}
-              onPress={() => p.onStatus(c.key)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingVertical: 6,
-                paddingHorizontal: 14,
-                borderRadius: radius.pill,
-                borderWidth: 1.5,
-                backgroundColor: active ? colors.indigo[600] : "#fff",
-                borderColor: active ? colors.indigo[600] : colors.line,
-              }}
-            >
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: active ? "rgba(255,255,255,.8)" : STATUS_DOT[c.key] }} />
-              <Text style={[t, { fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.body }]}>{c.label}</Text>
-            </Pressable>
-          );
-        })}
-      </ChipRow>
-
-      <View style={{ height: 1, backgroundColor: colors.subtle, marginTop: 1, marginHorizontal: 16 }} />
-
-      <ChipRow label="분류">
+      {/* 분류 칩 한 줄만 둔다 — 웹 FilterBar 와 같은 구성이다(상태 필터는 웹에 없다). */}
+      <ChipRow>
         {CAT_CHIPS.map((c) => {
           const active = category === c.key;
           return (
@@ -182,15 +144,15 @@ function FilterBar(p: FeedProps) {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={{
-                paddingVertical: 6,
-                paddingHorizontal: 14,
-                borderRadius: radius.sm,
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                borderRadius: radius.pill,
                 borderWidth: 1.5,
-                backgroundColor: active ? colors.indigo[50] : colors.gray[100],
-                borderColor: active ? colors.indigo[600] : "transparent",
+                backgroundColor: active ? colors.indigo[600] : "#fff",
+                borderColor: active ? colors.indigo[600] : colors.line,
               }}
             >
-              <Text style={[t, { fontSize: 13, fontWeight: "700", color: active ? colors.indigo[700] : colors.muted }]}>{c.label}</Text>
+              <Text style={[t, { fontSize: 14, fontWeight: "600", color: active ? "#fff" : colors.body }]}>{c.label}</Text>
             </Pressable>
           );
         })}
@@ -232,14 +194,11 @@ function askSort(current: Sort, onSort: (s: Sort) => void) {
   ]);
 }
 
-function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
+function ChipRow({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 14 }}>
-      <Text style={[t, { width: 26, fontSize: 10.5, fontWeight: "800", color: colors.gray[400] }]}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-        {children}
-      </ScrollView>
-    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 14 }}>
+      {children}
+    </ScrollView>
   );
 }
 
@@ -249,24 +208,29 @@ function PetitionCard({ p, votes, tab, onOpen, onVote }: { p: Petition; votes: V
 
   return (
     <Pressable onPress={() => onOpen(p.id)} accessibilityRole="button">
+      {/* 웹 PetitionCard 와 같은 구성이다 — 분류·상태 / 제목만 / 도달률 / 작성자·D-day·댓글 + 공감. */}
       <Card style={{ gap: 11 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} size="sm" />
           <StatusBadge status={p.status} size="sm" />
-          <Text style={[t, { marginLeft: "auto", fontSize: 11.5, color: colors.muted, fontWeight: "600" }]}>{ddayLabel(p)}</Text>
         </View>
 
         <Text style={[t, { fontWeight: "700", fontSize: 15.5, color: colors.strong, lineHeight: 21.7, letterSpacing: -0.155 }]}>{p.title}</Text>
-        <Text style={[t, { fontSize: 13, color: colors.muted, lineHeight: 20.8 }]}>{p.excerpt}</Text>
 
         <ThresholdBar current={c} threshold={p.threshold} basisLabel={p.basis} size="sm" />
 
         {tab === "soon" && left > 0 ? <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.magenta[600] }]}>목표까지 {fmt(left)}명 남음</Text> : null}
 
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>
-            {p.author} · 댓글 {p.comments}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>
+              {p.author} · {ddayLabel(p)}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Icon name="message" size={14} color={colors.muted} />
+              <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{p.comments}</Text>
+            </View>
+          </View>
           <EmpathyButton count={c} active={!!votes[p.id]} size="sm" onToggle={() => onVote(p.id)} />
         </View>
       </Card>

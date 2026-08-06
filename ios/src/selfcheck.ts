@@ -33,7 +33,7 @@ assert.equal(statusOf(edge, { 3: true }), "reviewing");
 assert.equal(statusOf(byId(4), none), "answered");
 
 /* 임박 탭은 남은 인원이 적은 순으로 고정 정렬된다. */
-const soon = visibleList(SEED, { tab: "soon", status: "all", category: "all", query: "", sort: "hot" }, none);
+const soon = visibleList(SEED, { tab: "soon", category: "all", query: "", sort: "hot" }, none);
 assert.deepEqual(
   soon.map((p) => p.id),
   [...soon].sort((a, b) => remain(a, none) - remain(b, none)).map((p) => p.id),
@@ -41,26 +41,26 @@ assert.deepEqual(
 assert.ok(soon.every((p) => isSoon(p, none)));
 
 /* 홈 탭 정렬 토글. */
-const hot = visibleList(SEED, { tab: "home", status: "all", category: "all", query: "", sort: "hot" }, none);
+const hot = visibleList(SEED, { tab: "home", category: "all", query: "", sort: "hot" }, none);
 assert.equal(hot[0].id, 4, "공감순 1위는 631건");
-const fresh = visibleList(SEED, { tab: "home", status: "all", category: "all", query: "", sort: "new" }, none);
+const fresh = visibleList(SEED, { tab: "home", category: "all", query: "", sort: "new" }, none);
 assert.equal(fresh[0].id, 6, "최신순 1위는 id 가 가장 큰 건");
 
 /* 필터는 누적된다. */
-const filtered = visibleList(SEED, { tab: "home", status: "received", category: "library", query: "", sort: "hot" }, none);
+const filtered = visibleList(SEED, { tab: "home", category: "library", query: "노트북", sort: "hot" }, none);
 assert.deepEqual(
   filtered.map((p) => p.id),
   [6],
 );
 assert.deepEqual(
-  visibleList(SEED, { tab: "mine", status: "all", category: "all", query: "", sort: "hot" }, none).map((p) => p.id),
+  visibleList(SEED, { tab: "mine", category: "all", query: "", sort: "hot" }, none).map((p) => p.id),
   [4, 3],
 );
 assert.deepEqual(
-  visibleList(SEED, { tab: "home", status: "all", category: "all", query: "세탁기", sort: "hot" }, none).map((p) => p.id),
+  visibleList(SEED, { tab: "home", category: "all", query: "세탁기", sort: "hot" }, none).map((p) => p.id),
   [2],
 );
-assert.equal(visibleList(SEED, { tab: "home", status: "all", category: "all", query: "없는말", sort: "hot" }, none).length, 0);
+assert.equal(visibleList(SEED, { tab: "home", category: "all", query: "없는말", sort: "hot" }, none).length, 0);
 
 /* 카테고리마다 임계치 기준이 다르다. */
 assert.equal(thresholdFor(basisFor("department")), 180);

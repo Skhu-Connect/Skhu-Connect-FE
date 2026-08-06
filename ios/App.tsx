@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
-import { NOTIFS, SEED, SEED_COMMENTS, type CategoryKey, type Comment, type Petition, type PrefKey, type StatusKey } from "./src/data";
+import { NOTIFS, SEED, SEED_COMMENTS, type CategoryKey, type Comment, type Petition, type PrefKey } from "./src/data";
 import { basisFor, isSoon, thresholdFor, visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
@@ -39,7 +39,6 @@ export default function App() {
   const [votes, setVotes] = useState<Votes>({});
   const [openId, setOpenId] = useState(1);
 
-  const [status, setStatus] = useState<StatusKey | "all">("all");
   const [category, setCategory] = useState<CategoryKey | "all">("all");
   const [sort, setSort] = useState<Sort>("hot");
   const [query, setQuery] = useState("");
@@ -89,7 +88,7 @@ export default function App() {
   const detail = useMemo(() => petitions.find((p) => p.id === openId) ?? petitions[0], [petitions, openId]);
   const deepPetition = useMemo(() => (deepId == null ? null : (petitions.find((p) => p.id === deepId) ?? null)), [petitions, deepId]);
 
-  const list = useMemo(() => visibleList(petitions, { tab, status, category, query, sort }, votes), [petitions, tab, status, category, query, sort, votes]);
+  const list = useMemo(() => visibleList(petitions, { tab, category, query, sort }, votes), [petitions, tab, category, query, sort, votes]);
   const soonCount = useMemo(() => petitions.filter((p) => isSoon(p, votes)).length, [petitions, votes]);
   const mineCount = useMemo(() => petitions.filter((p) => p.mine).length, [petitions]);
 
@@ -208,7 +207,7 @@ export default function App() {
             <FeedScreen
               petitions={petitions}
               votes={votes}
-              filter={{ tab, status, category, query, sort }}
+              filter={{ tab, category, query, sort }}
               list={list}
               soonCount={soonCount}
               mineCount={mineCount}
@@ -219,7 +218,6 @@ export default function App() {
                 setQuery("");
               }}
               onQuery={setQuery}
-              onStatus={setStatus}
               onCategory={setCategory}
               onSort={setSort}
               onOpen={openPetition}

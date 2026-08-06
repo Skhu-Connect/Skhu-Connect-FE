@@ -44,23 +44,15 @@ const colors = {
   danger: "#E5354A",
   info: "#4C6EF5",
 
-  /* 청원 라이프사이클 접수 → 검토중 → 답변 완료 */
+  /* 건의 라이프사이클 진행중 → 검토중 → 답변 완료.
+     배지는 원 색(dot-*)만 쓰고, fg/bg 쌍은 상세의 공식 답변 블록이 쓴다.
+     dot-* 는 웹 src/index.css 의 --status-dot-* 와 같은 값이다. */
   status: {
-    "received-fg": "#3D3A94",
-    "received-bg": "#E7E7F7",
-    "review-fg": "#B26A00",
-    "review-bg": "#FCEFD6",
     "answered-fg": "#1B8F5E",
     "answered-bg": "#DDF3E7",
-  },
-
-  /* 카테고리 액센트 */
-  cat: {
-    scholarship: "#E8912B",
-    facility: "#23B3A0",
-    dorm: "#6C63C7",
-    library: "#F0808A",
-    department: "#4C6EF5",
+    "dot-received": "#3778D8",
+    "dot-reviewing": "#E09A13",
+    "dot-answered": "#22A559",
   },
 
   /* 시맨틱 별칭 — 디자인 원본이 이 이름으로 쓰므로 className 도 같은 이름을 쓴다 */
