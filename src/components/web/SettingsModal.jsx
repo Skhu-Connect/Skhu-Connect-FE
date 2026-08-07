@@ -33,7 +33,7 @@ export default function SettingsModal({ user, onClose }) {
           </button>
         </div>
         <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "13px 16px", fontSize: 13.5, color: "var(--text-body)" }}>
-          <b style={{ color: "var(--text-strong)" }}>{user.name}</b> · {user.dept} {user.year}학년 · {user.sid}
+          <b style={{ color: "var(--text-strong)" }}>{user.dept}</b> · {user.loginId}
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>개인정보는 인증에만 사용되며 건의는 익명 처리됩니다.</div>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>

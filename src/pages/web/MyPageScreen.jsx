@@ -95,11 +95,14 @@ export default function MyPageScreen() {
 
   return (
     <div style={{ paddingBottom: 90 }}>
+      {/* 서버가 이름을 안 준다(익명 설계) — 학부를 주 정보로 올리고 아이디를 보조로 둔다.
+          "이름 빠진 자리" 가 아니라 익명 서비스에 맞는 표시로 다시 짰다. */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", padding: "40px var(--page-gutter) 32px", color: "#fff", display: "flex", alignItems: "center", gap: 16 }}>
-        <Avatar name={user.name.slice(1)} size={56} ring />
+        <Avatar size={56} ring />
         <div>
-          <div style={{ fontSize: 19, fontWeight: 800 }}>{user.name}</div>
-          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 3 }}>{user.dept}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", opacity: 0.75, textTransform: "uppercase" }}>소속 학부</div>
+          <div style={{ fontSize: 19, fontWeight: 800, marginTop: 2 }}>{user.dept}</div>
+          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 3 }}>{user.loginId}</div>
         </div>
       </div>
 
