@@ -28,6 +28,9 @@ export type Petition = {
 
 export type Comment = { author: string; body: string; date: string };
 
+/** MY 화면 "내가 쓴 댓글" 전용 — 웹 src/api/index.js의 adaptMyComment와 동일하게 title은 없다. */
+export type MyComment = { id: number; petitionId: number; body: string; date: string };
+
 export const CAT_LABEL: Record<CategoryKey, string> = {
   scholarship: "장학",
   facility: "시설",

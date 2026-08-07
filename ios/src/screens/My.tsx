@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { PREF_ROWS, type Notification, type Petition, type PrefKey } from "../data";
+import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
 import { Avatar, Button } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
 const t = { fontFamily: font };
+const PAGE_SIZE = 5;
 
 export type MyProps = {
   me: { loginId: string; departmentName: string } | null;
@@ -13,6 +15,7 @@ export type MyProps = {
   answeredCount: number;
   notifications: Notification[];
   bookmarks: Petition[];
+  myComments: MyComment[];
   prefs: Record<PrefKey, boolean>;
   onTogglePref: (k: PrefKey) => void;
   onOpenPetition: (id: number) => void;
@@ -21,6 +24,11 @@ export type MyProps = {
 };
 
 export function MyScreen(p: MyProps) {
+  const [notifExpanded, setNotifExpanded] = useState(false);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const shownNotifications = notifExpanded ? p.notifications : p.notifications.slice(0, PAGE_SIZE);
+  const shownComments = commentsExpanded ? p.myComments : p.myComments.slice(0, PAGE_SIZE);
+
   const stats = [
     { value: p.mineCount, label: "등록한 건의" },
     { value: p.voteCount, label: "누른 공감" },
@@ -57,7 +65,7 @@ export function MyScreen(p: MyProps) {
           {p.notifications.length === 0 ? (
             <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18, paddingHorizontal: 15 }]}>받은 알림이 없습니다.</Text>
           ) : (
-            p.notifications.map((n, i) => (
+            shownNotifications.map((n, i) => (
               <Pressable
                 key={n.id}
                 onPress={() => p.onOpenNotification(n)}
@@ -84,6 +92,7 @@ export function MyScreen(p: MyProps) {
               </Pressable>
             ))
           )}
+          {!notifExpanded && p.notifications.length > PAGE_SIZE ? <MoreButton onPress={() => setNotifExpanded(true)} /> : null}
         </View>
 
         <SectionTitle style={{ paddingTop: 18 }}>북마크한 건의</SectionTitle>
@@ -117,6 +126,26 @@ export function MyScreen(p: MyProps) {
           ))}
         </View>
 
+        <SectionTitle style={{ paddingTop: 18 }}>내가 쓴 댓글</SectionTitle>
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
+          {p.myComments.length === 0 ? (
+            <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18, paddingHorizontal: 15 }]}>아직 작성한 댓글이 없습니다.</Text>
+          ) : (
+            shownComments.map((c, i) => (
+              <Pressable
+                key={c.id}
+                onPress={() => p.onOpenPetition(c.petitionId)}
+                accessibilityRole="button"
+                style={{ paddingVertical: 13, paddingHorizontal: 15, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.subtle }}
+              >
+                <Text numberOfLines={2} style={[t, { fontSize: 13, color: colors.body, lineHeight: 19 }]}>{c.body}</Text>
+                <Text style={[t, { fontSize: 11, color: colors.muted, marginTop: 3 }]}>{c.date}</Text>
+              </Pressable>
+            ))
+          )}
+          {!commentsExpanded && p.myComments.length > PAGE_SIZE ? <MoreButton onPress={() => setCommentsExpanded(true)} /> : null}
+        </View>
+
         <View style={{ paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 }}>
           <Button variant="outline" block onPress={p.onLogout}>
             로그아웃
@@ -124,6 +153,18 @@ export function MyScreen(p: MyProps) {
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+function MoreButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle, alignItems: "center" }}
+    >
+      <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>더보기</Text>
+    </Pressable>
   );
 }
 

@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@react-native-firebase/app": "^26.1.0",
+    "@react-native-firebase/messaging": "^26.1.0",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.8",
+    "expo-build-properties": "~57.0.9",
     "expo-clipboard": "~57.0.1",
     "expo-linear-gradient": "~57.0.1",
     "expo-splash-screen": "~57.0.5",

@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "ac.skhu.petition",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "ac.skhu.petition",
@@ -34,7 +35,18 @@
           "imageWidth": 200
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ],
+      "./plugins/withRNFirebaseDisableSpm.js"
     ]
   }
 }

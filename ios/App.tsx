@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
-import type { CategoryKey, Comment, Notification, Petition, PrefKey } from "./src/data";
+import type { CategoryKey, Comment, MyComment, Notification, Petition, PrefKey } from "./src/data";
 import { visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
@@ -17,6 +17,7 @@ import { ShareSheet, TabBar, Toast } from "./src/shell";
 import { colors } from "./src/theme";
 import * as api from "./src/api";
 import type { Me } from "./src/api";
+import * as push from "./src/push";
 
 type Screen = "feed" | "detail" | "submit" | "my";
 
@@ -43,6 +44,7 @@ export default function App() {
   const [petitions, setPetitions] = useState<Petition[]>([]);
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [myComments, setMyComments] = useState<MyComment[]>([]);
   const [votes, setVotes] = useState<Votes>({});
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -85,6 +87,7 @@ export default function App() {
     setPetitions(ps);
     setNotifications(notifs);
     setVotes(Object.fromEntries([...api.getVotedIds()].map((id) => [id, true])));
+    push.registerForPush().catch(() => {}); // 부가 기능 — 실패해도 로그인 흐름을 막지 않는다
   }, []);
 
   /* 콜드 스타트: accessToken 은 메모리 전용이라 앱을 껐다 켜면 사라진다. refreshToken
@@ -138,12 +141,49 @@ export default function App() {
     };
   }, [screen, openId]);
 
-  /* MY 화면을 열 때마다 알림을 다시 불러온다 — 로그인 시 한 번만 받으면 그 사이에 다른
-     사용자의 공감·댓글로 새로 생긴 알림을 놓친다(탭바 벨 배지·피드 헤더 벨 점도 이 값을 쓴다). */
+  /* MY 화면을 열 때마다 알림·내가 쓴 댓글을 다시 불러온다 — 로그인 시 한 번만 받으면 그 사이에
+     다른 사용자의 공감·댓글로 새로 생긴 알림을 놓친다(탭바 벨 배지·피드 헤더 벨 점도 이 값을 쓴다). */
   useEffect(() => {
     if (screen !== "my") return;
     api.listNotifications().then(setNotifications).catch(() => {});
+    api.listMyComments().then(setMyComments).catch(() => {});
   }, [screen]);
+
+  /* 웹 WebLayout.jsx 와 같은 방식 — 진짜 푸시가 아니라 로그인 중 30초마다 목록을 다시
+     불러와 벨 배지가 실시간처럼 보이게 한다. 실패는 조용히 넘기고 다음 주기에 재시도한다. */
+  useEffect(() => {
+    if (!authed) return;
+    const id = setInterval(() => {
+      api.listNotifications().then(setNotifications).catch(() => {});
+    }, 30000);
+    return () => clearInterval(id);
+  }, [authed]);
+
+  /* 앱이 열려 있는 동안 FCM 이 오면(시스템 배너 없음) 알림 목록을 바로 갱신하고 토스트로 알린다. */
+  useEffect(() => {
+    if (!authed) return;
+    return push.onForegroundMessage(() => {
+      api.listNotifications().then(setNotifications).catch(() => {});
+      flash("새 알림이 도착했습니다");
+    });
+  }, [authed, flash]);
+
+  /* 푸시 알림을 탭해서 열린 경우 — URL 딥링크와 같은 경로(deepId/openId)를 탄다.
+     킬 상태 콜드 스타트와 백그라운드 탭 둘 다 여기로 모인다. */
+  useEffect(() => {
+    const arrive = (petitionId: number | null) => {
+      if (petitionId == null) return;
+      setDeepId(petitionId);
+      setDeepUsed(false);
+      setOpenId(petitionId);
+      setAuthed((was) => {
+        if (was) setScreen("detail");
+        return was;
+      });
+    };
+    push.getTappedNotificationPetitionId().then(arrive).catch(() => {});
+    return push.onNotificationTapped(arrive);
+  }, []);
 
   const detail = useMemo(() => petitions.find((p) => p.id === openId), [petitions, openId]);
   const deepPetition = useMemo(() => (deepId == null ? null : (petitions.find((p) => p.id === deepId) ?? null)), [petitions, deepId]);
@@ -266,6 +306,7 @@ export default function App() {
 
   const onLogout = useCallback(() => {
     api.logout();
+    push.unregisterFromPush();
     setAuthed(false);
     setAuthScreen("login");
     setScreen("feed");
@@ -277,6 +318,7 @@ export default function App() {
     setPetitions([]);
     setComments({});
     setNotifications([]);
+    setMyComments([]);
   }, []);
 
   const onTab = useCallback((next: Tab) => {
@@ -382,6 +424,7 @@ export default function App() {
               answeredCount={petitions.filter((p) => p.mine && p.status === "answered").length}
               notifications={notifications}
               bookmarks={bookmarkedList}
+              myComments={myComments}
               prefs={prefs}
               onTogglePref={(k) => setPrefs((p) => ({ ...p, [k]: !p[k] }))}
               onOpenPetition={openPetition}

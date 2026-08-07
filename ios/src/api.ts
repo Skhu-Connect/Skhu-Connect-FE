@@ -6,7 +6,7 @@
    동일하게 적용된다. 모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제,
    비밀번호 재설정, 전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다. */
 
-import type { CategoryKey, Comment, Notification, Petition, StatusKey } from "./data";
+import type { CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
 
@@ -320,6 +320,15 @@ export async function addComment(petitionId: number, body: string): Promise<Comm
   return adaptComment(raw);
 }
 
+function adaptMyComment(uc: any): MyComment {
+  return { id: uc.comment.id, petitionId: uc.petitionId, body: uc.comment.content, date: formatRelative(uc.comment.createdAt) };
+}
+
+export async function listMyComments(): Promise<MyComment[]> {
+  const data = await apiFetch<any>("/connect/users/me/comments?size=100");
+  return (data?.content ?? []).map(adaptMyComment);
+}
+
 /* ───────────────── 알림 ───────────────── */
 
 const NOTIF_META: Record<string, { title: string; iconBg: string; iconFg: string }> = {
@@ -344,4 +353,14 @@ export async function listNotifications(): Promise<Notification[]> {
 
 export async function markNotifRead(id: number): Promise<void> {
   await apiFetch(`/connect/notifications/${id}/read`, { method: "PATCH" });
+}
+
+/* ───────────────── 푸시(FCM) 토큰 ───────────────── */
+
+export async function registerFcmToken(token: string): Promise<void> {
+  await apiFetch("/connect/notifications/fcm-tokens", { method: "POST", body: { token } });
+}
+
+export async function deleteFcmToken(token: string): Promise<void> {
+  await apiFetch("/connect/notifications/fcm-tokens", { method: "DELETE", body: { token } });
 }
