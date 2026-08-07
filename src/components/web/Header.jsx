@@ -122,14 +122,19 @@ function AvatarMenu({ user, onSelect }) {
       width={240}
       trigger={
         <button type="button" aria-label="내 메뉴" aria-expanded={open} onClick={() => setOpen((o) => !o)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "inline-flex" }}>
-          <Avatar name={user.name.slice(1)} size={38} ring />
+          <Avatar size={38} ring />
         </button>
       }
     >
+      {/* 서버가 이름을 안 준다(익명 설계) — 아이덴티티는 학부 한 줄 + 아이디로 대체한다.
+          "이름 빠진 자리" 가 아니라 익명 서비스에 맞는 표시로 다시 짰다. */}
       <div style={{ padding: "6px 0" }}>
-        <div style={{ padding: "10px 16px 12px", borderBottom: "1px solid var(--border-subtle)", marginBottom: 4 }}>
-          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--text-strong)" }}>{user.name}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{user.dept} · {user.year}학년</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px 12px", borderBottom: "1px solid var(--border-subtle)", marginBottom: 4 }}>
+          <Avatar size={34} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.dept}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{user.loginId}</div>
+          </div>
         </div>
         {item("user", "마이페이지", "mypage")}
         {item("bookmark", "북마크", "bookmarks")}

@@ -9,6 +9,9 @@ import { Icon } from "./Icon.jsx";
 
 /* ───────────────────────── core ───────────────────────── */
 
+/** name 이 없으면(서버가 이름을 안 주는 계정 — Phase 6) 이니셜 대신 사람 아이콘을 보인다.
+    빈 원보다 의도된 자리처럼 보이려는 것뿐, 새 variant 를 만들지 않는다 — 기존 name 호출부는
+    그대로 이니셜을 보인다. */
 export function Avatar({ src, name = "", size = 44, ring = false, style, ...rest }) {
   const initials = name.trim().slice(0, 2);
   return (
@@ -31,7 +34,7 @@ export function Avatar({ src, name = "", size = 44, ring = false, style, ...rest
       }}
       {...rest}
     >
-      {!src && initials}
+      {!src && (initials || <Icon name="user" size={size * 0.48} stroke={2.4} />)}
     </span>
   );
 }
