@@ -1,5 +1,5 @@
-/* 목 데이터 — 디자인 원본 스크립트의 SEED·NOTIFS·ANSWER 를 그대로 옮겼다.
-   백엔드가 붙으면 이 파일만 fetch 로 바꾼다. */
+/* 타입·표시용 상수. SEED/SEED_COMMENTS 는 이제 앱 런타임이 아니라 selfcheck.ts(순수 로직
+   유닛 테스트)의 픽스처로만 쓴다 — 실 데이터는 src/api.ts 가 백엔드에서 받아온다. */
 
 export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department";
 export type StatusKey = "received" | "reviewing" | "answered";
@@ -20,8 +20,10 @@ export type Petition = {
   createdAt: string;
   comments: number;
   views: string;
-  answered?: boolean;
+  /** "답변 완료" 여부는 별도 필드가 아니라 `status === "answered"` 로 판단한다 —
+      백엔드에 공식 답변 등록 기능 자체가 아직 없어(ARCHITECTURE.md) 실제로 채워지지 않는다. */
   mine?: boolean;
+  bookmarked?: boolean;
 };
 
 export type Comment = { author: string; body: string; date: string };
@@ -42,21 +44,6 @@ export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "dorm", label: "기숙사" },
   { key: "library", label: "도서관" },
   { key: "department", label: "학부" },
-];
-
-/** 회원가입 화면의 소속 학부 선택지. 웹과 같은 11개 목록(src/api/mockDb.js DEPARTMENTS, 이슈 #16 결정). */
-export const DEPARTMENTS: string[] = [
-  "인문융합콘텐츠학부",
-  "경영학부",
-  "사회융합학부",
-  "미디어콘텐츠융합학부",
-  "미래융합학부",
-  "소프트웨어융합학부",
-  "국제학부",
-  "인문융합자율학부",
-  "사회융합자율학부",
-  "미디어콘텐츠융합자율학부",
-  "IT융합자율학부",
 ];
 
 export const BASIS_NOTE: Record<BasisLabel, string> = {
@@ -130,7 +117,6 @@ export const SEED: Petition[] = [
     createdAt: daysAgo(14),
     comments: 58,
     views: "2,391",
-    answered: true,
     mine: true,
   },
   {
@@ -174,14 +160,9 @@ export const SEED_COMMENTS: Record<number, Comment[]> = {
   4: [{ author: "익명 1", body: "답변 감사합니다. 다음 학기부터 체감되면 좋겠습니다.", date: "1주 전" }],
 };
 
-export const ANSWER = {
-  dept: "학생지원팀",
-  manager: "이동수",
-  date: "2026.05.22",
-  body: "안녕하세요, 학생지원팀입니다. 2026학년도 2학기부터 교내 장학금 신청 시 종합정보시스템에 등록된 서류는 자동 연동되도록 개선하겠습니다. 소중한 의견 감사합니다.",
-};
-
+/** id 는 markNotifRead 호출에 쓴다. */
 export type Notification = {
+  id: number;
   petitionId: number;
   title: string;
   body: string;
@@ -191,39 +172,8 @@ export type Notification = {
   iconFg: string;
 };
 
-export const NOTIFS: Notification[] = [
-  {
-    petitionId: 4,
-    title: "공식 답변 등록",
-    body: "‘교내 장학금 신청 절차 간소화’에 학생지원팀 답변이 등록되었습니다.",
-    date: "3시간 전",
-    read: false,
-    iconBg: "#DDF3E7",
-    iconFg: "#22A06B",
-  },
-  {
-    petitionId: 1,
-    title: "도달률 달성",
-    body: "‘중앙도서관 24시간 개방’이 도달률 100%를 달성해 검토가 시작되었습니다.",
-    date: "1일 전",
-    read: false,
-    iconBg: "#FCEFD6",
-    iconFg: "#B26A00",
-  },
-  {
-    petitionId: 3,
-    title: "도달률 달성",
-    body: "'중앙도서관 24시간 개방’이 도달률 50%를 넘었습니다.",
-    date: "2일 전",
-    read: true,
-    iconBg: "#FCE7E9",
-    iconFg: "#F0808A",
-  },
-];
-
-/* 학번·학년은 화면에서 뺐다 — 익명 건의 앱이라 본인 식별 정보를 띄우지 않는다. */
-export const USER = { name: "김석환", initial: "석환", dept: "소프트웨어융합학부" };
-
+/* PREF_ROWS(알림 설정)는 서버에 대응 API가 없어(GET /connect/users/me 의 notificationEnabled 는
+   읽기 전용, PATCH 없음 — 웹 src/api/index.js 와 동일한 결론) 로컬 전용 토글로 유지한다. */
 export const PREF_ROWS: { key: PrefKey; title: string; desc: string }[] = [
   { key: "threshold", title: "도달률 알림", desc: "내 건의가 도달률 100%에 도달하면 알려드립니다." },
   { key: "answer", title: "답변 등록 알림", desc: "공감한 건의에 공식 답변이 등록되면 알려드립니다." },

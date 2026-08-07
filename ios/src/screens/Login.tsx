@@ -6,19 +6,29 @@ import { Pressable, Text, View } from "react-native";
 import { AuthShell } from "../authShell";
 import { Button, Input } from "../ui";
 import { colors, font, onVideo, radius } from "../theme";
+import { login } from "../api";
 
-export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: string; onLogin: () => void; onSignup: () => void }) {
+export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: string; onLogin: () => void | Promise<void>; onSignup: () => void }) {
   const [sid, setSid] = useState("");
   const [pw, setPw] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!sid.trim() || !pw.trim()) {
       setError("아이디와 비밀번호를 입력해 주세요.");
       return;
     }
     setError("");
-    onLogin();
+    setLoading(true);
+    try {
+      await login(sid, pw);
+      await onLogin();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "로그인에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,8 +49,8 @@ export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: stri
         {error ? (
           <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{error}</Text>
         ) : null}
-        <Button variant="primary" size="lg" block onPress={submit}>
-          {deepTitle ? "로그인하고 공감하기" : "로그인"}
+        <Button variant="primary" size="lg" block disabled={loading} onPress={submit}>
+          {loading ? "로그인 중…" : deepTitle ? "로그인하고 공감하기" : "로그인"}
         </Button>
 
         <Pressable onPress={onSignup} accessibilityRole="button" style={{ alignItems: "center" }}>

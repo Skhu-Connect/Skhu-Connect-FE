@@ -1,14 +1,14 @@
 /* 회원가입. 웹(src/pages/web/SignupScreen.jsx)과 단계·필드·문구·이동 링크를 맞춘다.
-   2단계: ① 학교 이메일 인증 ② 아이디·이름·소속 학부·비밀번호 입력. 목 단계라 실제 메일
-   발송·검증·중복 학번 확인은 없다 — 웹과 같은 한계다.
+   2단계: ① 학교 이메일 인증(발송 → 6자리 코드 확인) ② 아이디·소속 학부·비밀번호 입력.
+   실제 SignupRequest 에는 이름 필드가 없다(웹도 이름을 받지 않는다) — 입력 안 받는다.
    흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(theme 의 onVideo 팔레트). */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
 import { font, onVideo } from "../theme";
-import { DEPARTMENTS } from "../data";
+import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
 
 const PORTAL_URL = "https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main";
 
@@ -16,23 +16,46 @@ function ErrorText({ children }: { children: string }) {
   return <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{children}</Text>;
 }
 
-function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (email: string) => void }) {
+function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (email: string, verificationToken: string) => void }) {
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [checking, setChecking] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const submit = () => {
+  const send = async () => {
     const value = email.trim();
     if (!value || !value.includes("@")) {
       setError("학교 이메일을 입력해 주세요.");
       return;
     }
     setError("");
-    setChecking(true);
-    setTimeout(() => {
-      setChecking(false);
-      onVerified(value);
-    }, 400);
+    setLoading(true);
+    try {
+      await sendSignupCode(value);
+      setSent(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "인증번호 발송에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirm = async () => {
+    if (!code.trim()) {
+      setError("인증번호를 입력해 주세요.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const token = await confirmSignupCode(email.trim(), code.trim());
+      onVerified(email.trim(), token);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "인증번호가 올바르지 않습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,11 +63,25 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
       <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>학교 인증</Text>
       <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>학교 이메일로 재학생 여부를 확인해요.</Text>
 
-      <Input dark label="학교 이메일" value={email} onChangeText={setEmail} placeholder="예: 20260000@skhu.ac.kr" keyboardType="email-address" />
+      <Input dark label="학교 이메일" value={email} onChangeText={setEmail} placeholder="예: 20260000@office.skhu.ac.kr" keyboardType="email-address" />
+
+      {sent ? <Input dark label="인증번호" value={code} onChangeText={setCode} placeholder="6자리 숫자" keyboardType="number-pad" /> : null}
       {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button variant="primary" size="lg" block disabled={checking} onPress={submit}>
-        {checking ? "확인 중…" : "인증하기"}
-      </Button>
+
+      {sent ? (
+        <>
+          <Button variant="primary" size="lg" block disabled={loading} onPress={confirm}>
+            {loading ? "확인 중…" : "인증 확인"}
+          </Button>
+          <Pressable onPress={send} disabled={loading} accessibilityRole="button" style={{ alignItems: "center" }}>
+            <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>인증번호 다시 받기</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Button variant="primary" size="lg" block disabled={loading} onPress={send}>
+          {loading ? "발송 중…" : "인증번호 발송"}
+        </Button>
+      )}
 
       <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
         <Pressable onPress={onBack} accessibilityRole="button">
@@ -59,21 +96,28 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
   );
 }
 
-function AccountStep({ email, onBack, onSignup }: { email: string; onBack: () => void; onSignup: () => void }) {
+function AccountStep({ email, verificationToken, onBack, onSignup }: { email: string; verificationToken: string; onBack: () => void; onSignup: () => void | Promise<void> }) {
   const [sid, setSid] = useState("");
-  const [name, setName] = useState("");
   const [dept, setDept] = useState("");
   const [pw, setPw] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
 
-  const submit = () => {
-    if (!sid.trim() || !name.trim() || !pw.trim()) {
-      setError("아이디·이름·비밀번호를 입력해 주세요.");
+  useEffect(() => {
+    listDepartments()
+      .then(setDepartments)
+      .catch(() => setError("학부 목록을 불러오지 못했습니다."));
+  }, []);
+
+  const submit = async () => {
+    if (!sid.trim() || !pw.trim()) {
+      setError("아이디·비밀번호를 입력해 주세요.");
       return;
     }
-    if (!dept) {
+    const department = departments.find((d) => d.name === dept);
+    if (!department) {
       setError("소속 학부를 선택해 주세요.");
       return;
     }
@@ -83,7 +127,14 @@ function AccountStep({ email, onBack, onSignup }: { email: string; onBack: () =>
     }
     setError("");
     setSaving(true);
-    onSignup();
+    try {
+      await signup({ loginId: sid.trim(), password: pw, departmentId: department.id, verificationToken });
+      await onSignup();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "회원가입에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -96,28 +147,27 @@ function AccountStep({ email, onBack, onSignup }: { email: string; onBack: () =>
       <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>{email} 인증 완료</Text>
 
       <Input dark label="아이디" value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" />
-      <Input dark label="이름" value={name} onChangeText={setName} placeholder="이름을 입력하세요" />
-      <Select dark label="소속 학부" options={DEPARTMENTS} value={dept} onChange={setDept} placeholder="학부를 선택하세요" />
+      <Select dark label="소속 학부" options={departments.map((d) => d.name)} value={dept} onChange={setDept} placeholder="학부를 선택하세요" />
       <Input dark label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
       <Input dark label="비밀번호 확인" value={pwConfirm} onChangeText={setPwConfirm} placeholder="••••••••" secureTextEntry />
       {error ? <ErrorText>{error}</ErrorText> : null}
       <Button variant="primary" size="lg" block disabled={saving} onPress={submit}>
-        회원가입
+        {saving ? "가입 중…" : "회원가입"}
       </Button>
     </>
   );
 }
 
 export function SignupScreen({ onBack, onSignup }: { onBack: () => void; onSignup: () => void }) {
-  const [email, setEmail] = useState<string | null>(null);
+  const [verified, setVerified] = useState<{ email: string; token: string } | null>(null);
 
   return (
     <AuthShell>
       <View style={{ gap: 14 }}>
-        {email == null ? (
-          <EmailStep onBack={onBack} onVerified={setEmail} />
+        {verified == null ? (
+          <EmailStep onBack={onBack} onVerified={(email, token) => setVerified({ email, token })} />
         ) : (
-          <AccountStep email={email} onBack={() => setEmail(null)} onSignup={onSignup} />
+          <AccountStep email={verified.email} verificationToken={verified.token} onBack={() => setVerified(null)} onSignup={onSignup} />
         )}
       </View>
     </AuthShell>

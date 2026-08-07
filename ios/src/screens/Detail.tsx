@@ -2,7 +2,7 @@ import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } fr
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
-import { ANSWER, BASIS_NOTE, CAT_LABEL, type Comment, type Petition } from "../data";
+import { BASIS_NOTE, CAT_LABEL, type Comment, type Petition } from "../data";
 import { count, ddayLabel, ymd } from "../logic";
 import type { Votes } from "../logic";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
@@ -20,6 +20,8 @@ export type DetailProps = {
   onBack: () => void;
   onVote: () => void;
   onOpenShare: () => void;
+  bookmarked: boolean;
+  onToggleBookmark: () => void;
   /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
   deepPrompt: boolean;
 };
@@ -29,7 +31,8 @@ export function DetailScreen(p: DetailProps) {
   const d = p.petition;
   const c = count(d, p.votes);
   const reached = c >= d.threshold;
-  const answered = !!d.answered;
+  // 백엔드에 공식 답변 등록 기능 자체가 아직 없어(ARCHITECTURE.md) status 는 사실상 여기 도달하지 않는다.
+  const answered = d.status === "answered";
 
   const steps = [
     { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
@@ -38,7 +41,7 @@ export function DetailScreen(p: DetailProps) {
       note: reached ? "도달률 100% 달성 · 담당 부서에 이메일·SMS로 전달되었습니다." : "도달률 100% 달성 시 담당 부서로 전달됩니다.",
       done: reached,
     },
-    { label: "답변 완료", note: answered ? `${ANSWER.dept} 공식 답변 등록 · ${ANSWER.date}` : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered },
+    { label: "답변 완료", note: answered ? "공식 답변이 등록되었습니다." : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered },
   ];
 
   const barHeight = 52 + 12 + Math.max(insets.bottom, 22);
@@ -111,15 +114,7 @@ export function DetailScreen(p: DetailProps) {
               ))}
             </Card>
 
-            {answered ? (
-              <View style={{ backgroundColor: colors.status["answered-bg"], borderWidth: 1, borderColor: "#C7E9D6", borderLeftWidth: 4, borderLeftColor: colors.success, borderRadius: radius.lg, padding: 16 }}>
-                <Text style={[t, { fontWeight: "800", fontSize: 13.5, color: colors.status["answered-fg"] }]}>{ANSWER.dept} · 공식 답변</Text>
-                <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 3 }]}>
-                  담당자 {ANSWER.manager} · {ANSWER.date}
-                </Text>
-                <Text style={[t, { fontSize: 14, color: colors.gray[800], lineHeight: 24.1, marginTop: 10 }]}>{ANSWER.body}</Text>
-              </View>
-            ) : null}
+            {/* 공식 답변 카드는 숨긴다 — 백엔드에 답변 등록 기능 자체가 없어 답변 본문을 받아올 방법이 없다. */}
 
             <Card>
               <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, marginBottom: 6 }]}>댓글 {p.comments.length}</Text>
@@ -174,6 +169,15 @@ export function DetailScreen(p: DetailProps) {
         }}
       >
         <EmpathyButton count={c} active={!!p.votes[d.id]} size="lg" block onToggle={p.onVote} />
+        <Pressable
+          onPress={p.onToggleBookmark}
+          accessibilityRole="button"
+          accessibilityLabel={p.bookmarked ? "북마크 해제" : "북마크"}
+          accessibilityState={{ selected: p.bookmarked }}
+          style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: p.bookmarked ? colors.indigo[600] : colors.line, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }}
+        >
+          <Icon name={p.bookmarked ? "bookmarkSolid" : "bookmark"} size={20} color={colors.indigo[600]} />
+        </Pressable>
         <Pressable
           onPress={p.onOpenShare}
           accessibilityRole="button"

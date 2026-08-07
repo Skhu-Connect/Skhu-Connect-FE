@@ -1,18 +1,22 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { NOTIFS, PREF_ROWS, USER, type PrefKey } from "../data";
+import { PREF_ROWS, type Notification, type Petition, type PrefKey } from "../data";
 import { Avatar, Button } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
 const t = { fontFamily: font };
 
 export type MyProps = {
+  me: { loginId: string; departmentName: string } | null;
   mineCount: number;
   voteCount: number;
   answeredCount: number;
+  notifications: Notification[];
+  bookmarks: Petition[];
   prefs: Record<PrefKey, boolean>;
   onTogglePref: (k: PrefKey) => void;
   onOpenPetition: (id: number) => void;
+  onOpenNotification: (n: Notification) => void;
   onLogout: () => void;
 };
 
@@ -32,10 +36,10 @@ export function MyScreen(p: MyProps) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient {...gradient.hero} style={{ paddingTop: 20, paddingHorizontal: 18, paddingBottom: 24, flexDirection: "row", alignItems: "center", gap: 14, overflow: "hidden" }}>
           <View style={{ position: "absolute", right: -40, bottom: -70, width: 170, height: 170, borderRadius: 85, backgroundColor: "rgba(255,255,255,.06)" }} />
-          <Avatar name={USER.initial} size={56} ring />
+          <Avatar name={p.me?.loginId ?? ""} size={56} ring />
           <View>
-            <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff" }]}>{USER.name}</Text>
-            <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.85)", marginTop: 3 }]}>{USER.dept}</Text>
+            <Text style={[t, { fontSize: 18, fontWeight: "800", color: "#fff" }]}>{p.me?.loginId ?? ""}</Text>
+            <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.85)", marginTop: 3 }]}>{p.me?.departmentName ?? ""}</Text>
           </View>
         </LinearGradient>
 
@@ -50,32 +54,54 @@ export function MyScreen(p: MyProps) {
 
         <SectionTitle>알림</SectionTitle>
         <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
-          {NOTIFS.map((n, i) => (
-            <Pressable
-              key={n.title + n.date}
-              onPress={() => p.onOpenPetition(n.petitionId)}
-              accessibilityRole="button"
-              style={{
-                flexDirection: "row",
-                gap: 11,
-                paddingVertical: 13,
-                paddingHorizontal: 15,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: colors.subtle,
-                backgroundColor: n.read ? "transparent" : colors.indigo[50],
-              }}
-            >
-              <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: n.iconBg, alignItems: "center", justifyContent: "center" }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: n.iconFg }} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[t, { fontSize: 13, color: colors.body, lineHeight: 20.2 }]}>
-                  <Text style={{ fontWeight: "700", color: colors.strong }}>{n.title}</Text> · {n.body}
-                </Text>
-                <Text style={[t, { fontSize: 11, color: colors.muted, marginTop: 3 }]}>{n.date}</Text>
-              </View>
-            </Pressable>
-          ))}
+          {p.notifications.length === 0 ? (
+            <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18, paddingHorizontal: 15 }]}>받은 알림이 없습니다.</Text>
+          ) : (
+            p.notifications.map((n, i) => (
+              <Pressable
+                key={n.id}
+                onPress={() => p.onOpenNotification(n)}
+                accessibilityRole="button"
+                style={{
+                  flexDirection: "row",
+                  gap: 11,
+                  paddingVertical: 13,
+                  paddingHorizontal: 15,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: colors.subtle,
+                  backgroundColor: n.read ? "transparent" : colors.indigo[50],
+                }}
+              >
+                <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: n.iconBg, alignItems: "center", justifyContent: "center" }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: n.iconFg }} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[t, { fontSize: 13, color: colors.body, lineHeight: 20.2 }]}>
+                    <Text style={{ fontWeight: "700", color: colors.strong }}>{n.title}</Text> · {n.body}
+                  </Text>
+                  <Text style={[t, { fontSize: 11, color: colors.muted, marginTop: 3 }]}>{n.date}</Text>
+                </View>
+              </Pressable>
+            ))
+          )}
+        </View>
+
+        <SectionTitle style={{ paddingTop: 18 }}>북마크한 건의</SectionTitle>
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
+          {p.bookmarks.length === 0 ? (
+            <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18, paddingHorizontal: 15 }]}>북마크한 건의가 없습니다.</Text>
+          ) : (
+            p.bookmarks.map((b, i) => (
+              <Pressable
+                key={b.id}
+                onPress={() => p.onOpenPetition(b.id)}
+                accessibilityRole="button"
+                style={{ paddingVertical: 13, paddingHorizontal: 15, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.subtle }}
+              >
+                <Text numberOfLines={1} style={[t, { fontSize: 13, fontWeight: "700", color: colors.strong }]}>{b.title}</Text>
+              </Pressable>
+            ))
+          )}
         </View>
 
         <SectionTitle style={{ paddingTop: 18 }}>알림 설정</SectionTitle>

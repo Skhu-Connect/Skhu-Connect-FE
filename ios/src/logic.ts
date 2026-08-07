@@ -48,7 +48,7 @@ export function ddayLabel(p: Petition, now = Date.now()): string {
   return left > 0 ? `D-${left}` : "만료";
 }
 
-/** 등록 날짜(상세 "접수" 단계). `ANSWER.date` 와 같은 2026.05.22 꼴. */
+/** 등록 날짜(상세 "접수" 단계). 2026.05.22 꼴. */
 export function ymd(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -70,6 +70,6 @@ export function thresholdFor(basis: BasisLabel): number {
 
 /** 접수 → 검토중 → 답변 완료. 임계치를 넘는 순간 검토중으로 넘어간다. */
 export function statusOf(p: Petition, votes: Votes): StatusKey {
-  if (p.answered) return "answered";
+  if (p.status === "answered") return "answered";
   return count(p, votes) >= p.threshold ? "reviewing" : "received";
 }

@@ -11,6 +11,8 @@ export type IconName =
   | "x"
   | "heart"
   | "heartSolid"
+  | "bookmark"
+  | "bookmarkSolid"
   | "home"
   | "inbox"
   | "user"
@@ -96,6 +98,11 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       return <Path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" {...p} />;
     case "heartSolid":
       return <Path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" fill={color} stroke="none" />;
+    /* 북마크. 웹 src/components/ui/Icon.jsx 의 같은 이름 지오메트리(lucide bookmark)를 그대로 옮겼다. */
+    case "bookmark":
+      return <Path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" {...p} />;
+    case "bookmarkSolid":
+      return <Path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill={color} stroke="none" />;
     case "home":
       return (
         <>
