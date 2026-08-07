@@ -22,7 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Icon, type IconName } from "./icons";
 import { CAT_LABEL, type CategoryKey, type StatusKey } from "./data";
-import { colors, font, gradient, radius, shadow } from "./theme";
+import { colors, font, gradient, onVideo, radius, shadow } from "./theme";
 
 /* Hermes 의 Intl 유무에 기대지 않는 천단위 구분. */
 export function fmt(n: number): string {
@@ -146,18 +146,19 @@ export function Button({
 
 /* ───────────────────────── forms ───────────────────────── */
 
-function Label({ children }: { children: string }) {
+function Label({ children, dark }: { children: string; dark?: boolean }) {
   /* --text-label = 600 13/1.5 → lineHeight 는 절대값(13×1.5)으로 환산한다(M0-7 규칙). */
-  return <Text style={[base, { fontSize: 13, lineHeight: 19.5, fontWeight: "600", color: colors.strong, marginBottom: 6 }]}>{children}</Text>;
+  return <Text style={[base, { fontSize: 13, lineHeight: 19.5, fontWeight: "600", color: dark ? onVideo.text : colors.strong, marginBottom: 6 }]}>{children}</Text>;
 }
 
 /* 원본의 focus 링은 box-shadow 다. RN 에 대응이 없어 테두리 색 전환만 남겼다.
-   ponytail: 테두리 색 전환으로 충분 — 링이 필요해지면 겹 View 로 올린다. */
-const fieldBox = (focused: boolean): ViewStyle => ({
+   ponytail: 테두리 색 전환으로 충분 — 링이 필요해지면 겹 View 로 올린다.
+   dark 는 인증 화면의 영상 배경 위(웹 AuthLayout의 LIGHT_ON_VIDEO 토큰 교체와 같다) 전용이다. */
+const fieldBox = (focused: boolean, dark?: boolean): ViewStyle => ({
   borderWidth: 1.5,
-  borderColor: focused ? colors.indigo[400] : colors.line,
+  borderColor: dark ? (focused ? onVideo.borderFocus : onVideo.border) : focused ? colors.indigo[400] : colors.line,
   borderRadius: radius.md,
-  backgroundColor: colors.card,
+  backgroundColor: dark ? onVideo.surface : colors.card,
 });
 
 export function Input({
@@ -167,6 +168,7 @@ export function Input({
   placeholder,
   secureTextEntry,
   keyboardType,
+  dark,
 }: {
   label?: string;
   value: string;
@@ -174,24 +176,26 @@ export function Input({
   placeholder?: string;
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
+  /** 영상 배경 위(인증 화면)에서 흰 글자·반투명 테두리로 그린다. */
+  dark?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   return (
     <View>
-      {label ? <Label>{label}</Label> : null}
-      <View style={[fieldBox(focused), { paddingHorizontal: 14 }]}>
+      {label ? <Label dark={dark}>{label}</Label> : null}
+      <View style={[fieldBox(focused, dark), { paddingHorizontal: 14 }]}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={dark ? onVideo.muted : colors.muted}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize="none"
           autoCorrect={false}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={[base, { paddingVertical: 12, fontSize: 14, color: colors.strong }]}
+          style={[base, { paddingVertical: 12, fontSize: 14, color: dark ? onVideo.text : colors.strong }]}
         />
       </View>
     </View>
@@ -227,27 +231,30 @@ export function Select({
   value,
   onChange,
   placeholder = "선택하세요",
+  dark,
 }: {
   label?: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  /** 영상 배경 위(인증 화면)에서 흰 글자·반투명 테두리로 그린다. 펼쳐지는 시트는 그대로 밝게 유지한다. */
+  dark?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <View>
-      {label ? <Label>{label}</Label> : null}
+      {label ? <Label dark={dark}>{label}</Label> : null}
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityValue={{ text: value || placeholder }}
-        style={[fieldBox(false), { flexDirection: "row", alignItems: "center", paddingLeft: 15, paddingRight: 14, paddingVertical: 12 }]}
+        style={[fieldBox(false, dark), { flexDirection: "row", alignItems: "center", paddingLeft: 15, paddingRight: 14, paddingVertical: 12 }]}
       >
-        <Text style={[base, { flex: 1, fontSize: 14, color: value ? colors.strong : colors.muted }]}>{value || placeholder}</Text>
-        <Icon name="chevronDown" size={16} color={colors.muted} />
+        <Text style={[base, { flex: 1, fontSize: 14, color: dark ? (value ? onVideo.text : onVideo.muted) : value ? colors.strong : colors.muted }]}>{value || placeholder}</Text>
+        <Icon name="chevronDown" size={16} color={dark ? onVideo.muted : colors.muted} />
       </Pressable>
 
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>

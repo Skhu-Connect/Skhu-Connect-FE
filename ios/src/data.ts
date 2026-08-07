@@ -44,14 +44,19 @@ export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "department", label: "학부" },
 ];
 
-/** 로그인 화면의 학부/전공 선택지. 학교 포털의 전공 목록을 그대로 옮겼다. */
-export const MAJORS: string[] = [
+/** 회원가입 화면의 소속 학부 선택지. 웹과 같은 11개 목록(src/api/mockDb.js DEPARTMENTS, 이슈 #16 결정). */
+export const DEPARTMENTS: string[] = [
+  "인문융합콘텐츠학부",
   "경영학부",
-  "미디어콘텐츠융합학부(미디어콘텐츠융합자율학부)",
+  "사회융합학부",
+  "미디어콘텐츠융합학부",
   "미래융합학부",
-  "사회융합학부(사회융합자율학부)",
-  "소프트웨어융합학부(IT융합자율학부)",
-  "인문융합콘텐츠학부(인문융합자율학부)",
+  "소프트웨어융합학부",
+  "국제학부",
+  "인문융합자율학부",
+  "사회융합자율학부",
+  "미디어콘텐츠융합자율학부",
+  "IT융합자율학부",
 ];
 
 export const BASIS_NOTE: Record<BasisLabel, string> = {

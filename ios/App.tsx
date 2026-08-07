@@ -10,6 +10,7 @@ import { basisFor, thresholdFor, visibleList, type Sort, type Tab, type Votes } 
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
 import { LoginScreen } from "./src/screens/Login";
+import { SignupScreen } from "./src/screens/Signup";
 import { MyScreen } from "./src/screens/My";
 import { SubmitScreen, categoryOf } from "./src/screens/Submit";
 import { ShareSheet, TabBar, Toast } from "./src/shell";
@@ -31,6 +32,7 @@ function petitionIdFromUrl(url: string | null): number | null {
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
+  const [authScreen, setAuthScreen] = useState<"login" | "signup">("login");
   const [screen, setScreen] = useState<Screen>("feed");
   const [tab, setTab] = useState<Tab>("home");
 
@@ -176,6 +178,7 @@ export default function App() {
 
   const onLogout = useCallback(() => {
     setAuthed(false);
+    setAuthScreen("login");
     setScreen("feed");
     setTab("home");
     setVotes({});
@@ -194,7 +197,11 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <StatusBar style="light" />
-        <LoginScreen deepTitle={deepPetition?.title} onLogin={onLogin} />
+        {authScreen === "login" ? (
+          <LoginScreen deepTitle={deepPetition?.title} onLogin={onLogin} onSignup={() => setAuthScreen("signup")} />
+        ) : (
+          <SignupScreen onBack={() => setAuthScreen("login")} onSignup={onLogin} />
+        )}
       </SafeAreaProvider>
     );
   }

@@ -33,7 +33,8 @@
           "image": "./assets/icon.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-video"
     ]
   }
 }
