@@ -89,7 +89,7 @@ export default function MyPageScreen() {
   };
 
   const mineCount = petitions.filter((p) => p.mine).length;
-  const voteCount = Object.keys(voted).length;
+  const voteCount = Object.values(voted).filter(Boolean).length;
   const answeredCount = petitions.filter((p) => p.mine && p.answer).length;
   const unread = notifications.filter((n) => !n.read).length;
 
