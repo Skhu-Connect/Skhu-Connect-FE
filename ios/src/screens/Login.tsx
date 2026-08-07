@@ -1,10 +1,11 @@
 /* 로그인. 웹(src/pages/web/LoginScreen.jsx)과 필드·문구·이동 링크를 맞춘다 — 아이디+비밀번호만,
-   학부 선택은 회원가입에만 있다(이전 버전의 학부 선택 입력은 웹에 없는 필드라 걷어냈다). */
+   학부 선택은 회원가입에만 있다(이전 버전의 학부 선택 입력은 웹에 없는 필드라 걷어냈다).
+   흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(authShell 의 onVideo 팔레트). */
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { AuthShell } from "../authShell";
+import { AuthShell, onVideo } from "../authShell";
 import { Button, Input } from "../ui";
-import { colors, font, radius, shadow } from "../theme";
+import { colors, font, radius } from "../theme";
 
 export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: string; onLogin: () => void; onSignup: () => void }) {
   const [sid, setSid] = useState("");
@@ -22,7 +23,7 @@ export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: stri
 
   return (
     <AuthShell>
-      <View style={[{ backgroundColor: "#fff", borderRadius: 24, paddingVertical: 22, paddingHorizontal: 20, gap: 14 }, shadow.lg]}>
+      <View style={{ gap: 14 }}>
         {deepTitle ? (
           <View style={{ backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 13, paddingHorizontal: 14, gap: 6 }}>
             <Text style={[{ fontFamily: font }, { fontSize: 11, fontWeight: "800", color: colors.indigo[600], letterSpacing: 0.44 }]}>에타 공유 링크로 접속</Text>
@@ -31,24 +32,24 @@ export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: stri
           </View>
         ) : null}
 
-        <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: colors.strong }]}>로그인</Text>
+        <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>로그인</Text>
 
-        <Input label="아이디" value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" />
-        <Input label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
+        <Input dark label="아이디" value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" />
+        <Input dark label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
         {error ? (
-          <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: colors.danger }]}>{error}</Text>
+          <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{error}</Text>
         ) : null}
         <Button variant="primary" size="lg" block onPress={submit}>
           {deepTitle ? "로그인하고 공감하기" : "로그인"}
         </Button>
 
         <Pressable onPress={onSignup} accessibilityRole="button" style={{ alignItems: "center" }}>
-          <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: colors.muted }]}>
-            아직 계정이 없으신가요? <Text style={{ color: colors.indigo[600], fontWeight: "700" }}>회원가입</Text>
+          <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>
+            아직 계정이 없으신가요? <Text style={{ color: onVideo.link, fontWeight: "700" }}>회원가입</Text>
           </Text>
         </Pressable>
 
-        <Text style={[{ fontFamily: font }, { textAlign: "center", fontSize: 12, color: colors.muted, lineHeight: 18 }]}>
+        <Text style={[{ fontFamily: font }, { textAlign: "center", fontSize: 12, color: onVideo.muted, lineHeight: 18 }]}>
           재학생 인증을 통해 당신의 목소리를 들려주세요
         </Text>
       </View>

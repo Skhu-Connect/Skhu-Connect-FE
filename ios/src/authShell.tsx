@@ -8,9 +8,19 @@ import { AccessibilityInfo, Image, KeyboardAvoidingView, Pressable, ScrollView, 
 import { useVideoPlayer, VideoView } from "expo-video";
 import Svg, { Path, Rect } from "react-native-svg";
 import { LogoMark } from "./ui";
-import { font } from "./theme";
+import { colors, font } from "./theme";
 
 const FILL = { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0 };
+
+/* 인증 화면 전용 팔레트 — 웹 AuthLayout 의 LIGHT_ON_VIDEO 토큰 교체와 같다. 흰 카드를 없애고
+   폼이 영상 위에 직접 앉으므로, DS 프리미티브(Input·Select)에 안 실리는 일반 텍스트(제목·에러·
+   보조문구·링크)는 화면에서 이 팔레트로 직접 칠한다. */
+export const onVideo = {
+  text: "#fff",
+  muted: "rgba(255,255,255,.84)",
+  link: colors.indigo[200],
+  danger: "#ff8a92",
+};
 
 export function AuthShell({ children }: { children: ReactNode }) {
   const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
