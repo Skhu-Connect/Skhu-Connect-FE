@@ -6,9 +6,7 @@
    admin 콘솔(listAdminPetitions/listOwners/listNotifLogs/answerPetition)은 백엔드에 대응
    엔드포인트가 없어 여전히 mockDb.js 의 adminDb 로 동작한다 — 학생 웹 실 청원과는 별개 데이터셋.
    getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
-   로컬 상태로만 유지한다(새로고침하면 초기화). listMyComments 는 "내 댓글 전체" 를 청원 횡단으로
-   모아 주는 엔드포인트가 없어 빈 배열을 돌려준다(더미 데이터로 존재하지 않는 청원 id 를 가리키면
-   클릭 시 404 로 이어지므로, 있는 척하는 것보다 없다고 하는 편이 낫다). */
+   로컬 상태로만 유지한다(새로고침하면 초기화). */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 
@@ -98,37 +96,27 @@ function formatRelative(iso) {
 }
 
 /* ───────────────── voted/bookmarked/mine 파생 ─────────────────
-   서버 청원 응답에는 voted/bookmarked 가 없다. 로그인 시 내 공감·북마크 id 집합을 받아 캐시하고
-   토글할 때 그 캐시를 직접 갱신한다. mine 은 서버가 아예 소유자를 안 줘서(익명 설계) 이 브라우저가
-   만든 청원 id 를 localStorage 에 쌓아 근사한다 — 다른 기기에서는 안 보이는 게 알려진 한계다. */
+   서버 청원 응답에는 voted/bookmarked/mine 이 없다. 로그인 시 내 공감·북마크·작성 청원 id 집합을
+   `/users/me/agreements`·`/users/me/bookmarks`·`/users/me/petitions` 로 각각 받아 캐시하고,
+   토글·등록할 때 그 캐시를 직접 갱신한다. */
 
 let votedIds = new Set();
 let bookmarkedIds = new Set();
+let mineIds = new Set();
 let flagsLoaded = false;
-
-const MINE_KEY = "skhu:minePetitionIds";
-function loadMineIds() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(MINE_KEY) ?? "[]"));
-  } catch {
-    return new Set();
-  }
-}
-const mineIds = loadMineIds();
-function saveMineIds() {
-  localStorage.setItem(MINE_KEY, JSON.stringify([...mineIds]));
-}
 
 async function ensureFlags() {
   if (flagsLoaded || !accessToken) return;
   flagsLoaded = true;
   try {
-    const [agreements, bookmarks] = await Promise.all([
+    const [agreements, bookmarks, mine] = await Promise.all([
       apiFetch("/connect/users/me/agreements?size=200"),
       apiFetch("/connect/users/me/bookmarks?size=200"),
+      apiFetch("/connect/users/me/petitions?size=200"),
     ]);
     votedIds = new Set((agreements?.content ?? []).map((p) => p.id));
     bookmarkedIds = new Set((bookmarks?.content ?? []).map((p) => p.id));
+    mineIds = new Set((mine?.content ?? []).map((p) => p.id));
   } catch {
     flagsLoaded = false; // 다음 호출에서 재시도
   }
@@ -138,6 +126,7 @@ function resetSessionCaches() {
   flagsLoaded = false;
   votedIds = new Set();
   bookmarkedIds = new Set();
+  mineIds = new Set();
 }
 
 /* ───────────────── 세션 ───────────────── */
@@ -270,8 +259,7 @@ export async function createPetition({ category: categoryKey, title, body }) {
   if (!t) throw new Error("제목을 입력해 주세요.");
   if (!b) throw new Error("건의 내용을 입력해 주세요.");
   const raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
-  mineIds.add(raw.id);
-  saveMineIds();
+  mineIds.add(raw.id); // 서버 재조회를 기다리지 않고 즉시 반영(다음 ensureFlags 가 어차피 같은 값으로 확정)
   return adaptPetition(raw);
 }
 
@@ -321,9 +309,18 @@ export async function addComment(petitionId, body) {
   return adaptComment(raw);
 }
 
-/** 청원 횡단 "내 댓글" 전체를 모아 주는 엔드포인트가 없다(N+1 없이는 불가능). 빈 목록. */
+/** GET /users/me/comments 는 petitionId + 댓글만 준다(청원 제목은 없다) — title 은 빈 문자열로
+    둔다(N+1 로 청원마다 제목을 따로 불러오지 않는다). 이동 링크·본문·시간은 전부 실 데이터다. */
 export async function listMyComments() {
-  return [];
+  if (!accessToken) return [];
+  const data = await apiFetch("/connect/users/me/comments?size=100");
+  return (data?.content ?? []).map(({ petitionId, comment }) => ({
+    id: comment.id,
+    petitionId,
+    title: "",
+    body: comment.content,
+    date: formatRelative(comment.createdAt),
+  }));
 }
 
 /* ───────────────── 카테고리 · 담당자 (학생/관리자 공용, 클라이언트 상수) ───────────────── */

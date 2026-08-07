@@ -49,11 +49,13 @@
   (403/409 가능) — Admin 답변 기능 아님, 그냥 본인 글 수정·삭제.
 - **관리자 답변(`answerPetition`) 엔드포인트가 없다.** 관리자 콘솔은 이번 라운드 범위 밖 — 계속 mock.
 
-### voted / bookmarked 파생
+### voted / bookmarked / mine 파생
 
-목록·상세 응답에 없으므로, 로그인 시 `GET /connect/users/me/agreements`·`GET /connect/users/me/bookmarks`
-(둘 다 `PetitionPageResponse`, size 를 크게 줘서 한 번에 가져온다 — 페이지네이션 UI는 범위 밖)를 불러
-`Set<petitionId>` 를 만들고 `src/stores/petitions.js` 의 기존 `voted`/`bookmarked` Set 자리에 채운다.
+목록·상세 응답에 없으므로, 로그인 시 `GET /connect/users/me/agreements`·`GET /connect/users/me/bookmarks`·
+`GET /connect/users/me/petitions`(셋 다 `PetitionPageResponse`, size 를 크게 줘서 한 번에 가져온다 —
+페이지네이션 UI는 범위 밖)를 불러 `Set<petitionId>` 를 만들고 `src/stores/petitions.js` 의 기존
+`voted`/`bookmarked` Set 자리에 채운다. `GET /connect/users/me/petitions` 가 "내가 쓴 청원"을 정확히
+주므로 `mine` 도 이걸로 판정한다(localStorage 근사 아님 — 다른 기기에서도 정확하다).
 공감/북마크 토글 성공 시 그 Set 을 갱신(기존 mock 로직과 동일 패턴).
 
 - `POST/DELETE /connect/petitions/{id}/agreements` → 201 `AgreementResponse{petitionId,agreementCount,status}`
@@ -74,6 +76,9 @@
   연동해도 충분 — 있으면 좋지만 필수는 아님).
 - `POST/DELETE .../comments/{commentId}/likes` → `CommentLikeResponse{commentId,likeCount,liked}` (mock 의
   댓글 `votes` 는 읽기 전용이었는데 이제 좋아요 토글이 가능해진다 — 추가 기능, 범위 밖이어도 무방).
+- **마이페이지 "내가 쓴 댓글"**: `GET /connect/users/me/comments?page&size` →
+  `UserCommentPageResponse{content:[{petitionId, comment:CommentResponse}]}` — 청원 횡단으로 한 번에
+  가져온다(N+1 아님). 단 **청원 제목은 안 준다** — 제목 없이 본문·이동 링크만 채운다.
 
 ## 알림
 

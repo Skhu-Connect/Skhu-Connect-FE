@@ -283,11 +283,10 @@ Admin 테이블 `Row` 와 `AnswerModal`, `Owners` 카드가 이들을 쓴다. Ph
   `PetitionQueryResponse.expiresAt` 기준으로 다시 계산한다. `src/api/selfcheck.js`(임계치 전이 assert)는
   그 로직이 서버로 넘어가므로 폐기 대상 — 6-1 에서 지우고 README "실행" 절의
   `node src/api/selfcheck.js` 안내도 같이 지운다.
-- **`/mine`("내 건의") 판정**: `PetitionResponse`/`Query` 어디에도 작성자·소유 플래그가 없다(익명성이
-  설계 의도 — 서버조차 목록에서 소유자를 안 준다). 재논의 대상이 아니라 근사로 처리한다 —
-  **`createPetition` 성공 응답의 id 를 `localStorage` 에 클라이언트가 직접 쌓아 "내가 이 브라우저에서
-  만든 청원" 집합으로 `/mine` 을 채운다.** 다른 기기·브라우저에서는 안 보이는 게 알려진 한계이고, 서버가
-  owner 조회 엔드포인트를 주기 전까지 더 나은 방법이 없다.
+- **`/mine`("내 건의") 판정**: `PetitionResponse`/`Query` 자체에는 작성자·소유 플래그가 없지만(익명성이
+  설계 의도), **`GET /connect/users/me/petitions` 가 정확히 "내가 쓴 청원"을 준다** — 계획 초안은 이
+  엔드포인트를 놓치고 `localStorage` id 집합으로 근사하려 했으나(6-1 code-reviewer 가 지적), 실제로는
+  로그인 시 이 엔드포인트로 `mineIds` Set 을 채운다. 다른 기기·브라우저에서도 정확하다.
 - **알림 설정 3종 토글**(`prefs.threshold/answer/empathy`)과 `getPrefs`/`savePrefs`: 대응 엔드포인트가
   없다(사용자 지시로 범위 밖). `src/api/index.js` 에서 이 두 함수는 fetch 로 바꾸지 않고 **로컬 상태로만
   유지**한다(껍데기만 async) — 새로고침하면 초기화되는 게 알려진 한계.
