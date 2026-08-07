@@ -6,9 +6,11 @@
    admin 콘솔(listAdminPetitions/listOwners/listNotifLogs/answerPetition)은 백엔드에 대응
    엔드포인트가 없어 여전히 mockDb.js 의 adminDb 로 동작한다 — 학생 웹 실 청원과는 별개 데이터셋.
    getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
-   로컬 상태로만 유지한다(새로고침하면 초기화). listMyComments 는 "내 댓글 전체" 를 청원 횡단으로
-   모아 주는 엔드포인트가 없어 빈 배열을 돌려준다(더미 데이터로 존재하지 않는 청원 id 를 가리키면
-   클릭 시 404 로 이어지므로, 있는 척하는 것보다 없다고 하는 편이 낫다). */
+   로컬 상태로만 유지한다(새로고침하면 초기화).
+
+   청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 댓글 수정/삭제(PUT·DELETE
+   .../comments/{id}), 비밀번호 재설정(POST /connect/auth/password/reset)은 백엔드엔 있지만
+   화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이 없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것. */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 
@@ -98,37 +100,27 @@ function formatRelative(iso) {
 }
 
 /* ───────────────── voted/bookmarked/mine 파생 ─────────────────
-   서버 청원 응답에는 voted/bookmarked 가 없다. 로그인 시 내 공감·북마크 id 집합을 받아 캐시하고
-   토글할 때 그 캐시를 직접 갱신한다. mine 은 서버가 아예 소유자를 안 줘서(익명 설계) 이 브라우저가
-   만든 청원 id 를 localStorage 에 쌓아 근사한다 — 다른 기기에서는 안 보이는 게 알려진 한계다. */
+   서버 청원 응답에는 voted/bookmarked/mine 이 없다. 로그인 시 내 공감·북마크·작성 청원 id 집합을
+   /connect/users/me/{agreements,bookmarks,petitions} 로 받아 캐시하고, 토글·등록할 때 그 캐시를
+   직접 갱신한다. size 는 100 초과 시 서버가 400("Invalid user activity page request")을 낸다. */
 
 let votedIds = new Set();
 let bookmarkedIds = new Set();
+let myPetitionIds = new Set();
 let flagsLoaded = false;
-
-const MINE_KEY = "skhu:minePetitionIds";
-function loadMineIds() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(MINE_KEY) ?? "[]"));
-  } catch {
-    return new Set();
-  }
-}
-const mineIds = loadMineIds();
-function saveMineIds() {
-  localStorage.setItem(MINE_KEY, JSON.stringify([...mineIds]));
-}
 
 async function ensureFlags() {
   if (flagsLoaded || !accessToken) return;
   flagsLoaded = true;
   try {
-    const [agreements, bookmarks] = await Promise.all([
-      apiFetch("/connect/users/me/agreements?size=200"),
-      apiFetch("/connect/users/me/bookmarks?size=200"),
+    const [agreements, bookmarks, mine] = await Promise.all([
+      apiFetch("/connect/users/me/agreements?size=100"),
+      apiFetch("/connect/users/me/bookmarks?size=100"),
+      apiFetch("/connect/users/me/petitions?size=100"),
     ]);
     votedIds = new Set((agreements?.content ?? []).map((p) => p.id));
     bookmarkedIds = new Set((bookmarks?.content ?? []).map((p) => p.id));
+    myPetitionIds = new Set((mine?.content ?? []).map((p) => p.id));
   } catch {
     flagsLoaded = false; // 다음 호출에서 재시도
   }
@@ -138,6 +130,7 @@ function resetSessionCaches() {
   flagsLoaded = false;
   votedIds = new Set();
   bookmarkedIds = new Set();
+  myPetitionIds = new Set();
 }
 
 /* ───────────────── 세션 ───────────────── */
@@ -237,7 +230,7 @@ function adaptPetition(raw) {
     comments: 0,
     views: 0,
     date: expired || daysLeft == null ? (expired ? "만료" : "") : daysLeft > 0 ? `D-${daysLeft}` : "만료",
-    mine: mineIds.has(raw.id),
+    mine: myPetitionIds.has(raw.id),
     voted: votedIds.has(raw.id),
     bookmarked: bookmarkedIds.has(raw.id),
     expired,
@@ -270,8 +263,7 @@ export async function createPetition({ category: categoryKey, title, body }) {
   if (!t) throw new Error("제목을 입력해 주세요.");
   if (!b) throw new Error("건의 내용을 입력해 주세요.");
   const raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
-  mineIds.add(raw.id);
-  saveMineIds();
+  myPetitionIds.add(raw.id);
   return adaptPetition(raw);
 }
 
@@ -304,26 +296,37 @@ export async function toggleBookmark(id) {
 
 /* ───────────────── 댓글 ───────────────── */
 
+/** replies 는 root 댓글에만 온다(1단계 대댓글 — 서버가 대댓글의 대댓글을 지원하지 않는다). */
 function adaptComment(c) {
-  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), votes: c.likeCount, mine: c.myComment };
+  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), votes: c.likeCount, mine: c.myComment, liked: c.liked, replies: (c.replies ?? []).map(adaptComment) };
 }
 
 export async function listComments(petitionId) {
   const data = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments?size=100`, { auth: false });
-  // 1단계 대댓글(replies)은 이번 라운드 범위 밖 — root 댓글만 노출한다.
   return (data?.content ?? []).map(adaptComment);
 }
 
-export async function addComment(petitionId, body) {
+/** parentCommentId 를 주면 그 root 댓글의 대댓글로 등록한다. */
+export async function addComment(petitionId, body, parentCommentId = null) {
   const text = String(body ?? "").trim();
   if (!text) throw new Error("댓글 내용을 입력해 주세요.");
-  const raw = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments`, { method: "POST", body: { content: text } });
+  const raw = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments`, { method: "POST", body: { content: text, parentCommentId } });
   return adaptComment(raw);
 }
 
-/** 청원 횡단 "내 댓글" 전체를 모아 주는 엔드포인트가 없다(N+1 없이는 불가능). 빈 목록. */
+/** liked 는 캐시하지 않고 목록 응답의 CommentResponse.liked 를 그대로 쓴다 — 호출부가 넘겨준다. */
+export async function toggleCommentLike(petitionId, commentId, liked) {
+  const res = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments/${Number(commentId)}/likes`, { method: liked ? "DELETE" : "POST" });
+  return { votes: res.likeCount, liked: res.liked };
+}
+
+function adaptMyComment(uc) {
+  return { id: uc.comment.id, petitionId: uc.petitionId, title: "", body: uc.comment.content, date: formatRelative(uc.comment.createdAt) };
+}
+
 export async function listMyComments() {
-  return [];
+  const data = await apiFetch("/connect/users/me/comments?size=100");
+  return (data?.content ?? []).map(adaptMyComment);
 }
 
 /* ───────────────── 카테고리 · 담당자 (학생/관리자 공용, 클라이언트 상수) ───────────────── */
@@ -350,6 +353,10 @@ export async function listNotifications() {
 export async function markAllNotifRead() {
   await apiFetch("/connect/notifications/read-all", { method: "PATCH" });
   return listNotifications();
+}
+
+export async function markNotifRead(id) {
+  await apiFetch(`/connect/notifications/${Number(id)}/read`, { method: "PATCH" });
 }
 
 /* ───────────────── 관리자 콘솔 (백엔드 미지원 — mockDb.adminDb 로 계속 동작) ───────────────── */

@@ -66,6 +66,7 @@ export default function MyPageScreen() {
   const voted = usePetitions((s) => s.voted);
   const notifications = usePetitions((s) => s.notifications);
   const markAllNotifRead = usePetitions((s) => s.markAllNotifRead);
+  const markNotifRead = usePetitions((s) => s.markNotifRead);
   const myComments = usePetitions((s) => s.myComments);
   const loadMyComments = usePetitions((s) => s.loadMyComments);
 
@@ -140,7 +141,10 @@ export default function MyPageScreen() {
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => navigate(`/p/${n.petitionId}`)}
+                  onClick={() => {
+                    if (!n.read) markNotifRead(n.id);
+                    navigate(`/p/${n.petitionId}`);
+                  }}
                   style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "13px 18px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
                 >
                   <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: m.bg, color: m.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>

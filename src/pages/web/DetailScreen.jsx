@@ -49,11 +49,42 @@ function AdminAnswer({ a }) {
   );
 }
 
+function CommentRow({ c, reply, onToggleLike }) {
+  return (
+    <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "1px solid var(--border-subtle)", marginLeft: reply ? 48 : 0 }}>
+      <Avatar name="익" size={reply ? 30 : 36} />
+      <div style={{ flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontWeight: 700, fontSize: 13.5, color: "var(--text-strong)" }}>{c.author}</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{c.date}</span>
+        </div>
+        <p style={{ margin: "5px 0 0", fontSize: 14, color: "var(--text-body)", lineHeight: 1.6 }}>{c.body}</p>
+      </div>
+      <button
+        type="button"
+        aria-label={`댓글 공감 ${c.votes}`}
+        aria-pressed={!!c.liked}
+        onClick={() => onToggleLike(c.id)}
+        style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, color: c.liked ? "var(--coral-500)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700, fontSize: 12 }}
+      >
+        <Icon name="heart" size={16} />
+        {c.votes}
+      </button>
+    </div>
+  );
+}
+
 function CommentsSection({ petitionId }) {
   const comments = usePetitions((s) => s.commentsById[petitionId]);
   const addComment = usePetitions((s) => s.addComment);
+  const toggleCommentLike = usePetitions((s) => s.toggleCommentLike);
   const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
+  const [replyText, setReplyText] = useState("");
   const list = comments ?? [];
+  // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
+  const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
+  const toggleLike = (id) => toggleCommentLike(petitionId, id);
 
   const add = async () => {
     if (!text.trim()) return;
@@ -61,24 +92,44 @@ function CommentsSection({ petitionId }) {
     setText("");
   };
 
+  const addReply = async (parentId) => {
+    if (!replyText.trim()) return;
+    await addComment(petitionId, replyText, parentId);
+    setReplyText("");
+    setReplyTo(null);
+  };
+
   return (
     <>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", margin: "0 0 4px" }}>댓글 {list.length}</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", margin: "0 0 4px" }}>댓글 {total}</h2>
       <Card>
         {list.map((c) => (
-          <div key={c.id} style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "1px solid var(--border-subtle)" }}>
-            <Avatar name="익" size={36} />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 13.5, color: "var(--text-strong)" }}>{c.author}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{c.date}</span>
-              </div>
-              <p style={{ margin: "5px 0 0", fontSize: 14, color: "var(--text-body)", lineHeight: 1.6 }}>{c.body}</p>
-            </div>
-            <button type="button" aria-label={`댓글 공감 ${c.votes}`} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, color: "var(--coral-500)", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
-              <Icon name="heart" size={16} />
-              {c.votes}
+          <div key={c.id}>
+            <CommentRow c={c} onToggleLike={toggleLike} />
+            <button
+              type="button"
+              onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", margin: "8px 0 8px 48px" }}
+            >
+              답글달기
             </button>
+            {(c.replies ?? []).map((r) => (
+              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} />
+            ))}
+            {replyTo === c.id && (
+              <div style={{ display: "flex", gap: 10, marginLeft: 48, paddingBottom: 14 }}>
+                <input
+                  autoFocus
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addReply(c.id)}
+                  placeholder="답글을 입력하세요"
+                  aria-label="답글 입력"
+                  style={{ flex: 1, border: "1.5px solid var(--border-strong)", borderRadius: "var(--radius-pill)", padding: "9px 16px", fontFamily: "var(--font-sans)", fontSize: 13.5, outline: "none" }}
+                />
+                <Button variant="primary" size="sm" disabled={!replyText.trim()} onClick={() => addReply(c.id)}>등록</Button>
+              </div>
+            )}
           </div>
         ))}
         <div style={{ display: "flex", gap: 10, paddingTop: 14 }}>

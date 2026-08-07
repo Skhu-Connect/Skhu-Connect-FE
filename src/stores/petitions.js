@@ -11,7 +11,7 @@ const upsert = (list, p) => (list.some((x) => x.id === p.id) ? list.map((x) => (
 const flags = (list, key) => Object.fromEntries(list.filter((p) => p[key]).map((p) => [p.id, true]));
 const answers = (list) => Object.fromEntries(list.filter((p) => p.answer).map((p) => [p.id, p.answer]));
 
-export const usePetitions = create((set) => ({
+export const usePetitions = create((set, get) => ({
   petitions: [],
   categories: [],
   owners: [],
@@ -103,12 +103,19 @@ export const usePetitions = create((set) => ({
     return p;
   },
 
-  addComment: async (petitionId, body) => {
-    const c = await api.addComment(petitionId, body);
-    set((s) => ({
-      commentsById: { ...s.commentsById, [petitionId]: [...(s.commentsById[petitionId] ?? []), c] },
-      petitions: s.petitions.map((p) => (p.id === Number(petitionId) ? { ...p, comments: p.comments + 1 } : p)),
-    }));
+  /** parentCommentId 를 주면 그 root 댓글 아래 대댓글로 붙인다. */
+  addComment: async (petitionId, body, parentCommentId = null) => {
+    const c = await api.addComment(petitionId, body, parentCommentId);
+    set((s) => {
+      const list = s.commentsById[petitionId] ?? [];
+      const nextList = parentCommentId
+        ? list.map((root) => (root.id === parentCommentId ? { ...root, replies: [...(root.replies ?? []), c] } : root))
+        : [...list, c];
+      return {
+        commentsById: { ...s.commentsById, [petitionId]: nextList },
+        petitions: s.petitions.map((p) => (p.id === Number(petitionId) ? { ...p, comments: p.comments + 1 } : p)),
+      };
+    });
     return c;
   },
 
@@ -122,6 +129,27 @@ export const usePetitions = create((set) => ({
   markAllNotifRead: async () => {
     const notifications = await api.markAllNotifRead();
     set({ notifications });
+  },
+
+  markNotifRead: async (id) => {
+    await api.markNotifRead(id);
+    set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) }));
+  },
+
+  /** commentId 는 root 댓글이거나 그 밑 대댓글 중 하나일 수 있다 — 둘 다 뒤져서 patch 한다. */
+  toggleCommentLike: async (petitionId, commentId) => {
+    const list = get().commentsById[petitionId] ?? [];
+    const flat = list.flatMap((c) => [c, ...(c.replies ?? [])]);
+    const c = flat.find((x) => x.id === commentId);
+    const { votes, liked } = await api.toggleCommentLike(petitionId, commentId, !!c?.liked);
+    set((s) => ({
+      commentsById: {
+        ...s.commentsById,
+        [petitionId]: (s.commentsById[petitionId] ?? []).map((root) =>
+          root.id === commentId ? { ...root, votes, liked } : { ...root, replies: (root.replies ?? []).map((r) => (r.id === commentId ? { ...r, votes, liked } : r)) }
+        ),
+      },
+    }));
   },
 
   loadMyComments: async () => {
