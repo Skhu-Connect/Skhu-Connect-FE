@@ -251,6 +251,140 @@ Admin 테이블 `Row` 와 `AnswerModal`, `Owners` 카드가 이들을 쓴다. Ph
 
 ---
 
+## Phase 6 — 백엔드 연동 (2026-08-07 추가)
+
+**목표** — 로그인한 학생이 실 백엔드(`skhu-connect-be-production.up.railway.app`)로 회원가입(이메일 인증)·
+로그인·로그아웃·토큰 재발급을 거쳐, 실제 청원 피드·상세·댓글 등록·공감·북마크·알림·학부 선택까지 전 구간을
+목 데이터 없이 쓸 수 있다. 이름(name) 필드는 서버에 없으므로 헤더·마이페이지에서 제거하고 그 자리를
+새로 디자인한다.
+
+원본은 `docs/api-spec.md`(mock 계약과의 차이) + `README.md` "API 계약"·"연동 시 반드시 닫아야 할 항목"
+절이다. 여기서는 그 위에서 크로스 트랙 의존과 이슈 분할만 정한다 — 계약 자체를 다시 옮기지 않는다.
+
+### 결정 사항 (여기서 확정 — 화면 이슈에서 재논의하지 않는다)
+
+- **토큰 저장**: access token 은 `stores/session.js` zustand 메모리에만 둔다(`localStorage` 0건, README
+  보안 항목 2). `POST /connect/auth/login`·`/signup`·`/token/refresh` 응답의 `accessToken` 을 세션에
+  얹고, 모든 `src/api/` fetch 는 `Authorization: Bearer` 헤더를 붙인다. `refreshToken` 은 서버
+  Set-Cookie 로만 오가므로 **모든 fetch 호출에 `credentials: 'include'`** 를 건다 — 이게 빠지면 재발급·
+  로그아웃이 조용히 401 로 죽는다. Vercel(프론트)↔Railway(백엔드) 크로스 오리진이라 백엔드 CORS 가 그
+  오리진에 `Access-Control-Allow-Credentials: true` 를 실제로 내리는지 6-1 완료 조건에 넣는다.
+- **로그인 실패 문구**: 서버가 뭘 던지든(`title` 문구 포함) `LoginScreen` 은 지금처럼 고정 문구 하나로
+  감싼다(README 보안 항목 6, 이미 코드가 그렇게 돼 있다 — 유지만 하면 됨).
+- **카테고리 메타(라벨·임계치 기준문구·담당자)**: 서버에 대응 엔드포인트가 없으므로 `mockDb.js` 의
+  `categories[]` 값을 `src/api/` 안의 클라이언트 상수로 남긴다(`ponytail: /connect/categories 생기면
+  교체`). `targetAgreementCount` 는 서버 값을 쓴다. `category` enum 매핑(`dorm`→`DORMITORY`, 나머지는
+  대문자 변환)도 여기서 흡수한다.
+- **`voted`/`bookmarked` 파생**: 로그인 시 `GET /users/me/agreements`·`GET /users/me/bookmarks` 를 큰
+  `size` 로 불러 id 집합을 만들고, 기존 `petitions` 스토어의 `voted`/`bookmarked` 오브젝트 맵 자리에
+  채운다(스토어 구조는 안 바뀐다 — 값의 출처만 바뀐다).
+- **만료 판정**: 클라이언트가 `createdAt`+30일로 계산하던 `expired`(Phase 5-3)를 버리고 서버
+  `status: EXPIRED` 를 그대로 쓴다. D-day 라벨은 `PetitionResponse.agreementDeadline`/
+  `PetitionQueryResponse.expiresAt` 기준으로 다시 계산한다. `src/api/selfcheck.js`(임계치 전이 assert)는
+  그 로직이 서버로 넘어가므로 폐기 대상 — 6-1 에서 지우고 README "실행" 절의
+  `node src/api/selfcheck.js` 안내도 같이 지운다.
+- **`/mine`("내 건의") 판정**: `PetitionResponse`/`Query` 어디에도 작성자·소유 플래그가 없다(익명성이
+  설계 의도 — 서버조차 목록에서 소유자를 안 준다). 재논의 대상이 아니라 근사로 처리한다 —
+  **`createPetition` 성공 응답의 id 를 `localStorage` 에 클라이언트가 직접 쌓아 "내가 이 브라우저에서
+  만든 청원" 집합으로 `/mine` 을 채운다.** 다른 기기·브라우저에서는 안 보이는 게 알려진 한계이고, 서버가
+  owner 조회 엔드포인트를 주기 전까지 더 나은 방법이 없다.
+- **알림 설정 3종 토글**(`prefs.threshold/answer/empathy`)과 `getPrefs`/`savePrefs`: 대응 엔드포인트가
+  없다(사용자 지시로 범위 밖). `src/api/index.js` 에서 이 두 함수는 fetch 로 바꾸지 않고 **로컬 상태로만
+  유지**한다(껍데기만 async) — 새로고침하면 초기화되는 게 알려진 한계.
+- **"내가 쓴 댓글" 전체 목록(마이페이지)**: `CommentResponse` 에 `myComment` 플래그는 있지만 "내 댓글
+  전체"를 청원 횡단으로 모아 주는 엔드포인트가 없다(청원마다 댓글 목록을 순회해야 하는데, 그러려면 전체
+  청원 수만큼 N+1 호출이 필요해 비현실적). **이번 라운드는 이 섹션을 mock 목록 그대로 둔다** — 항목으로
+  쪼개지 않는다. 서버에 "내 댓글" 전용 엔드포인트가 생기면 그때 정리.
+- **학부 목록 모양**: 서버는 `[{id, code, name}]` 을 주는데 지금 목은 문자열 배열이다. `ui/index.jsx`
+  의 `Select` 는 이미 문자열/`{value,label}` 객체 둘 다 받으므로(320행), `listDepartments()` 가
+  `{value: id, label: name}` 로 매핑해 내려주면 `Select` 쪽은 손댈 필요가 없다 — 회원가입 제출 시
+  `departmentId` 로 선택한 `value`(id)를 그대로 보낸다.
+
+### 이슈 6-1 ~ 6-6
+
+- [ ] **6-1. [CHORE] 데이터 접근 계층(api client) 전면 교체** — `src/api/index.js` 를 실 백엔드 fetch 로
+  다시 쓰고 `src/api/mockDb.js`·`src/api/selfcheck.js` 를 지운다. 위 "결정 사항"의 토큰 저장
+  (`credentials:'include'` 포함)·에러 매핑(4xx/5xx → 화면이 잡을 수 있는 표준 `Error`)·enum 매핑
+  (category/status)·카테고리 메타 상수·만료 판정 서버 전환·`getPrefs`/`savePrefs` 로컬 유지·학부 목록
+  매핑이 전부 여기서 구현된다. 선행 없음 — 다른 5개 이슈 전부의 병목.
+  완료: `src/components`·`src/pages`·`src/stores` 에서 `mockDb` import 가 0건(grep). `login`/`signup`/
+  `getMe`/`listPetitions`/`listDepartments` 를 실 서버로 호출해 각각 스펙대로 응답이 오고, 401(만료
+  access token)에서 `POST /token/refresh` 가 쿠키로 자동 재시도되는 것을 devtools 네트워크 탭으로
+  확인. `npm run lint` 통과. credentialed 요청이 CORS 프리플라이트에 막히지 않는 것을 브라우저에서
+  실제로 확인(막히면 백엔드 쪽 이슈로 별도 기록).
+
+- [ ] **6-2. [FEAT] 로그인 화면 실 API 연동** — `LoginScreen`/`stores/session.js` 의 `login` 이
+  `POST /connect/auth/login` 을 타고, `logout` 이 `POST /connect/auth/logout`(쿠키)을 타도록 배선한다.
+  UI·문구는 안 바꾼다(이미 고정 문구). (6-1 선행)
+  완료: 실 계정으로 로그인하면 `accessToken` 이 세션에 담기고 `/`(또는 `next`)로 이동한다. 틀린
+  비밀번호·미등록 학번 둘 다 화면에는 같은 고정 문구만 뜬다(README 보안 항목 6 닫힘). 로그아웃하면
+  세션이 비워지고 이후 인증 필요 API 호출이 다시 401.
+
+- [ ] **6-3. [FEAT] 회원가입 화면 재작업 — 이메일 인증 플로우** — `SignupScreen` 을 이메일 발송
+  (`POST /email-verifications`) → 6자리 코드 확인(`POST /email-verifications/confirm` →
+  `verificationToken`) → 가입(`POST /connect/auth/signup` `{verificationToken, loginId, password,
+  departmentId}`) 3단계로 재구성한다. **이름 입력 필드를 삭제한다**(서버에 없음). 학부는
+  `api.listDepartments()`(6-1 이 구현)로 채운다. (6-1 선행 — 특히 학부 드롭다운과 이메일 인증 엔드포인트)
+  완료: 이메일 입력→코드 발송→6자리 코드 입력→계정 정보(아이디·비밀번호·비밀번호 확인·학부) 입력까지
+  3단계가 실제로 넘어가고, 마지막 단계 제출이 실 `signup` 을 호출해 로그인 상태로 `/` 진입한다. 코드가
+  틀리면 다음 단계로 못 넘어간다. 폼 어디에도 이름 입력란이 없다. (학부 드롭다운이 비어 있는 동안은
+  3단계에서 막히는 게 정상 — "알려진 제약" 참고, 코드 리뷰는 진행 가능.)
+
+- [ ] **6-4. [FEAT] 헤더·마이페이지 이름 표시 제거 및 재디자인** — `Header.jsx` 의 `AvatarMenu` 트리거
+  (`Avatar name={user.name.slice(1)}` + 드롭다운 상단 `user.name`/`user.dept`/`user.year`)와
+  `MyPageScreen.jsx` 히어로(`Avatar` + `user.name` + `user.dept`)에서 이름 표시를 뗀다. `user.name`·
+  `user.year` 는 서버 `UserMeResponse` 에 없으므로 참조 자체를 지운다. **단순 삭제가 아니라
+  `high-end-visual-design` 스킬로 그 자리를 다시 디자인할 것** — 트리거는 이름 pill 없이 무엇으로
+  "내 계정"임을 표시할지, 히어로는 이름 한 줄이 빠진 자리를 어떻게 채울지 새로 정한다. 마이페이지의
+  통계 카드·알림 목록·알림 설정·내가 쓴 댓글 섹션은 이 이슈의 범위가 아니다(각각 6-5·6-6, "내가 쓴
+  댓글"은 위 결정 사항대로 mock 유지) — 이 이슈는 **아이덴티티 표시 영역**만 건드린다. (6-1 선행 —
+  `getMe` 가 이름 없는 모양으로 와야 재디자인 기준이 확정된다)
+  완료: 헤더 아바타 트리거와 마이페이지 히어로 어디에도 `user.name`/`user.year` 참조가 없고(grep), 두
+  자리 모두 디자인이 "무언가 지워진 자리"가 아니라 의도된 새 레이아웃으로 보인다. `학부(dept)` 표시는
+  유지한다(서버가 준다).
+
+- [ ] **6-5. [FEAT] 피드·상세·댓글·공감·북마크 실 API 연동** — `stores/petitions.js`·`FeedScreen`·
+  `DetailScreen`·`CommentsSection`·`SubmitScreen`·`BookmarkScreen` 을 실 엔드포인트로 배선한다:
+  `GET /petitions`(피드, 인증 불필요), `GET /petitions/{id}`, `POST /petitions`(등록),
+  `POST/DELETE /petitions/{id}/agreements`(공감, 409 는 서버 값으로 재동기화),
+  `POST/DELETE /petitions/{id}/bookmarks`, `GET /petitions/bookmarks`(북마크 화면 전용),
+  `GET/POST /petitions/{id}/comments`(댓글, root 만 노출 — 대댓글 UI 는 범위 밖). `excerpt` 는
+  `content.slice(0,120)` 클라이언트 파생으로 유지. `/mine` 은 위 결정 사항의 `localStorage` id 집합으로
+  필터링한다. (6-1 선행)
+  완료: 로그인 없이 피드·상세·댓글 목록이 보이고(인증 불필요 확인), 로그인 후 공감·북마크 토글이 실제로
+  서버에 반영되며 새로고침해도 유지된다(voted/bookmarked 파생 확인). 청원 등록 후 그 청원이 피드 맨 위와
+  `/mine` 양쪽에 뜬다. 댓글 등록이 실제로 목록에 반영된다. 30일 지난 청원이 아니라 서버 `status: EXPIRED`
+  인 청원이 기본 피드에서 빠지고 `/mine`·검색에는 남는다.
+
+- [ ] **6-6. [FEAT] 알림 실 API 연동** — `Header.jsx` `NotifBell`(안읽음 배지)와 `MyPageScreen.jsx` 알림
+  목록을 `GET /notifications`·`GET /notifications/unread-count`·`PATCH /notifications/{id}/read`·
+  `PATCH /notifications/read-all` 로 배선한다. `NOTIF_META` 아이콘 매핑을 서버 7종 enum
+  (`PETITION_AGREEMENT_60_PERCENT` 등)에 맞게 다시 짜고, `title`+`body` 조합 렌더를 버리고 서버가 주는
+  완성 문장 `message` 를 그대로 렌더한다. (6-1 선행)
+  완료: 로그인 상태에서 안읽음 배지 숫자가 `unread-count` 와 일치하고, 마이페이지에서 알림 클릭 시 해당
+  청원으로 이동하며 읽음 처리되고(배지 감소), "모두 읽음"이 전체를 읽음 처리한다. 7종 알림 타입 각각에
+  아이콘이 매핑돼 있다(없는 타입이 기본 아이콘으로 깨지지 않게).
+
+### 이번 라운드 범위 밖 (사용자 지시 — 항목으로 쪼개지 않는다)
+
+- 관리자 콘솔 전체(답변 등록·담당자 연락처·처리 로그) — 대응 엔드포인트 없음. mock 유지.
+- 마이페이지 학부 수정 — `PATCH /users/me` 없음. mock 유지(현재 `Select`+저장 UI 그대로 두되 저장은
+  로컬에만 반영, 6-4 범위 아님).
+- 알림 3종 개별 토글 저장 — 대응 엔드포인트 없음(위 결정 사항 참고).
+- 비밀번호 재설정 화면 — 엔드포인트는 있으나 신규 화면이라 범위 밖.
+
+### 알려진 제약 (실기기 검증 순서에 영향)
+
+`GET /connect/petitions`·`GET /connect/departments` 가 2026-08-07 기준 빈 배열이다(DB 시드 전). 학부가
+없으면 6-3(회원가입)이 마지막 단계에서 막혀 실제 가입을 끝까지 못 돌린다 — **프론트 구현·코드 리뷰는
+시드 여부와 무관하게 진행**하되, 브라우저로 전 구간을 확인하려면 백엔드에 최소 학부 1개 이상이 시드된
+뒤 아래 순서로 셀프 시드하며 검증한다: ① 학부가 뜨는지 확인 → ② 직접 회원가입(6-3) → ③ 로그인(6-2) →
+④ 청원 등록(6-5) → ⑤ 피드에 뜨는지·공감/북마크/댓글(6-5) → ⑥ 알림 발생 여부(6-6, 임계치 알림은 다른
+계정의 공감이 필요해 단일 계정 셀프 시드로는 100%/60% 알림까지는 재현 못 할 수 있다 — 그 경우 코드
+경로 확인으로 대체).
+
+---
+
 ## 스코프에서 잘라낸 것
 
 - **모바일 킷(iOS/Android)** — 전제에서 범위 밖.
@@ -263,3 +397,14 @@ Admin 테이블 `Row` 와 `AnswerModal`, `Owners` 카드가 이들을 쓴다. Ph
 - **테스트 프레임워크** — 넣지 않는다. 유일한 비자명 로직인 임계치 전이에 `assert` self-check 하나만(0-6).
 - **프로토타입의 디자인 툴 데모 장치** — Web 우하단 "에타 공유 링크 진입 데모" 토글, `skipLogin` prop. 실제 라우팅으로 대체된다.
 - **SKHU 공식 로고** — 핸드오프가 "실제 엠블럼을 재구성하지 말라"고 명시. "청" 그라디언트 타일 플레이스홀더를 유지한다.
+
+---
+
+## 이슈 분할
+
+- [CHORE] 데이터 접근 계층(api client) 전면 교체 — 선행 없음
+- [FEAT] 로그인 화면 실 API 연동 — 데이터 접근 계층 전면 교체 선행
+- [FEAT] 회원가입 화면 재작업 — 이메일 인증 플로우 — 데이터 접근 계층 전면 교체 선행
+- [FEAT] 헤더·마이페이지 이름 표시 제거 및 재디자인 — 데이터 접근 계층 전면 교체 선행
+- [FEAT] 피드·상세·댓글·공감·북마크 실 API 연동 — 데이터 접근 계층 전면 교체 선행
+- [FEAT] 알림 실 API 연동 — 데이터 접근 계층 전면 교체 선행
