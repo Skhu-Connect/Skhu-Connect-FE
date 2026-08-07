@@ -49,7 +49,23 @@ function AdminAnswer({ a }) {
   );
 }
 
-function CommentRow({ c, reply, onToggleLike }) {
+function linkButtonStyle() {
+  return { background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", padding: 0 };
+}
+
+function CommentRow({ c, reply, onToggleLike, onEdit, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(c.body);
+
+  const save = async () => {
+    if (!text.trim() || text.trim() === c.body) {
+      setEditing(false);
+      return;
+    }
+    await onEdit(c.id, text);
+    setEditing(false);
+  };
+
   return (
     <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "1px solid var(--border-subtle)", marginLeft: reply ? 48 : 0 }}>
       <Avatar name="익" size={reply ? 30 : 36} />
@@ -57,8 +73,29 @@ function CommentRow({ c, reply, onToggleLike }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontWeight: 700, fontSize: 13.5, color: "var(--text-strong)" }}>{c.author}</span>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{c.date}</span>
+          {c.mine && !editing && (
+            <span style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+              <button type="button" onClick={() => { setText(c.body); setEditing(true); }} style={linkButtonStyle()}>수정</button>
+              <button type="button" onClick={() => onDelete(c.id)} style={linkButtonStyle()}>삭제</button>
+            </span>
+          )}
         </div>
-        <p style={{ margin: "5px 0 0", fontSize: 14, color: "var(--text-body)", lineHeight: 1.6 }}>{c.body}</p>
+        {editing ? (
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <input
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              aria-label="댓글 수정"
+              style={{ flex: 1, border: "1.5px solid var(--border-strong)", borderRadius: "var(--radius-pill)", padding: "8px 14px", fontFamily: "var(--font-sans)", fontSize: 13.5, outline: "none" }}
+            />
+            <Button variant="primary" size="sm" disabled={!text.trim()} onClick={save}>저장</Button>
+            <Button variant="outline" size="sm" onClick={() => setEditing(false)}>취소</Button>
+          </div>
+        ) : (
+          <p style={{ margin: "5px 0 0", fontSize: 14, color: "var(--text-body)", lineHeight: 1.6 }}>{c.body}</p>
+        )}
       </div>
       <button
         type="button"
@@ -78,6 +115,8 @@ function CommentsSection({ petitionId }) {
   const comments = usePetitions((s) => s.commentsById[petitionId]);
   const addComment = usePetitions((s) => s.addComment);
   const toggleCommentLike = usePetitions((s) => s.toggleCommentLike);
+  const updateComment = usePetitions((s) => s.updateComment);
+  const deleteComment = usePetitions((s) => s.deleteComment);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -85,6 +124,10 @@ function CommentsSection({ petitionId }) {
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
   const toggleLike = (id) => toggleCommentLike(petitionId, id);
+  const editComment = (id, body) => updateComment(petitionId, id, body);
+  const removeComment = (id) => {
+    if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
+  };
 
   const add = async () => {
     if (!text.trim()) return;
@@ -105,7 +148,7 @@ function CommentsSection({ petitionId }) {
       <Card>
         {list.map((c) => (
           <div key={c.id}>
-            <CommentRow c={c} onToggleLike={toggleLike} />
+            <CommentRow c={c} onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} />
             <button
               type="button"
               onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
@@ -114,7 +157,7 @@ function CommentsSection({ petitionId }) {
               답글달기
             </button>
             {(c.replies ?? []).map((r) => (
-              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} />
+              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} />
             ))}
             {replyTo === c.id && (
               <div style={{ display: "flex", gap: 10, marginLeft: 48, paddingBottom: 14 }}>

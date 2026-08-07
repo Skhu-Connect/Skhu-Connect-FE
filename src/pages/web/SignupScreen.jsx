@@ -43,7 +43,7 @@ function EmailStep({ onSent }) {
         <Input
           label="학교 이메일"
           type="email"
-          placeholder="예: 20260000@skhu.ac.kr"
+          placeholder="예: 20260000@office.skhu.ac.kr"
           prefix={<Icon name="user" size={16} />}
           value={email}
           onChange={(e) => setEmail(e.target.value)}

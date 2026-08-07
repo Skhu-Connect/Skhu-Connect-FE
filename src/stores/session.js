@@ -8,6 +8,12 @@ export const useSession = create((set) => ({
   authed: false,
   user: null,
   prefs: null,
+  restored: false, // 새로고침 후 refreshToken 쿠키로 세션 복구를 시도했는지
+
+  restore: async () => {
+    const session = await api.restoreSession();
+    set(session ? { authed: true, user: session.user, prefs: session.prefs, restored: true } : { restored: true });
+  },
 
   login: async (sid, password) => {
     const { user, prefs } = await api.login(sid, password);

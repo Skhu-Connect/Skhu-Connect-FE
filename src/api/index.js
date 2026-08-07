@@ -8,9 +8,9 @@
    getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
    로컬 상태로만 유지한다(새로고침하면 초기화).
 
-   청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 댓글 수정/삭제(PUT·DELETE
-   .../comments/{id}), 비밀번호 재설정(POST /connect/auth/password/reset)은 백엔드엔 있지만
-   화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이 없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것. */
+   청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 비밀번호 재설정(POST
+   /connect/auth/password/reset)은 백엔드엔 있지만 화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이
+   없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것. */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 
@@ -148,6 +148,20 @@ export async function getMe() {
   const me = await apiFetch("/connect/users/me");
   cachedMe = toUser(me);
   return { ...cachedMe };
+}
+
+/** 새로고침 직후 부팅 시 호출한다: accessToken 은 메모리에만 있어 사라졌지만 refreshToken
+    쿠키는 살아있을 수 있으므로, 그걸로 세션을 복구해본다. 실패하면 null(비로그인 취급). */
+export async function restoreSession() {
+  try {
+    await refreshAccessToken();
+  } catch {
+    return null;
+  }
+  resetSessionCaches();
+  const user = await getMe();
+  if (!user) return null;
+  return { user, prefs: { ...localPrefs } };
 }
 
 export async function login(sid, password) {
@@ -313,6 +327,17 @@ export async function addComment(petitionId, body, parentCommentId = null) {
   if (!text) throw new Error("댓글 내용을 입력해 주세요.");
   const raw = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments`, { method: "POST", body: { content: text, parentCommentId } });
   return adaptComment(raw);
+}
+
+export async function updateComment(petitionId, commentId, body) {
+  const text = String(body ?? "").trim();
+  if (!text) throw new Error("댓글 내용을 입력해 주세요.");
+  const raw = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments/${Number(commentId)}`, { method: "PUT", body: { content: text } });
+  return adaptComment(raw);
+}
+
+export async function deleteComment(petitionId, commentId) {
+  await apiFetch(`/connect/petitions/${Number(petitionId)}/comments/${Number(commentId)}`, { method: "DELETE" });
 }
 
 /** liked 는 캐시하지 않고 목록 응답의 CommentResponse.liked 를 그대로 쓴다 — 호출부가 넘겨준다. */

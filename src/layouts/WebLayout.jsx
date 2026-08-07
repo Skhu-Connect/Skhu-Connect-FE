@@ -14,14 +14,30 @@ const FEED_PATHS = ["/", "/answered", "/mine"];
 
 export default function WebLayout() {
   const authed = useSession((s) => s.authed);
+  const restored = useSession((s) => s.restored);
+  const restore = useSession((s) => s.restore);
   const loadFeed = usePetitions((s) => s.loadFeed);
+  const refreshNotifications = usePetitions((s) => s.refreshNotifications);
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (!authed && !restored) restore();
+  }, [authed, restored, restore]);
+
+  useEffect(() => {
     if (authed) loadFeed();
   }, [authed, loadFeed]);
+
+  /** 알림은 loadFeed 로 로그인 시 한 번만 오고 끝이었다 — 30초마다 다시 불러와 벨 배지가 실제로 갱신되게 한다. */
+  useEffect(() => {
+    if (!authed) return;
+    const id = setInterval(refreshNotifications, 30000);
+    return () => clearInterval(id);
+  }, [authed, refreshNotifications]);
+
+  if (!authed && !restored) return null; // refreshToken 쿠키로 세션 복구 시도 중 — 결과 나오기 전엔 로그인으로 안 튕긴다
 
   if (!authed) {
     const next = encodeURIComponent(location.pathname + location.search);

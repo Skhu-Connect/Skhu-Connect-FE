@@ -11,6 +11,13 @@ const upsert = (list, p) => (list.some((x) => x.id === p.id) ? list.map((x) => (
 const flags = (list, key) => Object.fromEntries(list.filter((p) => p[key]).map((p) => [p.id, true]));
 const answers = (list) => Object.fromEntries(list.filter((p) => p.answer).map((p) => [p.id, p.answer]));
 
+/* 댓글 트리는 root + root.replies 딱 1단계다(서버가 대댓글의 대댓글을 지원 안 함) — id 로 찾기/패치/삭제 공용 */
+const findComment = (list, id) => list.flatMap((c) => [c, ...(c.replies ?? [])]).find((x) => x.id === id);
+const patchComment = (list, id, patch) =>
+  list.map((root) => (root.id === id ? { ...root, ...patch } : { ...root, replies: (root.replies ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+const removeComment = (list, id) =>
+  list.some((c) => c.id === id) ? list.filter((c) => c.id !== id) : list.map((root) => ({ ...root, replies: (root.replies ?? []).filter((r) => r.id !== id) }));
+
 export const usePetitions = create((set, get) => ({
   petitions: [],
   categories: [],
@@ -136,24 +143,37 @@ export const usePetitions = create((set, get) => ({
     set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) }));
   },
 
-  /** commentId 는 root 댓글이거나 그 밑 대댓글 중 하나일 수 있다 — 둘 다 뒤져서 patch 한다. */
   toggleCommentLike: async (petitionId, commentId) => {
-    const list = get().commentsById[petitionId] ?? [];
-    const flat = list.flatMap((c) => [c, ...(c.replies ?? [])]);
-    const c = flat.find((x) => x.id === commentId);
+    const c = findComment(get().commentsById[petitionId] ?? [], commentId);
     const { votes, liked } = await api.toggleCommentLike(petitionId, commentId, !!c?.liked);
+    set((s) => ({ commentsById: { ...s.commentsById, [petitionId]: patchComment(s.commentsById[petitionId] ?? [], commentId, { votes, liked }) } }));
+  },
+
+  updateComment: async (petitionId, commentId, body) => {
+    const c = await api.updateComment(petitionId, commentId, body);
+    set((s) => ({ commentsById: { ...s.commentsById, [petitionId]: patchComment(s.commentsById[petitionId] ?? [], commentId, { body: c.body }) } }));
+  },
+
+  deleteComment: async (petitionId, commentId) => {
+    await api.deleteComment(petitionId, commentId);
     set((s) => ({
-      commentsById: {
-        ...s.commentsById,
-        [petitionId]: (s.commentsById[petitionId] ?? []).map((root) =>
-          root.id === commentId ? { ...root, votes, liked } : { ...root, replies: (root.replies ?? []).map((r) => (r.id === commentId ? { ...r, votes, liked } : r)) }
-        ),
-      },
+      commentsById: { ...s.commentsById, [petitionId]: removeComment(s.commentsById[petitionId] ?? [], commentId) },
+      petitions: s.petitions.map((p) => (p.id === Number(petitionId) ? { ...p, comments: Math.max(0, p.comments - 1) } : p)),
     }));
   },
 
   loadMyComments: async () => {
     const myComments = await api.listMyComments();
     set({ myComments });
+  },
+
+  /** WebLayout 이 로그인 중 주기적으로 부른다 — 알림은 loadFeed 때 한 번만 오면 이후로 절대 안 갱신됐다. */
+  refreshNotifications: async () => {
+    try {
+      const notifications = await api.listNotifications();
+      set({ notifications });
+    } catch {
+      /* 폴링 실패는 조용히 넘어간다 — 다음 주기에 재시도 */
+    }
   },
 }));
