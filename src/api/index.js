@@ -301,8 +301,9 @@ function adaptComment(c) {
   return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), votes: c.likeCount, mine: c.myComment, liked: c.liked, replies: (c.replies ?? []).map(adaptComment) };
 }
 
+/** auth 를 강제로 끄지 않는다 — 로그인 상태여야 서버가 각 댓글의 liked/myComment 를 내 기준으로 채워 준다. */
 export async function listComments(petitionId) {
-  const data = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments?size=100`, { auth: false });
+  const data = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments?size=100`);
   return (data?.content ?? []).map(adaptComment);
 }
 
