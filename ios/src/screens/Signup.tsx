@@ -1,13 +1,13 @@
 /* 회원가입. 웹(src/pages/web/SignupScreen.jsx)과 단계·필드·문구·이동 링크를 맞춘다.
    2단계: ① 학교 이메일 인증 ② 아이디·이름·소속 학부·비밀번호 입력. 목 단계라 실제 메일
    발송·검증·중복 학번 확인은 없다 — 웹과 같은 한계다.
-   흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(authShell 의 onVideo 팔레트). */
+   흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(theme 의 onVideo 팔레트). */
 import { useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
-import { AuthShell, onVideo } from "../authShell";
+import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
-import { font } from "../theme";
+import { font, onVideo } from "../theme";
 import { DEPARTMENTS } from "../data";
 
 const PORTAL_URL = "https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main";
@@ -50,7 +50,7 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
         <Pressable onPress={onBack} accessibilityRole="button">
           <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>로그인으로 돌아가기</Text>
         </Pressable>
-        <Text style={{ color: onVideo.muted }}>|</Text>
+        <Text style={{ color: onVideo.border }}>|</Text>
         <Pressable onPress={() => Linking.openURL(PORTAL_URL)} accessibilityRole="link">
           <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: onVideo.link }]}>학교 이메일을 모르시나요?</Text>
         </Pressable>

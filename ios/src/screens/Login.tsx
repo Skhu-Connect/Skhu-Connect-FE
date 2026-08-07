@@ -1,11 +1,11 @@
 /* 로그인. 웹(src/pages/web/LoginScreen.jsx)과 필드·문구·이동 링크를 맞춘다 — 아이디+비밀번호만,
    학부 선택은 회원가입에만 있다(이전 버전의 학부 선택 입력은 웹에 없는 필드라 걷어냈다).
-   흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(authShell 의 onVideo 팔레트). */
+   흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(theme 의 onVideo 팔레트). */
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { AuthShell, onVideo } from "../authShell";
+import { AuthShell } from "../authShell";
 import { Button, Input } from "../ui";
-import { colors, font, radius } from "../theme";
+import { colors, font, onVideo, radius } from "../theme";
 
 export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: string; onLogin: () => void; onSignup: () => void }) {
   const [sid, setSid] = useState("");
