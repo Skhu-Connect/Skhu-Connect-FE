@@ -190,7 +190,7 @@ export const db = {
   /* petitionId → 댓글 목록 */
   comments: {
     1: [
-      { id: 1, author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리 없어서 고생했어요.", date: "2일 전", votes: 24 },
+      { id: 1, author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리 없어서 고생했어요.", date: "2일 전", votes: 24, mine: true },
       { id: 2, author: "익명 2", body: "타 대학도 다 하는데 우리만 안 하는 게 이상해요.", date: "1일 전", votes: 12 },
       { id: 3, author: "익명 3", body: "안전 문제로 최소 인력만 배치해도 충분할 것 같습니다.", date: "20시간 전", votes: 7 },
     ],
@@ -204,7 +204,7 @@ export const db = {
       { id: 2, author: "익명 2", body: "야간 개방하면 장비 관리 인력이 필요할 텐데 조교 근로로 충분할 것 같아요.", date: "3시간 전", votes: 3 },
     ],
     4: [
-      { id: 1, author: "익명 1", body: "매번 같은 서류를 다시 내는 게 제일 번거로웠습니다.", date: "2주 전", votes: 31 },
+      { id: 1, author: "익명 1", body: "매번 같은 서류를 다시 내는 게 제일 번거로웠습니다.", date: "2주 전", votes: 31, mine: true },
       { id: 2, author: "익명 2", body: "종합정보시스템에 이미 있는 정보인데 왜 다시 제출해야 하는지 의문이었어요.", date: "2주 전", votes: 22 },
       { id: 3, author: "익명 3", body: "답변대로 자동 첨부가 되면 정말 편해질 것 같습니다.", date: "1주 전", votes: 14 },
     ],

@@ -195,9 +195,23 @@ export async function addComment(petitionId, body) {
   await delay();
   const key = Number(petitionId);
   const list = (db.comments[key] ??= []);
-  const c = { id: (list.at(-1)?.id ?? 0) + 1, author: `익명 ${list.length + 1}`, body: text, date: "방금 전", votes: 0 };
+  const c = { id: (list.at(-1)?.id ?? 0) + 1, author: `익명 ${list.length + 1}`, body: text, date: "방금 전", votes: 0, mine: true };
   list.push(c);
   return copy(c);
+}
+
+/** 내가 쓴 댓글만 골라 청원 제목을 붙여 반환한다. 작성자 표시(author)는 건드리지 않는다 —
+    공개 익명 처리와 "내 것 찾기"는 별개다(mine 은 내부 플래그, 화면에 노출하지 않는다). */
+export async function listMyComments() {
+  await delay();
+  const mine = [];
+  for (const [petitionId, list] of Object.entries(db.comments)) {
+    const p = record(petitionId);
+    for (const c of list) {
+      if (c.mine) mine.push({ ...c, petitionId: Number(petitionId), title: p?.title ?? "" });
+    }
+  }
+  return copy(mine);
 }
 
 /* ───────────────── 카테고리 · 담당자 ───────────────── */

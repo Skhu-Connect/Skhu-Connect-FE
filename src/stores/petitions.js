@@ -21,6 +21,7 @@ export const usePetitions = create((set) => ({
   answersById: {},
   voted: {},
   bookmarked: {},
+  myComments: [],
   loading: false,
 
   /** 학생 웹 로드. WebLayout 이 마운트 시 한 번 부른다.
@@ -121,5 +122,10 @@ export const usePetitions = create((set) => ({
   markAllNotifRead: async () => {
     const notifications = await api.markAllNotifRead();
     set({ notifications });
+  },
+
+  loadMyComments: async () => {
+    const myComments = await api.listMyComments();
+    set({ myComments });
   },
 }));

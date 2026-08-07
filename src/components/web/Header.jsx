@@ -58,12 +58,6 @@ function SearchBox({ value, onChange }) {
   );
 }
 
-const NOTIF_META = {
-  threshold: { icon: "trending", bg: "var(--status-review-bg)", fg: "var(--status-review-fg)" },
-  answer: { icon: "checkCircle", bg: "var(--status-answered-bg)", fg: "var(--status-answered-fg)" },
-  empathy: { icon: "heart", bg: "#FCE7E9", fg: "var(--coral-600)" },
-};
-
 /** 투명 오버레이로 외부 클릭을 닫는다(원본 position:fixed;inset:0). Escape 는 컨테이너에서 받는다. */
 function Dropdown({ open, onClose, width, children, trigger }) {
   const ref = useRef(null);
@@ -91,58 +85,21 @@ function Dropdown({ open, onClose, width, children, trigger }) {
   );
 }
 
+/** 알림 목록은 마이페이지로 옮겼다(이슈 #39) — 여기서는 벨 + 안읽음 배지만 보여주고 클릭하면 이동한다. */
 function NotifBell() {
-  const [open, setOpen] = useState(false);
   const items = usePetitions((s) => s.notifications);
-  const markAllRead = usePetitions((s) => s.markAllNotifRead);
   const navigate = useNavigate();
   const unread = items.filter((n) => !n.read).length;
 
   return (
-    <Dropdown
-      open={open}
-      onClose={() => setOpen(false)}
-      width={350}
-      trigger={
-        <div style={{ position: "relative" }}>
-          <IconButton variant="ghost" ariaLabel="알림" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            <Icon name="bell" size={20} />
-          </IconButton>
-          {unread > 0 && (
-            <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, borderRadius: 99, background: "var(--coral-500)", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none" }}>{unread}</span>
-          )}
-        </div>
-      }
-    >
-      <div style={{ display: "flex", alignItems: "center", padding: "14px 18px 10px" }}>
-        <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text-strong)" }}>알림</span>
-        {unread > 0 && <span style={{ marginLeft: 7, fontSize: 12, fontWeight: 700, color: "var(--coral-500)" }}>{unread}건 안 읽음</span>}
-        <button type="button" onClick={markAllRead} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 600, color: "var(--indigo-600)" }}>
-          모두 읽음
-        </button>
-      </div>
-      {items.map((n) => {
-        const m = NOTIF_META[n.type];
-        return (
-          <button
-            key={n.id}
-            type="button"
-            onClick={() => { setOpen(false); navigate(`/p/${n.petitionId}`); }}
-            style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "13px 18px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
-          >
-            <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: m.bg, color: m.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon name={m.icon} size={17} />
-            </div>
-            <div>
-              <div style={{ fontSize: 13.5, color: "var(--text-body)", lineHeight: 1.55 }}>
-                <b style={{ color: "var(--text-strong)" }}>{n.title}</b> · {n.body}
-              </div>
-              <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 3 }}>{n.date}</div>
-            </div>
-          </button>
-        );
-      })}
-    </Dropdown>
+    <div style={{ position: "relative" }}>
+      <IconButton variant="ghost" ariaLabel="알림" onClick={() => navigate("/mypage")}>
+        <Icon name="bell" size={20} />
+      </IconButton>
+      {unread > 0 && (
+        <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, borderRadius: 99, background: "var(--coral-500)", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none" }}>{unread}</span>
+      )}
+    </div>
   );
 }
 
@@ -152,7 +109,7 @@ function AvatarMenu({ user, onSelect }) {
     <button
       type="button"
       onClick={() => { setOpen(false); onSelect(key); }}
-      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: key === "logout" ? "var(--coral-600)" : "var(--text-body)", textAlign: "left" }}
+      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: "var(--text-body)", textAlign: "left" }}
     >
       <Icon name={icon} size={17} />
       {label}
@@ -177,8 +134,6 @@ function AvatarMenu({ user, onSelect }) {
         {item("user", "마이페이지", "mypage")}
         {item("bookmark", "북마크", "bookmarks")}
         {item("sliders", "환경설정", "settings")}
-        <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
-        {item("logOut", "로그아웃", "logout")}
       </div>
     </Dropdown>
   );
@@ -201,7 +156,6 @@ const navLinkStyle = ({ isActive }) => ({
 
 export default function Header({ search, onSearch }) {
   const user = useSession((s) => s.user);
-  const logout = useSession((s) => s.logout);
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -209,7 +163,6 @@ export default function Header({ search, onSearch }) {
     if (key === "mypage") navigate("/mypage");
     else if (key === "bookmarks") navigate("/bookmarks");
     else if (key === "settings") setSettingsOpen(true);
-    else if (key === "logout") logout();
   };
 
   return (
