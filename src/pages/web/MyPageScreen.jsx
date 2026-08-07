@@ -44,6 +44,18 @@ function StatCard({ value, label }) {
   );
 }
 
+function MoreButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{ display: "block", width: "100%", textAlign: "center", padding: "12px", background: "none", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 700, color: "var(--indigo-600)" }}
+    >
+      더보기
+    </button>
+  );
+}
+
 function SectionTitle({ children }) {
   return <h2 style={{ margin: "28px 0 10px", fontSize: 15, fontWeight: 800, color: "var(--text-strong)" }}>{children}</h2>;
 }
@@ -58,6 +70,7 @@ export default function MyPageScreen() {
 
   const petitions = usePetitions((s) => s.petitions);
   const voted = usePetitions((s) => s.voted);
+  const bookmarked = usePetitions((s) => s.bookmarked);
   const notifications = usePetitions((s) => s.notifications);
   const markAllNotifRead = usePetitions((s) => s.markAllNotifRead);
   const markNotifRead = usePetitions((s) => s.markNotifRead);
@@ -67,6 +80,9 @@ export default function MyPageScreen() {
   const [departments, setDepartments] = useState([]);
   const [dept, setDept] = useState(user.dept);
   const [saving, setSaving] = useState(false);
+  const [notifExpanded, setNotifExpanded] = useState(false);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
 
   useEffect(() => {
     api.listDepartments().then(setDepartments);
@@ -87,6 +103,7 @@ export default function MyPageScreen() {
   const voteCount = Object.values(voted).filter(Boolean).length;
   const answeredCount = petitions.filter((p) => p.mine && p.answer).length;
   const unread = notifications.filter((n) => !n.read).length;
+  const bookmarkedPetitions = petitions.filter((p) => bookmarked[p.id]);
 
   return (
     <div style={{ paddingBottom: 90 }}>
@@ -129,7 +146,7 @@ export default function MyPageScreen() {
           {notifications.length === 0 ? (
             <div style={{ padding: "18px", fontSize: 13.5, color: "var(--text-muted)", borderTop: "1px solid var(--border-subtle)" }}>알림이 없습니다.</div>
           ) : (
-            notifications.map((n) => {
+            (notifExpanded ? notifications : notifications.slice(0, 5)).map((n) => {
               const m = NOTIF_META[n.type];
               return (
                 <button
@@ -154,7 +171,27 @@ export default function MyPageScreen() {
               );
             })
           )}
+          {!notifExpanded && notifications.length > 5 ? <MoreButton onClick={() => setNotifExpanded(true)} /> : null}
         </Card>
+
+        <SectionTitle>북마크한 건의</SectionTitle>
+        {bookmarkedPetitions.length === 0 ? (
+          <Card style={{ fontSize: 13.5, color: "var(--text-muted)", textAlign: "center" }}>북마크한 건의가 없습니다.</Card>
+        ) : (
+          <Card padding={0} style={{ overflow: "hidden" }}>
+            {(bookmarksExpanded ? bookmarkedPetitions : bookmarkedPetitions.slice(0, 5)).map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => navigate(`/p/${p.id}`)}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "13px 18px", background: "none", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              >
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>{p.title}</div>
+              </button>
+            ))}
+            {!bookmarksExpanded && bookmarkedPetitions.length > 5 ? <MoreButton onClick={() => setBookmarksExpanded(true)} /> : null}
+          </Card>
+        )}
 
         <SectionTitle>알림 설정</SectionTitle>
         <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -174,7 +211,7 @@ export default function MyPageScreen() {
           <Card style={{ fontSize: 13.5, color: "var(--text-muted)", textAlign: "center" }}>아직 작성한 댓글이 없습니다.</Card>
         ) : (
           <Card padding={0} style={{ overflow: "hidden" }}>
-            {myComments.map((c, i) => (
+            {(commentsExpanded ? myComments : myComments.slice(0, 5)).map((c, i) => (
               <button
                 key={`${c.petitionId}-${c.id}`}
                 type="button"
@@ -186,6 +223,7 @@ export default function MyPageScreen() {
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{c.date}</div>
               </button>
             ))}
+            {!commentsExpanded && myComments.length > 5 ? <MoreButton onClick={() => setCommentsExpanded(true)} /> : null}
           </Card>
         )}
 
