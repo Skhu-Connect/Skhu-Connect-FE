@@ -90,8 +90,14 @@ async function apiFetch(path, opts = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// 서버가 타임존 없는 UTC LocalDateTime을 내려준다 — 그대로 new Date()에 넣으면 브라우저가 로컬시간(KST)으로
+// 오인해 9시간 밀린다. 타임존 표기가 없을 때만 'Z'를 붙여 UTC로 명시한다.
+function parseServerDate(iso) {
+  return new Date(/[Zz]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
+}
+
 function formatRelative(iso) {
-  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const min = Math.floor((Date.now() - parseServerDate(iso).getTime()) / 60000);
   if (min < 1) return "방금 전";
   if (min < 60) return `${min}분 전`;
   const hr = Math.floor(min / 60);
@@ -227,7 +233,7 @@ function adaptPetition(raw) {
   const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
   const meta = CATEGORY_META[key];
   const deadline = raw.agreementDeadline ?? raw.expiresAt;
-  const daysLeft = deadline ? Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000) : null;
+  const daysLeft = deadline ? Math.ceil((parseServerDate(deadline).getTime() - Date.now()) / 86400000) : null;
   const expired = raw.status === "EXPIRED";
   return {
     id: raw.id,
@@ -253,17 +259,32 @@ function adaptPetition(raw) {
   };
 }
 
+/* 청원 목록/상세 응답에 댓글 수 필드가 없다 — 댓글 목록(원댓글+대댓글)을 직접 세서 채운다.
+   실패해도 피드 전체를 막지 않도록 0으로 눙친다. */
+async function countComments(petitionId) {
+  try {
+    const data = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments?size=100`);
+    return (data?.content ?? []).reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
 export async function listPetitions() {
   await ensureFlags();
   const data = await apiFetch("/connect/petitions?size=100&sort=createdAt,desc", { auth: false });
-  return (data?.content ?? []).map(adaptPetition);
+  const petitions = (data?.content ?? []).map(adaptPetition);
+  await Promise.all(petitions.map(async (p) => { p.comments = await countComments(p.id); }));
+  return petitions;
 }
 
 export async function getPetition(id) {
   await ensureFlags();
   try {
     const raw = await apiFetch(`/connect/petitions/${Number(id)}`, { auth: false });
-    return adaptPetition(raw);
+    const p = adaptPetition(raw);
+    p.comments = await countComments(p.id);
+    return p;
   } catch (e) {
     if (e.status === 404) return null;
     throw e;

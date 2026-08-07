@@ -10,13 +10,7 @@ import { usePetitions } from "../../stores/petitions";
 import * as api from "../../api";
 import { Avatar, Button, Card, Icon, Select } from "../../components/ui";
 import { toast } from "../../components/Toast";
-
-// Header.jsx 의 NotifBell 이 쓰던 것을 그대로 옮겼다.
-const NOTIF_META = {
-  threshold: { icon: "trending", bg: "var(--status-review-bg)", fg: "var(--status-review-fg)" },
-  answer: { icon: "checkCircle", bg: "var(--status-answered-bg)", fg: "var(--status-answered-fg)" },
-  empathy: { icon: "heart", bg: "#FCE7E9", fg: "var(--coral-600)" },
-};
+import { NOTIF_META } from "../../components/web/notifMeta";
 
 // SettingsModal.jsx 의 ROWS 를 그대로 옮겼다.
 const PREF_ROWS = [

@@ -10,6 +10,7 @@ import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import { Avatar, Button, Icon, IconButton } from "../ui";
 import SettingsModal from "./SettingsModal";
+import { NOTIF_META } from "./notifMeta";
 
 function WordMark() {
   return (
@@ -85,21 +86,75 @@ function Dropdown({ open, onClose, width, children, trigger }) {
   );
 }
 
-/** 알림 목록은 마이페이지로 옮겼다(이슈 #39) — 여기서는 벨 + 안읽음 배지만 보여주고 클릭하면 이동한다. */
+/** 이슈 #39 에서 목록을 마이페이지로 뺐다가, 벨을 눌렀을 때 그 자리에서 바로 보이는 편이 낫다는
+    피드백으로 다시 드롭다운으로 되돌렸다(마이페이지 목록은 그대로 둔다 — 전체 보기 진입점). */
 function NotifBell() {
   const items = usePetitions((s) => s.notifications);
+  const markAllNotifRead = usePetitions((s) => s.markAllNotifRead);
+  const markNotifRead = usePetitions((s) => s.markNotifRead);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const unread = items.filter((n) => !n.read).length;
 
   return (
-    <div style={{ position: "relative" }}>
-      <IconButton variant="ghost" ariaLabel="알림" onClick={() => navigate("/mypage")}>
-        <Icon name="bell" size={20} />
-      </IconButton>
-      {unread > 0 && (
-        <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, borderRadius: 99, background: "var(--coral-500)", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none" }}>{unread}</span>
-      )}
-    </div>
+    <Dropdown
+      open={open}
+      onClose={() => setOpen(false)}
+      width={340}
+      trigger={
+        <div style={{ position: "relative" }}>
+          <IconButton variant="ghost" ariaLabel="알림" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <Icon name="bell" size={20} />
+          </IconButton>
+          {unread > 0 && (
+            <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, borderRadius: 99, background: "var(--coral-500)", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none" }}>{unread}</span>
+          )}
+        </div>
+      }
+    >
+      <div style={{ display: "flex", alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+        <span style={{ fontWeight: 800, fontSize: 14.5, color: "var(--text-strong)" }}>{unread > 0 ? `${unread}건 안 읽음` : "알림"}</span>
+        <button type="button" onClick={markAllNotifRead} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 600, color: "var(--indigo-600)" }}>
+          모두 읽음
+        </button>
+      </div>
+      <div style={{ maxHeight: 360, overflowY: "auto" }}>
+        {items.length === 0 ? (
+          <div style={{ padding: 18, fontSize: 13.5, color: "var(--text-muted)" }}>알림이 없습니다.</div>
+        ) : (
+          items.map((n) => {
+            const m = NOTIF_META[n.type];
+            return (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  if (!n.read) markNotifRead(n.id);
+                  navigate(`/p/${n.petitionId}`);
+                }}
+                style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "12px 16px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: m.bg, color: m.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon name={m.icon} size={16} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: "var(--text-body)", lineHeight: 1.5 }}>{n.body}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{n.date}</div>
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); navigate("/mypage"); }}
+        style={{ display: "block", width: "100%", textAlign: "center", padding: "11px", background: "none", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 700, color: "var(--indigo-600)" }}
+      >
+        전체 알림 보기
+      </button>
+    </Dropdown>
   );
 }
 
