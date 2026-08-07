@@ -1,272 +1,381 @@
 /* 데이터 접근 계약. 화면·스토어는 **이 파일의 async 함수만** 호출한다.
-   백엔드가 준비되면 이 파일 내부를 fetch 로 바꾸고 mockDb.js 를 지운다 — 그게 전부다.
 
-   모든 함수는 async 이고 목 지연 150ms 를 갖는다(로딩 경로가 실제로 존재하게).
-   반환값은 db 와 분리된 복사본이다 — 호출자가 상태를 직접 변형할 수 없다. */
+   Phase 6(백엔드 연동)에서 mock 을 실 백엔드(skhu-connect-be-production.up.railway.app) fetch 로
+   교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
-import { db, DEPARTMENTS } from "./mockDb.js";
+   admin 콘솔(listAdminPetitions/listOwners/listNotifLogs/answerPetition)은 백엔드에 대응
+   엔드포인트가 없어 여전히 mockDb.js 의 adminDb 로 동작한다 — 학생 웹 실 청원과는 별개 데이터셋.
+   getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
+   로컬 상태로만 유지한다(새로고침하면 초기화). listMyComments 는 "내 댓글 전체" 를 청원 횡단으로
+   모아 주는 엔드포인트가 없어 빈 배열을 돌려준다(더미 데이터로 존재하지 않는 청원 id 를 가리키면
+   클릭 시 404 로 이어지므로, 있는 척하는 것보다 없다고 하는 편이 낫다). */
 
-const delay = (ms = 150) => new Promise((r) => setTimeout(r, ms));
-const copy = (v) => structuredClone(v);
+import { CATEGORY_META, adminDb } from "./mockDb.js";
 
-const EXPIRY_DAYS = 30;
-const isExpired = (p) => Date.now() - new Date(p.createdAt).getTime() > EXPIRY_DAYS * 86400000;
-// "2주 전" 같은 상대 시간 대신, 30일 만료까지 남은 기간을 D-day 로 보여준다.
-const ddayLabel = (p) => {
-  const daysLeft = EXPIRY_DAYS - Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000);
-  return daysLeft > 0 ? `D-${daysLeft}` : "만료";
+const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
+
+const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT" };
+const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
+const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
+
+/* 서버 알림 7종 → 기존 화면이 아는 3종 아이콘 계열로 근사 매핑(6-6 에서 7종 전용 아이콘으로 교체 예정). */
+const NOTIF_TYPE_TO_LEGACY = {
+  PETITION_AGREEMENT_60_PERCENT: "empathy",
+  PETITION_AGREEMENT_100_PERCENT: "threshold",
+  PETITION_UNDER_REVIEW: "threshold",
+  PETITION_ANSWERED: "answer",
+  COMMENT_REPLY: "answer",
+  COMMENT_LIKE: "empathy",
+  REPLY_LIKE: "empathy",
 };
 
-const category = (key) => db.categories.find((c) => c.key === key);
-const record = (id) => db.petitions.find((p) => p.id === Number(id));
+/* ───────────────── fetch 기반 ───────────────── */
 
-/** 청원 레코드 + 카테고리에서 파생한 임계치·기준·담당자 + 내 공감/북마크 여부.
-    화면은 p.current 를 그대로 렌더한다 — 내 공감은 이미 반영돼 있다.
+let accessToken = null; // 메모리에만 둔다(localStorage 0건) — README 보안 항목 2
+let refreshing = null;
 
-    admin=false(학생)면 담당자는 **부서명까지만** 내린다. 담당자 실명·이메일·직통번호는
-    학생 화면이 쓰지 않는데도 응답에 실리면, 학번 하나로 로그인한 학생이 DevTools 로
-    5개 부서 담당자 연락처를 전부 긁을 수 있다 — 스코프는 라우트가 아니라 응답 필드다. */
-function view(p, { admin = false } = {}) {
-  const c = category(p.category);
-  return copy({
-    ...p,
-    threshold: c.threshold,
-    basis: c.basis,
-    date: ddayLabel(p),
-    // 댓글 수는 목록에서 파생한다 — 별도 카운트 필드를 두면 카드(47)와 상세(0)가 어긋난다.
-    comments: (db.comments[p.id] ?? []).length,
-    owner: admin ? c.owner : { team: c.owner.team },
-    voted: db.voted.has(p.id),
-    bookmarked: db.bookmarked.has(p.id),
-    answered: !!db.answers[p.id],
-    answer: db.answers[p.id] ?? null,
-    expired: isExpired(p),
+async function rawFetch(path, { method = "GET", body, auth = true } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  return fetch(`${BASE_URL}${path}`, {
+    method,
+    headers,
+    credentials: "include", // refreshToken 은 서버 Set-Cookie 로만 오간다
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
 
-/** 임계치 전이: 접수 → 검토중. 공감이 임계치에 닿으면 담당자 검토 요청이 나간 것으로 본다.
-    ponytail: 승격만 한다. 공감 취소로 임계치 아래로 내려가도 되돌리지 않는다 —
-    이미 발송된 검토 요청을 취소할 방법이 없기 때문. 되돌림이 필요해지면 여기 한 곳만 고친다. */
-function applyThreshold(p) {
-  if (p.status === "received" && p.current >= category(p.category).threshold) {
-    p.status = "reviewing";
+async function refreshAccessToken() {
+  if (!refreshing) {
+    refreshing = rawFetch("/connect/auth/token/refresh", { method: "POST", auth: false })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("세션이 만료되었습니다.");
+        const data = await res.json();
+        accessToken = data.accessToken;
+      })
+      .finally(() => {
+        refreshing = null;
+      });
   }
-  return p;
+  return refreshing;
+}
+
+async function parseError(res) {
+  let title = "";
+  try {
+    title = (await res.json())?.title ?? "";
+  } catch {
+    /* 본문 없음 */
+  }
+  const err = new Error(title || `요청을 처리할 수 없습니다. (${res.status})`);
+  err.status = res.status;
+  return err;
+}
+
+async function apiFetch(path, opts = {}) {
+  let res = await rawFetch(path, opts);
+  if (res.status === 401 && opts.auth !== false) {
+    try {
+      await refreshAccessToken();
+      res = await rawFetch(path, opts);
+    } catch {
+      /* 재발급 실패 — 아래에서 원래 401 을 던진다 */
+    }
+  }
+  if (!res.ok) throw await parseError(res);
+  if (res.status === 204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function formatRelative(iso) {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return "방금 전";
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  return `${Math.floor(hr / 24)}일 전`;
+}
+
+/* ───────────────── voted/bookmarked/mine 파생 ─────────────────
+   서버 청원 응답에는 voted/bookmarked 가 없다. 로그인 시 내 공감·북마크 id 집합을 받아 캐시하고
+   토글할 때 그 캐시를 직접 갱신한다. mine 은 서버가 아예 소유자를 안 줘서(익명 설계) 이 브라우저가
+   만든 청원 id 를 localStorage 에 쌓아 근사한다 — 다른 기기에서는 안 보이는 게 알려진 한계다. */
+
+let votedIds = new Set();
+let bookmarkedIds = new Set();
+let flagsLoaded = false;
+
+const MINE_KEY = "skhu:minePetitionIds";
+function loadMineIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(MINE_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+}
+const mineIds = loadMineIds();
+function saveMineIds() {
+  localStorage.setItem(MINE_KEY, JSON.stringify([...mineIds]));
+}
+
+async function ensureFlags() {
+  if (flagsLoaded || !accessToken) return;
+  flagsLoaded = true;
+  try {
+    const [agreements, bookmarks] = await Promise.all([
+      apiFetch("/connect/users/me/agreements?size=200"),
+      apiFetch("/connect/users/me/bookmarks?size=200"),
+    ]);
+    votedIds = new Set((agreements?.content ?? []).map((p) => p.id));
+    bookmarkedIds = new Set((bookmarks?.content ?? []).map((p) => p.id));
+  } catch {
+    flagsLoaded = false; // 다음 호출에서 재시도
+  }
+}
+
+function resetSessionCaches() {
+  flagsLoaded = false;
+  votedIds = new Set();
+  bookmarkedIds = new Set();
 }
 
 /* ───────────────── 세션 ───────────────── */
 
-export async function login(sid, password) {
-  if (!String(sid ?? "").trim() || !String(password ?? "").trim()) {
-    throw new Error("학번과 비밀번호를 입력해 주세요.");
-  }
-  await delay();
-  db.session = db.user; // 목: 자격 증명은 검증하지 않는다. 실제 인증은 백엔드가 한다.
-  return { user: copy(db.session), prefs: copy(db.prefs) };
+let cachedMe = null;
+
+function toUser(me) {
+  return { loginId: me.loginId, email: me.email, dept: me.departmentName, departmentCode: me.departmentCode, notificationEnabled: me.notificationEnabled };
 }
 
-export async function signup({ sid, password, name, dept }) {
-  const s = String(sid ?? "").trim();
+let localPrefs = { threshold: true, answer: true, empathy: false };
+
+export async function getMe() {
+  if (!accessToken) return null;
+  const me = await apiFetch("/connect/users/me");
+  cachedMe = toUser(me);
+  return { ...cachedMe };
+}
+
+export async function login(sid, password) {
+  const loginId = String(sid ?? "").trim();
   const pw = String(password ?? "").trim();
-  const n = String(name ?? "").trim();
-  if (!s || !pw) throw new Error("학번과 비밀번호를 입력해 주세요.");
-  if (!n) throw new Error("이름을 입력해 주세요.");
-  if (!DEPARTMENTS.includes(dept)) throw new Error("소속 학부를 선택해 주세요.");
-  await delay();
-  // ponytail: 목 단계라 자격 증명·중복 학번을 검증하지 않는다(login 과 동일한 한계). 학년은
-  // sid 로 산출할 방법이 없어 1로 둔다 — 실제 계산은 백엔드 연동 시 여기만 고치면 된다.
-  db.user = { name: n, dept, year: 1, sid: s };
-  db.session = db.user;
-  return { user: copy(db.session), prefs: copy(db.prefs) };
+  if (!loginId || !pw) throw new Error("아이디와 비밀번호를 입력해 주세요.");
+  const { accessToken: token } = await apiFetch("/connect/auth/login", { method: "POST", auth: false, body: { loginId, password: pw } });
+  accessToken = token;
+  resetSessionCaches();
+  const user = await getMe();
+  return { user, prefs: { ...localPrefs } };
+}
+
+/** 이메일 인증 2단계 뒤 호출한다: sendSignupCode → confirmSignupCode(→verificationToken) → signup. */
+export async function sendSignupCode(email) {
+  await apiFetch("/connect/auth/email-verifications", { method: "POST", auth: false, body: { email, purpose: "SIGN_UP" } });
+}
+
+export async function confirmSignupCode(email, code) {
+  const { verificationToken } = await apiFetch("/connect/auth/email-verifications/confirm", { method: "POST", auth: false, body: { email, code, purpose: "SIGN_UP" } });
+  return verificationToken;
+}
+
+export async function signup({ loginId, password, departmentId, verificationToken }) {
+  await apiFetch("/connect/auth/signup", { method: "POST", auth: false, body: { loginId, password, departmentId, verificationToken } });
+  return login(loginId, password);
 }
 
 export async function logout() {
-  await delay(0);
-  db.session = null;
+  try {
+    await apiFetch("/connect/auth/logout", { method: "POST", auth: false });
+  } catch {
+    /* 이미 만료됐어도 로컬 상태는 정리한다 */
+  }
+  accessToken = null;
+  cachedMe = null;
+  resetSessionCaches();
 }
 
-export async function getMe() {
-  await delay();
-  return db.session ? copy(db.session) : null;
-}
-
+/** 학부 수정 PATCH 엔드포인트가 없다 — 로컬에만 반영(새로고침하면 초기화, 알려진 한계). */
 export async function updateProfile(patch) {
-  await delay();
-  db.user = { ...db.user, ...patch };
-  if (db.session) db.session = db.user;
-  return copy(db.user);
+  cachedMe = { ...cachedMe, ...patch };
+  return { ...cachedMe };
 }
 
 export async function getPrefs() {
-  await delay();
-  return copy(db.prefs);
+  return { ...localPrefs };
 }
 
 export async function savePrefs(patch) {
-  await delay();
-  db.prefs = { ...db.prefs, ...patch };
-  return copy(db.prefs);
+  localPrefs = { ...localPrefs, ...patch };
+  return { ...localPrefs };
 }
 
-/** 소속 학부 11개. 회원가입·마이페이지가 같은 출처를 읽는다. */
 export async function listDepartments() {
-  await delay();
-  return copy(DEPARTMENTS);
+  const list = await apiFetch("/connect/departments", { auth: false });
+  return (list ?? []).map((d) => ({ value: d.id, label: d.name }));
 }
 
 /* ───────────────── 청원 ───────────────── */
 
-/** 학생용 목록 — 담당자는 부서명까지만. */
-export async function listPetitions() {
-  await delay();
-  return db.petitions.map((p) => view(p));
+function adaptPetition(raw) {
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  const meta = CATEGORY_META[key];
+  const deadline = raw.agreementDeadline ?? raw.expiresAt;
+  const daysLeft = deadline ? Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000) : null;
+  const expired = raw.status === "EXPIRED";
+  return {
+    id: raw.id,
+    title: raw.title,
+    excerpt: (raw.content ?? "").slice(0, 120),
+    body: raw.content,
+    category: key,
+    status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
+    current: raw.agreementCount ?? 0,
+    threshold: raw.targetAgreementCount ?? meta.threshold,
+    basis: meta.basis,
+    author: "익명",
+    // 댓글 수는 목록 응답에 없다 — 상세 진입 시 listComments 로 실제 값이 덮인다(store loadPetition).
+    comments: 0,
+    views: 0,
+    date: expired || daysLeft == null ? (expired ? "만료" : "") : daysLeft > 0 ? `D-${daysLeft}` : "만료",
+    mine: mineIds.has(raw.id),
+    voted: votedIds.has(raw.id),
+    bookmarked: bookmarkedIds.has(raw.id),
+    expired,
+    answered: false,
+    answer: null,
+  };
 }
 
-/** 관리자용 목록 — 담당자 실명·이메일·직통번호 포함. 백엔드는 이 엔드포인트에 관리자 스코프를 건다. */
-export async function listAdminPetitions() {
-  await delay();
-  return db.petitions.map((p) => view(p, { admin: true }));
+export async function listPetitions() {
+  await ensureFlags();
+  const data = await apiFetch("/connect/petitions?size=100&sort=createdAt,desc", { auth: false });
+  return (data?.content ?? []).map(adaptPetition);
 }
 
 export async function getPetition(id) {
-  await delay();
-  const p = record(id);
-  return p ? view(p) : null;
+  await ensureFlags();
+  try {
+    const raw = await apiFetch(`/connect/petitions/${Number(id)}`, { auth: false });
+    return adaptPetition(raw);
+  } catch (e) {
+    if (e.status === 404) return null;
+    throw e;
+  }
 }
 
 export async function createPetition({ category: categoryKey, title, body }) {
   const t = String(title ?? "").trim();
   const b = String(body ?? "").trim();
-  if (!category(categoryKey)) throw new Error("카테고리를 선택해 주세요.");
+  if (!CATEGORY_META[categoryKey]) throw new Error("카테고리를 선택해 주세요.");
   if (!t) throw new Error("제목을 입력해 주세요.");
   if (!b) throw new Error("건의 내용을 입력해 주세요.");
-  await delay();
-  const p = {
-    id: Math.max(...db.petitions.map((x) => x.id)) + 1,
-    title: t,
-    excerpt: b.slice(0, 120),
-    body: b,
-    category: categoryKey,
-    status: "received",
-    current: 0,
-    author: "익명",
-    createdAt: new Date().toISOString(),
-    views: 0,
-    mine: true,
-  };
-  db.petitions.unshift(p);
-  return view(p);
+  const raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
+  mineIds.add(raw.id);
+  saveMineIds();
+  return adaptPetition(raw);
 }
 
+/** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다. */
 export async function toggleEmpathy(id) {
-  await delay();
-  const p = record(id);
-  if (!p) throw new Error(`건의 ${id} 을(를) 찾을 수 없습니다.`);
-  if (db.voted.has(p.id)) {
-    db.voted.delete(p.id);
-    p.current -= 1;
-  } else {
-    db.voted.add(p.id);
-    p.current += 1;
-    applyThreshold(p);
+  const petitionId = Number(id);
+  const wasVoted = votedIds.has(petitionId);
+  try {
+    await apiFetch(`/connect/petitions/${petitionId}/agreements`, { method: wasVoted ? "DELETE" : "POST" });
+  } catch (e) {
+    if (e.status !== 409 && e.status !== 404) throw e;
   }
-  return view(p);
+  if (wasVoted) votedIds.delete(petitionId);
+  else votedIds.add(petitionId);
+  return getPetition(petitionId);
 }
 
 export async function toggleBookmark(id) {
-  await delay();
-  const p = record(id);
-  if (!p) throw new Error(`건의 ${id} 을(를) 찾을 수 없습니다.`);
-  if (db.bookmarked.has(p.id)) db.bookmarked.delete(p.id);
-  else db.bookmarked.add(p.id);
-  return view(p);
+  const petitionId = Number(id);
+  const wasBookmarked = bookmarkedIds.has(petitionId);
+  try {
+    await apiFetch(`/connect/petitions/${petitionId}/bookmarks`, { method: wasBookmarked ? "DELETE" : "POST" });
+  } catch (e) {
+    if (e.status !== 409 && e.status !== 404) throw e;
+  }
+  if (wasBookmarked) bookmarkedIds.delete(petitionId);
+  else bookmarkedIds.add(petitionId);
+  return getPetition(petitionId);
 }
 
 /* ───────────────── 댓글 ───────────────── */
 
+function adaptComment(c) {
+  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), votes: c.likeCount, mine: c.myComment };
+}
+
 export async function listComments(petitionId) {
-  await delay();
-  return copy(db.comments[Number(petitionId)] ?? []);
+  const data = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments?size=100`, { auth: false });
+  // 1단계 대댓글(replies)은 이번 라운드 범위 밖 — root 댓글만 노출한다.
+  return (data?.content ?? []).map(adaptComment);
 }
 
 export async function addComment(petitionId, body) {
   const text = String(body ?? "").trim();
   if (!text) throw new Error("댓글 내용을 입력해 주세요.");
-  await delay();
-  const key = Number(petitionId);
-  const list = (db.comments[key] ??= []);
-  const c = { id: (list.at(-1)?.id ?? 0) + 1, author: `익명 ${list.length + 1}`, body: text, date: "방금 전", votes: 0, mine: true };
-  list.push(c);
-  return copy(c);
+  const raw = await apiFetch(`/connect/petitions/${Number(petitionId)}/comments`, { method: "POST", body: { content: text } });
+  return adaptComment(raw);
 }
 
-/** 내가 쓴 댓글만 골라 청원 제목을 붙여 반환한다. 작성자 표시(author)는 건드리지 않는다 —
-    공개 익명 처리와 "내 것 찾기"는 별개다(mine 은 내부 플래그, 화면에 노출하지 않는다). */
+/** 청원 횡단 "내 댓글" 전체를 모아 주는 엔드포인트가 없다(N+1 없이는 불가능). 빈 목록. */
 export async function listMyComments() {
-  await delay();
-  const mine = [];
-  for (const [petitionId, list] of Object.entries(db.comments)) {
-    const p = record(petitionId);
-    for (const c of list) {
-      if (c.mine) mine.push({ ...c, petitionId: Number(petitionId), title: p?.title ?? "" });
-    }
-  }
-  return copy(mine);
+  return [];
 }
 
-/* ───────────────── 카테고리 · 담당자 ───────────────── */
+/* ───────────────── 카테고리 · 담당자 (학생/관리자 공용, 클라이언트 상수) ───────────────── */
 
-/** 5개 실제 카테고리. 필터의 「전체」 칩은 화면이 앞에 붙인다 — 도메인이 아니라 UI 다. */
 export async function listCategories() {
-  await delay();
-  return copy(db.categories);
+  return Object.entries(CATEGORY_META).map(([key, meta]) => ({ key, ...meta }));
 }
 
 export async function listOwners() {
-  await delay();
-  return copy(db.categories.map((c) => ({ key: c.key, label: c.label, ...c.owner })));
+  return Object.entries(CATEGORY_META).map(([key, meta]) => ({ key, label: meta.label, ...meta.owner }));
 }
 
 /* ───────────────── 알림 ───────────────── */
 
+function adaptNotification(n) {
+  return { id: n.id, type: NOTIF_TYPE_TO_LEGACY[n.type] ?? "answer", title: "", body: n.message, petitionId: n.petitionId, date: formatRelative(n.createdAt), read: n.read };
+}
+
 export async function listNotifications() {
-  await delay();
-  return copy(db.notifications);
+  const data = await apiFetch("/connect/notifications?size=50");
+  return (data?.content ?? []).map(adaptNotification);
 }
 
 export async function markAllNotifRead() {
-  await delay();
-  db.notifications.forEach((n) => (n.read = true));
-  return copy(db.notifications);
+  await apiFetch("/connect/notifications/read-all", { method: "PATCH" });
+  return listNotifications();
+}
+
+/* ───────────────── 관리자 콘솔 (백엔드 미지원 — mockDb.adminDb 로 계속 동작) ───────────────── */
+
+function adminView(p) {
+  const meta = CATEGORY_META[p.category];
+  return { id: p.id, title: p.title, excerpt: p.excerpt, category: p.category, status: p.status, current: p.current, threshold: meta.threshold, basis: meta.basis, owner: meta.owner, comments: 0, answered: p.status === "answered", answer: adminDb.answers[p.id] ?? null };
+}
+
+export async function listAdminPetitions() {
+  return adminDb.petitions.map(adminView);
 }
 
 export async function listNotifLogs() {
-  await delay();
-  return copy(db.notifLogs);
+  return [...adminDb.notifLogs];
 }
 
-/* ───────────────── 관리자 답변 (의존 B 의 쓰기 쪽) ───────────────── */
-
-/** 답변 레코드를 청원별로 만들고 상태를 답변 완료로 바꾼다.
-    프로토타입처럼 본문을 버리면 학생 웹 상세가 어느 청원에서나 같은 답변을 보여준다. */
 export async function answerPetition(id, body) {
   const text = String(body ?? "").trim();
   if (!text) throw new Error("답변 본문을 입력해 주세요.");
-  await delay();
-  const p = record(id);
+  const p = adminDb.petitions.find((x) => x.id === Number(id));
   if (!p) throw new Error(`청원 ${id} 을(를) 찾을 수 없습니다.`);
-  const { owner, threshold } = category(p.category);
-  // 임계치를 넘어야 담당 부서가 답한다 — 제품의 핵심 규칙이므로 UI 게이팅이 아니라 여기서 막는다.
-  // 백엔드는 이 계약을 그대로 구현한다.
-  if (p.current < threshold) throw new Error("임계치에 도달하지 않은 청원입니다.");
-  if (db.answers[p.id]) throw new Error("이미 답변이 등록된 청원입니다.");
-  db.answers[p.id] = {
-    petitionId: p.id,
-    dept: owner.team,
-    manager: owner.name,
-    date: new Date().toISOString().slice(0, 10).replaceAll("-", "."),
-    body: text,
-  };
+  const meta = CATEGORY_META[p.category];
+  if (p.current < meta.threshold) throw new Error("임계치에 도달하지 않은 청원입니다.");
+  if (adminDb.answers[p.id]) throw new Error("이미 답변이 등록된 청원입니다.");
+  adminDb.answers[p.id] = { petitionId: p.id, dept: meta.owner.team, manager: meta.owner.name, date: new Date().toISOString().slice(0, 10).replaceAll("-", "."), body: text };
   p.status = "answered";
-  return { petition: view(p, { admin: true }), answer: copy(db.answers[p.id]) };
+  return { petition: adminView(p), answer: adminDb.answers[p.id] };
 }
