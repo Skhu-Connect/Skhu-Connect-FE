@@ -29,6 +29,8 @@ export const usePetitions = create((set, get) => ({
   voted: {},
   bookmarked: {},
   myComments: [],
+  // 마이페이지 통계용 — petitions 배열(최근 100건)을 세지 않고 서버가 센 전체 개수를 그대로 쓴다.
+  myTotals: { mine: 0, voted: 0, bookmarked: 0, answered: 0 },
   loading: false,
 
   /** 학생 웹 로드. WebLayout 이 마운트 시 한 번 부른다.
@@ -48,6 +50,7 @@ export const usePetitions = create((set, get) => ({
         voted: flags(petitions, "voted"),
         bookmarked: flags(petitions, "bookmarked"),
         answersById: answers(petitions),
+        myTotals: api.getMyTotals(),
       });
     } finally {
       set({ loading: false });
@@ -90,23 +93,28 @@ export const usePetitions = create((set, get) => ({
     }
   },
 
-  /** @returns {boolean} 공감한 상태인지 — 토스트 문구를 화면이 고른다. */
+  /** @returns {boolean} 공감한 상태인지 — 토스트 문구를 화면이 고른다.
+      취소(DELETE)는 서버가 갱신된 agreementCount 를 안 준다(204 no body) — 토글 직후 잇달아 부르는
+      getPetition 이 아직 반영 전 값을 주면 "취소했는데 숫자가 그대로" 로 보인다. 방금 누른 방향만큼은
+      낙관적으로 반영하고, 서버 값이 그보다 더 진행돼 있으면(동시에 다른 사람이 공감/취소) 그 값을 따른다. */
   vote: async (id) => {
+    const before = get().petitions.find((x) => x.id === id)?.current;
     const p = await api.toggleEmpathy(id);
-    set((s) => ({ petitions: upsert(s.petitions, p), voted: { ...s.voted, [p.id]: p.voted } }));
+    const current = before == null ? p.current : p.voted ? Math.max(p.current, before + 1) : Math.min(p.current, before - 1);
+    set((s) => ({ petitions: upsert(s.petitions, { ...p, current }), voted: { ...s.voted, [p.id]: p.voted }, myTotals: api.getMyTotals() }));
     return p.voted;
   },
 
   /** @returns {boolean} 북마크된 상태인지 */
   bookmark: async (id) => {
     const p = await api.toggleBookmark(id);
-    set((s) => ({ petitions: upsert(s.petitions, p), bookmarked: { ...s.bookmarked, [p.id]: p.bookmarked } }));
+    set((s) => ({ petitions: upsert(s.petitions, p), bookmarked: { ...s.bookmarked, [p.id]: p.bookmarked }, myTotals: api.getMyTotals() }));
     return p.bookmarked;
   },
 
   submit: async ({ category, title, body }) => {
     const p = await api.createPetition({ category, title, body });
-    set((s) => ({ petitions: [p, ...s.petitions] }));
+    set((s) => ({ petitions: [p, ...s.petitions], myTotals: api.getMyTotals() }));
     return p;
   },
 

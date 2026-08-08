@@ -108,28 +108,54 @@ function formatRelative(iso) {
 /* ───────────────── voted/bookmarked/mine 파생 ─────────────────
    서버 청원 응답에는 voted/bookmarked/mine 이 없다. 로그인 시 내 공감·북마크·작성 청원 id 집합을
    /connect/users/me/{agreements,bookmarks,petitions} 로 받아 캐시하고, 토글·등록할 때 그 캐시를
-   직접 갱신한다. size 는 100 초과 시 서버가 400("Invalid user activity page request")을 낸다. */
+   직접 갱신한다. size 는 100 초과 시 서버가 400("Invalid user activity page request")을 낸다.
+
+   버그 수정: 셋 다 Promise.all 로 묶여 있으면 하나만 실패(콜드 스타트·일시적 네트워크 오류)해도
+   세 Set 이 통째로 비어버린다 — "탭을 나갔다가 들어오면 공감 표시가 사라진다" 증상의 원인.
+   allSettled 로 서로 독립시켜 실패한 것만 비우고, 하나라도 실패하면 flagsLoaded 를 다시 false 로
+   둬서 다음 호출(피드 재진입 등)에서 그 항목만 재시도되게 한다.
+   totalElements 도 같이 저장한다 — mine/voted 개수는 이 페이지(size=100)에 걸리는 청원 수가 아니라
+   서버가 세는 전체 개수를 써야 마이페이지 통계가 100건 너머에서도 정확하다. */
 
 let votedIds = new Set();
 let bookmarkedIds = new Set();
 let myPetitionIds = new Set();
+let myTotals = { mine: 0, voted: 0, bookmarked: 0, answered: 0 };
 let flagsLoaded = false;
 
 async function ensureFlags() {
   if (flagsLoaded || !accessToken) return;
   flagsLoaded = true;
-  try {
-    const [agreements, bookmarks, mine] = await Promise.all([
-      apiFetch("/connect/users/me/agreements?size=100"),
-      apiFetch("/connect/users/me/bookmarks?size=100"),
-      apiFetch("/connect/users/me/petitions?size=100"),
-    ]);
-    votedIds = new Set((agreements?.content ?? []).map((p) => p.id));
-    bookmarkedIds = new Set((bookmarks?.content ?? []).map((p) => p.id));
-    myPetitionIds = new Set((mine?.content ?? []).map((p) => p.id));
-  } catch {
-    flagsLoaded = false; // 다음 호출에서 재시도
+  const [agreements, bookmarks, mine] = await Promise.allSettled([
+    apiFetch("/connect/users/me/agreements?size=100"),
+    apiFetch("/connect/users/me/bookmarks?size=100"),
+    apiFetch("/connect/users/me/petitions?size=100"),
+  ]);
+  if (agreements.status === "fulfilled") {
+    votedIds = new Set((agreements.value?.content ?? []).map((p) => p.id));
+    myTotals = { ...myTotals, voted: agreements.value?.totalElements ?? votedIds.size };
   }
+  if (bookmarks.status === "fulfilled") {
+    bookmarkedIds = new Set((bookmarks.value?.content ?? []).map((p) => p.id));
+    myTotals = { ...myTotals, bookmarked: bookmarks.value?.totalElements ?? bookmarkedIds.size };
+  }
+  if (mine.status === "fulfilled") {
+    myPetitionIds = new Set((mine.value?.content ?? []).map((p) => p.id));
+    // "받은 답변" 은 여기서 직접 센다 — 목록/상세 응답의 status(ANSWERED)만 정답이고
+    // adaptPetition() 의 answer 필드는 실 백엔드에 답변 조회 엔드포인트가 없어 항상 null 이다
+    // (마이페이지가 이걸로 세고 있어서 "받은 답변" 이 항상 0 으로 보이던 버그).
+    const answered = (mine.value?.content ?? []).filter((p) => p.status === "ANSWERED").length;
+    myTotals = { ...myTotals, mine: mine.value?.totalElements ?? myPetitionIds.size, answered };
+  }
+  if (agreements.status !== "fulfilled" || bookmarks.status !== "fulfilled" || mine.status !== "fulfilled") {
+    flagsLoaded = false; // 실패한 항목이 있다 — 다음 호출에서 재시도
+  }
+}
+
+/** 마이페이지 통계용. petitions 피드는 최근 100건만 오므로 그 배열을 세면 100건 너머에서 값이 샌다 —
+    서버가 센 전체 개수를 그대로 쓴다. */
+export function getMyTotals() {
+  return { ...myTotals };
 }
 
 function resetSessionCaches() {
@@ -137,6 +163,7 @@ function resetSessionCaches() {
   votedIds = new Set();
   bookmarkedIds = new Set();
   myPetitionIds = new Set();
+  myTotals = { mine: 0, voted: 0, bookmarked: 0, answered: 0 };
 }
 
 /* ───────────────── 세션 ───────────────── */
@@ -299,10 +326,13 @@ export async function createPetition({ category: categoryKey, title, body }) {
   if (!b) throw new Error("건의 내용을 입력해 주세요.");
   const raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
   myPetitionIds.add(raw.id);
+  myTotals = { ...myTotals, mine: myTotals.mine + 1 };
   return adaptPetition(raw);
 }
 
-/** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다. */
+/** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다.
+    myTotals 도 같이 증감시킨다 — 안 그러면 ensureFlags 가 세션당 한 번만 도는 캐시라
+    마이페이지의 "누른 공감" 이 토글 직후엔 갱신되지 않고 다음 전체 새로고침까지 그대로 남는다. */
 export async function toggleEmpathy(id) {
   const petitionId = Number(id);
   const wasVoted = votedIds.has(petitionId);
@@ -313,6 +343,7 @@ export async function toggleEmpathy(id) {
   }
   if (wasVoted) votedIds.delete(petitionId);
   else votedIds.add(petitionId);
+  myTotals = { ...myTotals, voted: Math.max(0, myTotals.voted + (wasVoted ? -1 : 1)) };
   return getPetition(petitionId);
 }
 
@@ -326,6 +357,7 @@ export async function toggleBookmark(id) {
   }
   if (wasBookmarked) bookmarkedIds.delete(petitionId);
   else bookmarkedIds.add(petitionId);
+  myTotals = { ...myTotals, bookmarked: Math.max(0, myTotals.bookmarked + (wasBookmarked ? -1 : 1)) };
   return getPetition(petitionId);
 }
 
