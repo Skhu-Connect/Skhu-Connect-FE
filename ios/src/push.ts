@@ -13,6 +13,7 @@ import {
   onMessage,
   onNotificationOpenedApp,
   onTokenRefresh,
+  registerDeviceForRemoteMessages,
   requestPermission,
   setBackgroundMessageHandler,
   type RemoteMessage,
@@ -29,16 +30,16 @@ export async function registerForPush(): Promise<void> {
   if (!granted) return;
 
   try {
+    await registerDeviceForRemoteMessages(messaging); // v18+ 는 getToken() 전에 이걸 명시적으로 불러야 한다 — 안 그러면 messaging/unregistered
     const token = await getToken(messaging);
     await registerFcmToken(token);
+    unsubTokenRefresh?.();
+    unsubTokenRefresh = onTokenRefresh(messaging, (t) => {
+      registerFcmToken(t).catch(() => {});
+    });
   } catch {
     /* 토큰 발급·등록 실패 — 다음 로그인 때 재시도 */
   }
-
-  unsubTokenRefresh?.();
-  unsubTokenRefresh = onTokenRefresh(messaging, (token) => {
-    registerFcmToken(token).catch(() => {});
-  });
 }
 
 /** 로그아웃 시 호출한다. best-effort — 실패해도 로컬 세션 정리를 막지 않는다. */

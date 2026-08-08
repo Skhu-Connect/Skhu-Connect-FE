@@ -11,7 +11,10 @@
     "ios": {
       "bundleIdentifier": "ac.skhu.petition",
       "supportsTablet": false,
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "development"
+      }
     },
     "android": {
       "package": "ac.skhu.petition",
