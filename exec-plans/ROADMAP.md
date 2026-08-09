@@ -33,6 +33,11 @@
 
 Phase 5(신규 기능 확장, 학생 웹) 실행 항목은 [roadmap-web.md](roadmap-web.md) 에 있다.
 
+- [FEAT] 관리자 로그인·인증 게이트 추가 — 선행 없음, 아래 4건의 선행 조건. `/connect/admin/auth/{login,logout,token/refresh}` 연동. 지금 `/admin`은 로그인 게이트가 전혀 없다(AdminLayout.jsx·routes/admin.jsx에 "목 단계엔 인증 게이트 없음" 이라고 명시돼 있던 known 갭). 관리자 로그인 화면 신설 + AdminLayout 인증 가드. 학생 로그인(api/index.js login/restoreSession)과 같은 패턴(accessToken 메모리, refreshToken 쿠키)이되, 쿠키명이 `adminRefreshToken`으로 분리돼 있어 토큰 상태·리프레시 경로도 학생과 별도로 둔다.
+- [FEAT] 관리자 청원·댓글 목록을 실 백엔드로 전환 — 선행: 관리자 로그인·인증 게이트. `GET /connect/admin/petitions`, `GET .../comments`. `listAdminPetitions()` mock을 실 API로 교체.
+- [FEAT] 관리자 공식 답변 등록·수정 화면 보강 — 선행: 관리자 로그인·인증 게이트, 관리자 청원·댓글 목록 전환. `GET/PUT/POST .../answer`. 지금 AnswerModal은 등록(POST)만 있고 기존 답변 조회·수정 진입점이 없어 새로 만든다.
+- [FEAT] 관리자 콘텐츠 숨김·복원 기능 신규 추가 — 선행: 관리자 로그인·인증 게이트, 관리자 청원·댓글 목록 전환. 청원/댓글 hide·restore 4건. UI가 아예 없는 신규 기능.
+- [FEAT] 관리자 임계치 설정 화면 신규 추가 — 선행: 관리자 로그인·인증 게이트. `GET/PUT /connect/admin/threshold-settings`. 완전 신규 화면 + 사이드바 메뉴. `CATEGORY_META.threshold`가 학생 웹(청원 상세 진행률 등)도 같이 읽는 공용 상수라 서버값 전환 시 학생 웹 쪽 후속 이슈가 필요할 수 있다.
 - [FEAT] 회원가입 화면 구현 — 선행 없음
 - [FEAT] 마이페이지 화면 구현 — 선행 없음
 - [FEAT] 청원 만료 30일 처리 — 선행 없음
