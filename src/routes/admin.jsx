@@ -1,8 +1,10 @@
 /* 관리자 콘솔 라우트. Phase 2 는 이 파일과 src/pages/admin/* 만 건드린다.
-   목 단계에서 인증 게이트 없음 — Phase 3-2 security review 기록 항목. */
+   /admin/login 은 AdminLayout 밖의 형제 경로다 — 안에 넣으면 그 레이아웃의 인증 가드가
+   로그인 화면 자체를 다시 로그인으로 튕겨내는 순환이 생긴다. */
 
 import { Route } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
+import AdminLoginScreen from "../pages/admin/Login";
 import Dashboard from "../pages/admin/Dashboard";
 import Manage from "../pages/admin/Manage";
 import Owners from "../pages/admin/Owners";
@@ -10,11 +12,14 @@ import Logs from "../pages/admin/Logs";
 
 export function adminRoutes() {
   return (
-    <Route path="/admin" element={<AdminLayout />}>
-      <Route index element={<Dashboard />} />
-      <Route path="manage" element={<Manage />} />
-      <Route path="owners" element={<Owners />} />
-      <Route path="logs" element={<Logs />} />
-    </Route>
+    <>
+      <Route path="/admin/login" element={<AdminLoginScreen />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="manage" element={<Manage />} />
+        <Route path="owners" element={<Owners />} />
+        <Route path="logs" element={<Logs />} />
+      </Route>
+    </>
   );
 }

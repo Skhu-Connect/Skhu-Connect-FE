@@ -1,12 +1,14 @@
 /* 관리자 콘솔 셸: 232px navy 사이드바 고정 + 본문만 스크롤.
-   목 단계에서 /admin 에는 인증 게이트가 없다 — Phase 3-2 security review 에 기록할 항목.
+   인증 가드: adminRefreshToken 쿠키로 세션 복구를 시도하기 전엔 아무것도 안 그린다(깜빡 리다이렉트
+   방지, WebLayout 과 같은 패턴) — 실패하면 /admin/login 으로 보낸다.
    원본: design-handoff/project/app/admin-app-v4.jsx 63–83행.
    로고 타일은 Web 과 같은 /logo.png 다 — 브랜드 마크는 화면마다 다르게 그리지 않는다.
    Sidebar 는 이 레이아웃에서만 쓰이므로 파일을 쪼개지 않는다. */
 
 import { useEffect } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { usePetitions } from "../stores/petitions";
+import { useAdminSession } from "../stores/adminSession";
 import { Avatar, Icon } from "../components/ui";
 
 const NAV = [
@@ -18,10 +20,27 @@ const NAV = [
 
 export default function AdminLayout() {
   const loadAdmin = usePetitions((s) => s.loadAdmin);
+  const authed = useAdminSession((s) => s.authed);
+  const restored = useAdminSession((s) => s.restored);
+  const restore = useAdminSession((s) => s.restore);
+  const logout = useAdminSession((s) => s.logout);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadAdmin();
-  }, [loadAdmin]);
+    if (!authed && !restored) restore();
+  }, [authed, restored, restore]);
+
+  useEffect(() => {
+    if (authed) loadAdmin();
+  }, [authed, loadAdmin]);
+
+  if (!authed && !restored) return null;
+  if (!authed) return <Navigate to="/admin/login" replace />;
+
+  const onLogout = async () => {
+    await logout();
+    navigate("/admin/login", { replace: true });
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--surface-page)" }}>
@@ -62,10 +81,19 @@ export default function AdminLayout() {
         </nav>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 8px", borderTop: "1px solid rgba(255,255,255,.1)" }}>
           <Avatar name="관리" size={34} />
-          <div style={{ fontSize: 12.5 }}>
+          {/* 관리자 프로필 조회 API 가 없어 이름·이메일은 여전히 자리표시자다 — 로그인 자체는
+              실 세션이므로 로그아웃만 실제로 동작한다. */}
+          <div style={{ fontSize: 12.5, flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700 }}>총괄 관리자</div>
             <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@example.com</div>
           </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,.55)", padding: 4 }}
+          >
+            로그아웃
+          </button>
         </div>
       </aside>
       <Outlet />

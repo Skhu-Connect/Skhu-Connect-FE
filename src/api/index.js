@@ -438,7 +438,84 @@ export async function markNotifRead(id) {
   await apiFetch(`/connect/notifications/${Number(id)}/read`, { method: "PATCH" });
 }
 
-/* ───────────────── 관리자 콘솔 (백엔드 미지원 — mockDb.adminDb 로 계속 동작) ───────────────── */
+/* ───────────────── 관리자 인증 ─────────────────
+   학생 세션(accessToken/refreshing)과 완전히 분리된 상태를 쓴다. 서버가 리프레시 쿠키명부터
+   adminRefreshToken 으로 학생(refreshToken)과 구분해두므로, 401 재시도 때 학생용
+   /connect/auth/token/refresh 를 잘못 호출해 관리자 세션이 깨지는 일이 구조적으로 없다. */
+
+let adminAccessToken = null;
+let adminRefreshing = null;
+
+async function adminRawFetch(path, { method = "GET", body, auth = true } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (auth && adminAccessToken) headers.Authorization = `Bearer ${adminAccessToken}`;
+  return fetch(`${BASE_URL}${path}`, {
+    method,
+    headers,
+    credentials: "include", // adminRefreshToken 쿠키
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
+async function refreshAdminAccessToken() {
+  if (!adminRefreshing) {
+    adminRefreshing = adminRawFetch("/connect/admin/auth/token/refresh", { method: "POST", auth: false })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("세션이 만료되었습니다.");
+        const data = await res.json();
+        adminAccessToken = data.accessToken;
+      })
+      .finally(() => {
+        adminRefreshing = null;
+      });
+  }
+  return adminRefreshing;
+}
+
+async function adminApiFetch(path, opts = {}) {
+  let res = await adminRawFetch(path, opts);
+  if (res.status === 401 && opts.auth !== false) {
+    try {
+      await refreshAdminAccessToken();
+      res = await adminRawFetch(path, opts);
+    } catch {
+      /* 재발급 실패 — 아래에서 원래 401 을 던진다 */
+    }
+  }
+  if (!res.ok) throw await parseError(res);
+  if (res.status === 204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+/** AdminLayout 이 마운트 시 호출한다: adminRefreshToken 쿠키가 살아있으면 세션을 복구한다. */
+export async function restoreAdminSession() {
+  try {
+    await refreshAdminAccessToken();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function adminLogin(loginId, password) {
+  const id = String(loginId ?? "").trim();
+  const pw = String(password ?? "").trim();
+  if (!id || !pw) throw new Error("아이디와 비밀번호를 입력해 주세요.");
+  const { accessToken: token } = await adminApiFetch("/connect/admin/auth/login", { method: "POST", auth: false, body: { loginId: id, password: pw } });
+  adminAccessToken = token;
+}
+
+export async function adminLogout() {
+  try {
+    await adminApiFetch("/connect/admin/auth/logout", { method: "POST", auth: false });
+  } catch {
+    /* 이미 만료됐어도 로컬 상태는 정리한다 */
+  }
+  adminAccessToken = null;
+}
+
+/* ───────────────── 관리자 콘솔 (로그인만 실 백엔드 — 나머지는 아직 mockDb.adminDb) ───────────────── */
 
 function adminView(p) {
   const meta = CATEGORY_META[p.category];
