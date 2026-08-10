@@ -359,8 +359,7 @@ export default function App() {
     }
   }, [bootstrap, deepId, flash]);
 
-  const onLogout = useCallback(() => {
-    api.logout();
+  const resetAuthState = useCallback(() => {
     push.unregisterFromPush();
     setAuthed(false);
     setAuthScreen("login");
@@ -375,6 +374,19 @@ export default function App() {
     setNotifications([]);
     setMyComments([]);
   }, []);
+
+  const onLogout = useCallback(() => {
+    api.logout();
+    resetAuthState();
+  }, [resetAuthState]);
+
+  const onDeleteAccount = useCallback(
+    async (password: string) => {
+      await api.deleteAccount(password);
+      resetAuthState();
+    },
+    [resetAuthState],
+  );
 
   const onTab = useCallback((next: Tab) => {
     setTab(next);
@@ -488,6 +500,7 @@ export default function App() {
               onOpenNotification={onOpenNotification}
               onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
+              onDeleteAccount={onDeleteAccount}
             />
           ) : null}
 
