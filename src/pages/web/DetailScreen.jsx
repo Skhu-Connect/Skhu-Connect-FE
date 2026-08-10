@@ -39,8 +39,8 @@ function AdminAnswer({ a }) {
           <Icon name="shield" size={18} />
         </div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--status-answered-fg)" }}>{a.dept} · 공식 답변</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>담당자 {a.manager} · {a.date}</div>
+          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--status-answered-fg)" }}>{a.dept}</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{a.date}</div>
         </div>
         <div style={{ marginLeft: "auto" }}><StatusBadge status="answered" size="sm" /></div>
       </div>

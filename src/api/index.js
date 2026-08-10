@@ -142,9 +142,9 @@ async function ensureFlags() {
   }
   if (mine.status === "fulfilled") {
     myPetitionIds = new Set((mine.value?.content ?? []).map((p) => p.id));
-    // "받은 답변" 은 여기서 직접 센다 — 목록/상세 응답의 status(ANSWERED)만 정답이고
-    // adaptPetition() 의 answer 필드는 실 백엔드에 답변 조회 엔드포인트가 없어 항상 null 이다
-    // (마이페이지가 이걸로 세고 있어서 "받은 답변" 이 항상 0 으로 보이던 버그).
+    // "받은 답변" 은 여기서 직접 센다 — 이 목록 응답(size=100)에는 officialAnswer 가 없어
+    // adaptPetition() 의 answer 필드가 항상 null 이다(청원 상세 GET 에만 온다). status(ANSWERED)만
+    // 여기서 정답이다.
     const answered = (mine.value?.content ?? []).filter((p) => p.status === "ANSWERED").length;
     myTotals = { ...myTotals, mine: mine.value?.totalElements ?? myPetitionIds.size, answered };
   }
@@ -257,6 +257,15 @@ export async function listDepartments() {
 
 /* ───────────────── 청원 ───────────────── */
 
+// AnswerModal.jsx 의 ANSWER_SOURCES 라벨과 동일하다 — 실 답변에는 담당자 이름이 없다(답변 주체만).
+const ANSWER_SOURCE_LABEL = { OPERATION_TEAM: "운영팀 답변", SCHOOL_OFFICIAL: "학교 공식 답변" };
+
+/** 청원 상세 응답(GET /connect/petitions/{id})에만 오는 필드 — 목록 응답에는 없다. */
+function adaptOfficialAnswer(raw) {
+  if (!raw) return null;
+  return { body: raw.content, dept: ANSWER_SOURCE_LABEL[raw.answerSource] ?? "공식 답변", date: formatRelative(raw.createdAt) };
+}
+
 function adaptPetition(raw) {
   const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
   const meta = CATEGORY_META[key];
@@ -282,8 +291,8 @@ function adaptPetition(raw) {
     voted: votedIds.has(raw.id),
     bookmarked: bookmarkedIds.has(raw.id),
     expired,
-    answered: false,
-    answer: null,
+    answered: raw.status === "ANSWERED",
+    answer: adaptOfficialAnswer(raw.officialAnswer),
   };
 }
 
