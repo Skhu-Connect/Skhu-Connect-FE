@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
-import { Avatar, Button } from "../ui";
+import { Avatar, Button, Input } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
 const t = { fontFamily: font };
@@ -22,11 +22,13 @@ export type MyProps = {
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
   onLogout: () => void;
+  onDeleteAccount: (password: string) => Promise<void>;
 };
 
 export function MyScreen(p: MyProps) {
   const [notifExpanded, setNotifExpanded] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const shownNotifications = notifExpanded ? p.notifications : p.notifications.slice(0, PAGE_SIZE);
   const shownComments = commentsExpanded ? p.myComments : p.myComments.slice(0, PAGE_SIZE);
   const unread = p.notifications.filter((n) => !n.read).length;
@@ -155,13 +157,83 @@ export function MyScreen(p: MyProps) {
           {!commentsExpanded && p.myComments.length > PAGE_SIZE ? <MoreButton onPress={() => setCommentsExpanded(true)} /> : null}
         </View>
 
-        <View style={{ paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 }}>
+        <View style={{ paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
           <Button variant="outline" block onPress={p.onLogout}>
             로그아웃
           </Button>
+          <Pressable onPress={() => setDeleteOpen(true)} accessibilityRole="button" style={{ alignItems: "center", paddingVertical: 4 }}>
+            <Text style={[t, { fontSize: 12.5, fontWeight: "600", color: colors.muted }]}>회원탈퇴</Text>
+          </Pressable>
         </View>
       </ScrollView>
+
+      {deleteOpen ? (
+        <DeleteAccountSheet
+          onClose={() => setDeleteOpen(false)}
+          onSubmit={async (password) => {
+            await p.onDeleteAccount(password);
+            setDeleteOpen(false);
+          }}
+        />
+      ) : null}
     </View>
+  );
+}
+
+/* 신고 시트(Detail.tsx ReportSheet)와 같은 뼈대(스크림 + 하단 카드 폼)를 쓴다. */
+function DeleteAccountSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (password: string) => Promise<void> }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!password.trim()) return setError("비밀번호를 입력해 주세요.");
+    setBusy(true);
+    try {
+      await onSubmit(password);
+    } catch (e) {
+      // 네트워크 실패(fetch 가 던지는 TypeError)는 영어 원문이라 그대로 보여주지 않는다.
+      setError(e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : e instanceof Error ? e.message : "탈퇴 처리에 실패했습니다.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, .45)" }}>
+        <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, gap: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>회원탈퇴</Text>
+              <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 3 }]}>계정 삭제를 위해 가입한 비밀번호를 입력해 주세요.</Text>
+            </View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="탈퇴 창 닫기" hitSlop={10}>
+              <Text style={[t, { fontSize: 15, fontWeight: "700", color: colors.muted }]}>닫기</Text>
+            </Pressable>
+          </View>
+          <View style={{ backgroundColor: colors.page, borderRadius: 10, padding: 12 }}>
+            <Text style={[t, { fontSize: 12, color: colors.muted, lineHeight: 18 }]}>
+              탈퇴하면 계정 정보가 삭제되며, 이후 30일 동안은 같은 정보로 다시 가입할 수 없어요. 신중히 결정해 주세요.
+            </Text>
+          </View>
+          <Input label="비밀번호" value={password} onChangeText={(v) => { setPassword(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+          {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
+          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+            <Pressable onPress={onClose} disabled={busy} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
+              <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
+            </Pressable>
+            <Pressable
+              onPress={submit}
+              disabled={busy || !password.trim()}
+              accessibilityRole="button"
+              style={{ backgroundColor: colors.danger, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, opacity: busy || !password.trim() ? 0.5 : 1 }}
+            >
+              <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>{busy ? "처리 중…" : "탈퇴하기"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
