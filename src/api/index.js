@@ -3,8 +3,9 @@
    Phase 6(백엔드 연동)에서 mock 을 실 백엔드(skhu-connect-be-production.up.railway.app) fetch 로
    교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
-   admin 콘솔(listAdminPetitions/listOwners/listNotifLogs/answerPetition)은 백엔드에 대응
-   엔드포인트가 없어 여전히 mockDb.js 의 adminDb 로 동작한다 — 학생 웹 실 청원과는 별개 데이터셋.
+   admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)까지 실 백엔드로 연동됐다.
+   listOwners/listNotifLogs(담당자 연락처·알림 로그)는 대응 엔드포인트가 없어 여전히
+   mockDb.js 의 adminDb 로 동작한다.
    getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
    로컬 상태로만 유지한다(새로고침하면 초기화).
 
@@ -515,7 +516,7 @@ export async function adminLogout() {
   adminAccessToken = null;
 }
 
-/* ───────────────── 관리자 콘솔 (로그인·청원 목록은 실 백엔드 — 답변 등록은 아직 mockDb.adminDb) ───────────────── */
+/* ───────────────── 관리자 콘솔 (로그인·청원 목록·공식 답변은 실 백엔드 — 담당자·알림 로그만 mockDb.adminDb) ───────────────── */
 
 // 담당자 연락처(basis·owner)는 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위 고정값이라
 // 여전히 CATEGORY_META 에서 읽는다(#49 Owners 화면과 같은 소스). threshold 는 청원마다 다를 수
@@ -550,23 +551,31 @@ export async function listNotifLogs() {
   return [...adminDb.notifLogs];
 }
 
-// mockDb.adminDb 는 이미 클라이언트 키 형태(category/status)라 서버 enum 을 변환하는
-// adaptAdminPetition 을 쓸 수 없다 — 이 mock 전용 뷰는 #47(공식 답변 실 연동)에서 answerPetition
-// 자체가 없어질 때 같이 지운다.
-function mockAdminView(p) {
-  const meta = CATEGORY_META[p.category];
-  return { id: p.id, title: p.title, excerpt: p.excerpt, category: p.category, status: p.status, current: p.current, threshold: meta.threshold, basis: meta.basis, owner: meta.owner, comments: 0, answered: p.status === "answered", answer: adminDb.answers[p.id] ?? null };
+function adaptAdminAnswer(raw) {
+  return { id: raw.id, petitionId: raw.petitionId, content: raw.content, answerSource: raw.answerSource, createdAt: raw.createdAt, updatedAt: raw.updatedAt };
 }
 
-export async function answerPetition(id, body) {
-  const text = String(body ?? "").trim();
+/** 답변이 아직 없는 청원(등록 전)을 조회하면 서버가 404 를 준다 — 그건 정상 상태라 null 로
+    삼킨다. 그 외 오류(권한 없음 등)는 그대로 던진다. */
+export async function getAdminAnswer(petitionId) {
+  try {
+    return adaptAdminAnswer(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/answer`));
+  } catch (e) {
+    if (e.status === 404) return null;
+    throw e;
+  }
+}
+
+export async function createAdminAnswer(petitionId, content, answerSource) {
+  const text = String(content ?? "").trim();
   if (!text) throw new Error("답변 본문을 입력해 주세요.");
-  const p = adminDb.petitions.find((x) => x.id === Number(id));
-  if (!p) throw new Error(`청원 ${id} 을(를) 찾을 수 없습니다.`);
-  const meta = CATEGORY_META[p.category];
-  if (p.current < meta.threshold) throw new Error("임계치에 도달하지 않은 청원입니다.");
-  if (adminDb.answers[p.id]) throw new Error("이미 답변이 등록된 청원입니다.");
-  adminDb.answers[p.id] = { petitionId: p.id, dept: meta.owner.team, manager: meta.owner.name, date: new Date().toISOString().slice(0, 10).replaceAll("-", "."), body: text };
-  p.status = "answered";
-  return { petition: mockAdminView(p), answer: adminDb.answers[p.id] };
+  const raw = await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/answer`, { method: "POST", body: { content: text, answerSource } });
+  return adaptAdminAnswer(raw);
+}
+
+export async function updateAdminAnswer(petitionId, content, answerSource) {
+  const text = String(content ?? "").trim();
+  if (!text) throw new Error("답변 본문을 입력해 주세요.");
+  const raw = await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/answer`, { method: "PUT", body: { content: text, answerSource } });
+  return adaptAdminAnswer(raw);
 }

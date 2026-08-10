@@ -44,7 +44,7 @@ function Row({ p, onAnswer }) {
       </td>
       <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
         {p.status === "answered" ? (
-          <span style={{ fontSize: 12.5, color: "var(--success-500)", fontWeight: 700 }}>답변 완료</span>
+          <Button size="sm" variant="outline" onClick={() => onAnswer(p)}>답변 완료 · 보기</Button>
         ) : reached ? (
           <Button size="sm" variant="primary" onClick={() => onAnswer(p)}>답변 작성</Button>
         ) : (
@@ -59,11 +59,11 @@ function Row({ p, onAnswer }) {
     Dashboard·Manage 양쪽에 모달 상태를 복제할 이유가 없다. 열림 여부는 화면 useState.
     @param {{title: string, list: object[], empty: string}} props */
 export default function PetitionTable({ title, list, empty }) {
-  const answer = usePetitions((s) => s.answer);
+  const submitAnswer = usePetitions((s) => s.submitAnswer);
   const [answering, setAnswering] = useState(null);
 
-  const submit = async (id, body) => {
-    await answer(id, body);
+  const submit = async (id, body, answerSource, isEdit) => {
+    await submitAnswer(id, body, answerSource, isEdit);
     setAnswering(null);
   };
 

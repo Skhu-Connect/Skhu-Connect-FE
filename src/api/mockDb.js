@@ -45,67 +45,7 @@ export const CATEGORY_META = {
   },
 };
 
-const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
-
 export const adminDb = {
-  petitions: [
-    {
-      id: 1,
-      title: "중앙도서관 시험기간 24시간 개방 요청",
-      excerpt: "시험기간만이라도 열람실을 24시간 운영해 주세요. 밤 12시에 문을 닫으면 자리 경쟁이 너무 심합니다.",
-      category: "library",
-      status: "reviewing",
-      current: 512,
-      createdAt: daysAgo(2),
-    },
-    {
-      id: 2,
-      title: "기숙사 세탁기 추가 설치 건의",
-      excerpt: "세탁기 대수가 부족해 주말마다 1시간 이상 기다립니다. 층당 최소 2대씩 증설이 필요합니다.",
-      category: "dorm",
-      status: "reviewing",
-      current: 243,
-      createdAt: daysAgo(4),
-    },
-    {
-      id: 3,
-      title: "소프트웨어융합학부 실습실 야간 개방",
-      excerpt: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족합니다.",
-      category: "department",
-      status: "received",
-      current: 88,
-      createdAt: daysAgo(1),
-    },
-    {
-      id: 4,
-      title: "교내 장학금 신청 절차 간소화",
-      excerpt: "매 학기 동일 서류를 반복 제출합니다. 종합정보시스템 연동으로 자동화해 주세요.",
-      category: "scholarship",
-      status: "answered",
-      current: 631,
-      createdAt: daysAgo(14),
-    },
-    {
-      id: 5,
-      title: "학생회관 남녀 화장실 리모델링",
-      excerpt: "노후된 학생회관 화장실 위생 상태가 심각합니다. 전면 보수를 요청합니다.",
-      category: "facility",
-      status: "received",
-      current: 154,
-      createdAt: daysAgo(1),
-    },
-  ],
-
-  answers: {
-    4: {
-      petitionId: 4,
-      dept: "학생지원팀",
-      manager: "정명희",
-      date: "2026.05.22",
-      body: "안녕하세요, 학생지원팀입니다. 교내에서 확인 가능한 성적·재학 정보는 2026학년도 2학기 신청분부터 종합정보시스템 연동으로 자동 첨부되도록 개선하였습니다. 소중한 의견 감사합니다.",
-    },
-  },
-
   notifLogs: [
     { id: 1, time: "2026.07.25 14:02", type: "threshold", petitionId: 2, msg: "공감 243/240 도달 — 생활관행정실 김도윤에게 검토 요청을 발송했습니다." },
     { id: 2, time: "2026.07.24 09:31", type: "threshold", petitionId: 1, msg: "공감 512/480 도달 — 학술정보관 이동수에게 검토 요청을 발송했습니다." },
