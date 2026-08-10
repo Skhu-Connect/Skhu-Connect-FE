@@ -7,8 +7,9 @@
 
 import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
-import { Button, CategoryTag, StatusBadge } from "../ui";
+import { Badge, Button, CategoryTag, StatusBadge } from "../ui";
 import AnswerModal from "./AnswerModal";
+import CommentModeration from "./CommentModeration";
 
 const COLS = [
   { label: "제목 / 담당", style: { padding: "10px 16px" } },
@@ -18,13 +19,16 @@ const COLS = [
   { label: "처리", style: { padding: "10px 16px", textAlign: "right" } },
 ];
 
-function Row({ p, onAnswer }) {
+function Row({ p, onAnswer, onHide, onRestore, onComments }) {
   const reached = p.current >= p.threshold;
   const pct = Math.round((p.current / p.threshold) * 100);
   return (
     <tr style={{ borderTop: "1px solid var(--border-subtle)" }}>
       <td style={{ padding: "14px 16px", maxWidth: 300 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
+          {p.hidden ? <Badge tone="danger" size="sm">숨김</Badge> : null}
+        </div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
           {p.owner.team} · {p.owner.name}
         </div>
@@ -43,13 +47,21 @@ function Row({ p, onAnswer }) {
         </div>
       </td>
       <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
-        {p.status === "answered" ? (
-          <Button size="sm" variant="outline" onClick={() => onAnswer(p)}>답변 완료 · 보기</Button>
-        ) : reached ? (
-          <Button size="sm" variant="primary" onClick={() => onAnswer(p)}>답변 작성</Button>
-        ) : (
-          <Button size="sm" variant="outline" disabled>대기중</Button>
-        )}
+        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+          {p.status === "answered" ? (
+            <Button size="sm" variant="outline" onClick={() => onAnswer(p)}>답변 완료 · 보기</Button>
+          ) : reached ? (
+            <Button size="sm" variant="primary" onClick={() => onAnswer(p)}>답변 작성</Button>
+          ) : (
+            <Button size="sm" variant="outline" disabled>대기중</Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => onComments(p)}>댓글</Button>
+          {p.hidden ? (
+            <Button size="sm" variant="outline" onClick={() => onRestore(p)}>복원</Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => onHide(p)}>숨김</Button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -60,11 +72,33 @@ function Row({ p, onAnswer }) {
     @param {{title: string, list: object[], empty: string}} props */
 export default function PetitionTable({ title, list, empty }) {
   const submitAnswer = usePetitions((s) => s.submitAnswer);
+  const hidePetition = usePetitions((s) => s.hidePetition);
+  const restorePetition = usePetitions((s) => s.restorePetition);
   const [answering, setAnswering] = useState(null);
+  const [commenting, setCommenting] = useState(null);
 
   const submit = async (id, body, answerSource, isEdit) => {
     await submitAnswer(id, body, answerSource, isEdit);
     setAnswering(null);
+  };
+
+  const hide = async (p) => {
+    const reason = window.prompt(`"${p.title}" 청원을 숨길 사유를 입력하세요.`);
+    if (!reason) return;
+    try {
+      await hidePetition(p.id, reason);
+    } catch (e) {
+      window.alert(e.message);
+    }
+  };
+
+  const restore = async (p) => {
+    if (!window.confirm(`"${p.title}" 청원을 복원할까요?`)) return;
+    try {
+      await restorePetition(p.id);
+    } catch (e) {
+      window.alert(e.message);
+    }
   };
 
   return (
@@ -83,12 +117,13 @@ export default function PetitionTable({ title, list, empty }) {
           </thead>
           <tbody>
             {list.map((p) => (
-              <Row key={p.id} p={p} onAnswer={setAnswering} />
+              <Row key={p.id} p={p} onAnswer={setAnswering} onHide={hide} onRestore={restore} onComments={setCommenting} />
             ))}
           </tbody>
         </table>
       )}
       {answering && <AnswerModal p={answering} onClose={() => setAnswering(null)} onSubmit={submit} />}
+      {commenting && <CommentModeration p={commenting} onClose={() => setCommenting(null)} />}
     </div>
   );
 }

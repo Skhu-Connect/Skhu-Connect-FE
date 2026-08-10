@@ -551,6 +551,39 @@ export async function listNotifLogs() {
   return [...adminDb.notifLogs];
 }
 
+function pickHiddenState(raw) {
+  return { hidden: raw.hidden, hiddenReason: raw.hiddenReason ?? null };
+}
+
+export async function hideAdminPetition(petitionId, reason) {
+  const text = String(reason ?? "").trim();
+  if (!text) throw new Error("숨김 사유를 입력해 주세요.");
+  return pickHiddenState(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/hide`, { method: "PATCH", body: { hiddenReason: text } }));
+}
+
+export async function restoreAdminPetition(petitionId) {
+  return pickHiddenState(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/restore`, { method: "PATCH" }));
+}
+
+function adaptAdminComment(raw) {
+  return { id: raw.id, parentCommentId: raw.parentCommentId ?? null, content: raw.content, anonymousNumber: raw.anonymousNumber, hidden: raw.hidden, hiddenReason: raw.hiddenReason ?? null };
+}
+
+export async function listAdminComments(petitionId) {
+  const data = await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/comments?size=100`);
+  return (data?.content ?? []).map(adaptAdminComment);
+}
+
+export async function hideAdminComment(petitionId, commentId, reason) {
+  const text = String(reason ?? "").trim();
+  if (!text) throw new Error("숨김 사유를 입력해 주세요.");
+  return pickHiddenState(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/comments/${Number(commentId)}/hide`, { method: "PATCH", body: { hiddenReason: text } }));
+}
+
+export async function restoreAdminComment(petitionId, commentId) {
+  return pickHiddenState(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/comments/${Number(commentId)}/restore`, { method: "PATCH" }));
+}
+
 function adaptAdminAnswer(raw) {
   return { id: raw.id, petitionId: raw.petitionId, content: raw.content, answerSource: raw.answerSource, createdAt: raw.createdAt, updatedAt: raw.updatedAt };
 }
