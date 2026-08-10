@@ -515,19 +515,47 @@ export async function adminLogout() {
   adminAccessToken = null;
 }
 
-/* ───────────────── 관리자 콘솔 (로그인만 실 백엔드 — 나머지는 아직 mockDb.adminDb) ───────────────── */
+/* ───────────────── 관리자 콘솔 (로그인·청원 목록은 실 백엔드 — 답변 등록은 아직 mockDb.adminDb) ───────────────── */
 
-function adminView(p) {
-  const meta = CATEGORY_META[p.category];
-  return { id: p.id, title: p.title, excerpt: p.excerpt, category: p.category, status: p.status, current: p.current, threshold: meta.threshold, basis: meta.basis, owner: meta.owner, comments: 0, answered: p.status === "answered", answer: adminDb.answers[p.id] ?? null };
+// 담당자 연락처(basis·owner)는 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위 고정값이라
+// 여전히 CATEGORY_META 에서 읽는다(#49 Owners 화면과 같은 소스). threshold 는 청원마다 다를 수
+// 있어 응답의 targetAgreementCount 를 우선하고, 없을 때만 CATEGORY_META 폴백을 쓴다.
+function adaptAdminPetition(raw) {
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  const meta = CATEGORY_META[key];
+  return {
+    id: raw.id,
+    title: raw.title,
+    excerpt: (raw.content ?? "").slice(0, 120),
+    category: key,
+    status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
+    current: raw.agreementCount ?? 0,
+    threshold: raw.targetAgreementCount ?? meta.threshold,
+    basis: meta.basis,
+    owner: meta.owner,
+    hidden: raw.hidden ?? false,
+    hiddenReason: raw.hiddenReason ?? null,
+    answered: raw.status === "ANSWERED",
+    // 목록 응답엔 답변 본문이 없다 — GET .../answer 로 따로 받아야 하는 화면(#47)에서 채운다.
+    answer: null,
+  };
 }
 
 export async function listAdminPetitions() {
-  return adminDb.petitions.map(adminView);
+  const data = await adminApiFetch("/connect/admin/petitions?size=100");
+  return (data?.content ?? []).map(adaptAdminPetition);
 }
 
 export async function listNotifLogs() {
   return [...adminDb.notifLogs];
+}
+
+// mockDb.adminDb 는 이미 클라이언트 키 형태(category/status)라 서버 enum 을 변환하는
+// adaptAdminPetition 을 쓸 수 없다 — 이 mock 전용 뷰는 #47(공식 답변 실 연동)에서 answerPetition
+// 자체가 없어질 때 같이 지운다.
+function mockAdminView(p) {
+  const meta = CATEGORY_META[p.category];
+  return { id: p.id, title: p.title, excerpt: p.excerpt, category: p.category, status: p.status, current: p.current, threshold: meta.threshold, basis: meta.basis, owner: meta.owner, comments: 0, answered: p.status === "answered", answer: adminDb.answers[p.id] ?? null };
 }
 
 export async function answerPetition(id, body) {
@@ -540,5 +568,5 @@ export async function answerPetition(id, body) {
   if (adminDb.answers[p.id]) throw new Error("이미 답변이 등록된 청원입니다.");
   adminDb.answers[p.id] = { petitionId: p.id, dept: meta.owner.team, manager: meta.owner.name, date: new Date().toISOString().slice(0, 10).replaceAll("-", "."), body: text };
   p.status = "answered";
-  return { petition: adminView(p), answer: adminDb.answers[p.id] };
+  return { petition: mockAdminView(p), answer: adminDb.answers[p.id] };
 }
