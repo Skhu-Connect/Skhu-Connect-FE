@@ -192,7 +192,8 @@ function DeleteAccountSheet({ onClose, onSubmit }: { onClose: () => void; onSubm
     try {
       await onSubmit(password);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "탈퇴 처리에 실패했습니다.");
+      // 네트워크 실패(fetch 가 던지는 TypeError)는 영어 원문이라 그대로 보여주지 않는다.
+      setError(e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : e instanceof Error ? e.message : "탈퇴 처리에 실패했습니다.");
       setBusy(false);
     }
   };
