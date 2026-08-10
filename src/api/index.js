@@ -3,9 +3,9 @@
    Phase 6(백엔드 연동)에서 mock 을 실 백엔드(skhu-connect-be-production.up.railway.app) fetch 로
    교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
-   admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)까지 실 백엔드로 연동됐다.
-   listOwners/listNotifLogs(담당자 연락처·알림 로그)는 대응 엔드포인트가 없어 여전히
-   mockDb.js 의 adminDb 로 동작한다.
+   admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
+   임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listOwners/listNotifLogs(담당자 연락처·
+   알림 로그)는 대응 엔드포인트가 없어 여전히 mockDb.js 의 CATEGORY_META/adminDb 로 동작한다.
    getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
    로컬 상태로만 유지한다(새로고침하면 초기화).
 
@@ -611,4 +611,35 @@ export async function updateAdminAnswer(petitionId, content, answerSource) {
   if (!text) throw new Error("답변 본문을 입력해 주세요.");
   const raw = await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/answer`, { method: "PUT", body: { content: text, answerSource } });
   return adaptAdminAnswer(raw);
+}
+
+function adaptThresholdSetting(raw) {
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  return {
+    category: key,
+    totalStudentCount: raw.totalStudentCount,
+    thresholdRate: raw.thresholdRate,
+    minimumCount: raw.minimumCount,
+    targetAgreementCount: raw.targetAgreementCount,
+    changeReason: raw.changeReason ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  };
+}
+
+export async function listAdminThresholdSettings() {
+  const data = await adminApiFetch("/connect/admin/threshold-settings");
+  return (data ?? []).map(adaptThresholdSetting);
+}
+
+/** targetAgreementCount(실제 목표 공감 수)는 서버가 totalStudentCount·thresholdRate·
+    minimumCount 로부터 계산한다 — 클라이언트가 보내지 않는다. */
+export async function updateAdminThresholdSetting(category, { totalStudentCount, thresholdRate, minimumCount, changeReason }) {
+  const reason = String(changeReason ?? "").trim();
+  if (!reason) throw new Error("변경 사유를 입력해 주세요.");
+  const enumCategory = CATEGORY_KEY_TO_ENUM[category];
+  const raw = await adminApiFetch(`/connect/admin/threshold-settings/${enumCategory}`, {
+    method: "PUT",
+    body: { totalStudentCount, thresholdRate, minimumCount, changeReason: reason },
+  });
+  return adaptThresholdSetting(raw);
 }
