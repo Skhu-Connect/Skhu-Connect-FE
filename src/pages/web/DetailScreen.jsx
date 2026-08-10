@@ -7,6 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
+import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
 
 function ShareLink({ url }) {
   const [copied, setCopied] = useState(false);
@@ -264,7 +265,7 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
-            onToggle={async () => toast((await vote(p.id)) ? "공감했습니다" : "공감을 취소했습니다")}
+            onToggle={() => toggleVoteWithConfirm(vote, p.id, voted)}
           />
           <IconButton
             variant={bookmarked ? "solid" : "outline"}

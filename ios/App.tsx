@@ -1,6 +1,6 @@
 import "./global.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Linking, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
@@ -204,9 +204,8 @@ export default function App() {
   /* MyScreen 의 answeredCount(내 건의 중 답변받은 것)와 다르다 — 이건 전체 답변 완료 건수다. */
   const totalAnsweredCount = useMemo(() => petitions.filter((p) => p.status === "answered").length, [petitions]);
 
-  const vote = useCallback(
-    (id: number) => {
-      const wasVoted = !!votes[id];
+  const doVote = useCallback(
+    (id: number, wasVoted: boolean) => {
       setVotes((v) => ({ ...v, [id]: !wasVoted }));
       if (!wasVoted) setDeepUsed(true);
       flash(!wasVoted ? "공감했습니다" : "공감을 취소했습니다");
@@ -215,7 +214,23 @@ export default function App() {
         flash("공감 처리에 실패했습니다");
       });
     },
-    [votes, flash],
+    [flash],
+  );
+
+  /* 취소(voted=true → false)만 확인을 받는다 — 공감을 누르는 쪽은 확인 없이 바로 처리한다. */
+  const vote = useCallback(
+    (id: number) => {
+      const wasVoted = !!votes[id];
+      if (!wasVoted) {
+        doVote(id, wasVoted);
+        return;
+      }
+      Alert.alert("공감을 취소할까요?", undefined, [
+        { text: "취소", style: "cancel" },
+        { text: "확인", onPress: () => doVote(id, wasVoted) },
+      ]);
+    },
+    [votes, doVote],
   );
 
   const toggleBookmark = useCallback(

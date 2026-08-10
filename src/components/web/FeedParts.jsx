@@ -5,7 +5,7 @@
 import { useNavigate } from "react-router-dom";
 import { Icon, PetitionCard, petitionStatus } from "../ui";
 import { usePetitions } from "../../stores/petitions";
-import { toast } from "../Toast";
+import { toggleVoteWithConfirm } from "./voteWithConfirm";
 
 export function PageIntro({ icon, bg, fg, title, count, desc }) {
   return (
@@ -53,7 +53,7 @@ export function PetitionGrid({ list, authorOf }) {
           date={p.date}
           comments={p.comments}
           voted={!!voted[p.id]}
-          onToggleVote={async () => toast((await vote(p.id)) ? "공감했습니다" : "공감을 취소했습니다")}
+          onToggleVote={() => toggleVoteWithConfirm(vote, p.id, voted[p.id])}
           onClick={() => navigate(`/p/${p.id}`)}
         />
       ))}
