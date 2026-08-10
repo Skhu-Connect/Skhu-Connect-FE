@@ -108,13 +108,14 @@ function DeleteAccountDialog({ onClose }) {
       await deleteAccount(password);
       toast("탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
     } catch (err) {
-      setError(err.message || "탈퇴 처리에 실패했습니다.");
+      // 네트워크 실패(fetch 가 던지는 TypeError)는 영어 원문("Failed to fetch")이라 그대로 보여주지 않는다.
+      setError(err instanceof TypeError ? "네트워크 연결을 확인해 주세요." : err.message || "탈퇴 처리에 실패했습니다.");
       setBusy(false);
     }
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onClick={() => !busy && onClose()} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
       <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
         <h2 id="delete-account-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>회원탈퇴</h2>
         <p style={{ margin: "6px 0 14px", fontSize: 13.5, color: "var(--text-muted)" }}>계정 삭제를 위해 가입한 비밀번호를 입력해 주세요.</p>
