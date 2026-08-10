@@ -20,6 +20,7 @@ export type MyProps = {
   onTogglePref: (k: PrefKey) => void;
   onOpenPetition: (id: number) => void;
   onOpenNotification: (n: Notification) => void;
+  onMarkAllNotifRead: () => void;
   onLogout: () => void;
 };
 
@@ -28,6 +29,7 @@ export function MyScreen(p: MyProps) {
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const shownNotifications = notifExpanded ? p.notifications : p.notifications.slice(0, PAGE_SIZE);
   const shownComments = commentsExpanded ? p.myComments : p.myComments.slice(0, PAGE_SIZE);
+  const unread = p.notifications.filter((n) => !n.read).length;
 
   const stats = [
     { value: p.mineCount, label: "등록한 건의" },
@@ -60,7 +62,14 @@ export function MyScreen(p: MyProps) {
           ))}
         </View>
 
-        <SectionTitle>알림</SectionTitle>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6 }}>
+          <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong }]}>{unread > 0 ? `${unread}건 안 읽음` : "알림"}</Text>
+          {p.notifications.length > 0 ? (
+            <Pressable onPress={p.onMarkAllNotifRead} accessibilityRole="button" style={{ marginLeft: "auto" }}>
+              <Text style={[t, { fontSize: 12.5, fontWeight: "600", color: colors.indigo[600] }]}>전체 읽음</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
           {p.notifications.length === 0 ? (
             <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18, paddingHorizontal: 15 }]}>받은 알림이 없습니다.</Text>

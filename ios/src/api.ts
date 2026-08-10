@@ -355,6 +355,10 @@ export async function markNotifRead(id: number): Promise<void> {
   await apiFetch(`/connect/notifications/${id}/read`, { method: "PATCH" });
 }
 
+export async function markAllNotifRead(): Promise<void> {
+  await apiFetch("/connect/notifications/read-all", { method: "PATCH" });
+}
+
 /* ───────────────── 푸시(FCM) 토큰 ───────────────── */
 
 export async function registerFcmToken(token: string): Promise<void> {

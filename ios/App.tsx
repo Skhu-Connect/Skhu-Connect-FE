@@ -247,6 +247,11 @@ export default function App() {
     [openPetition],
   );
 
+  const onMarkAllNotifRead = useCallback(() => {
+    setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
+    api.markAllNotifRead().catch(() => {});
+  }, []);
+
   const addComment = useCallback(() => {
     const text = draft.trim();
     if (!text || openId == null) return;
@@ -429,6 +434,7 @@ export default function App() {
               onTogglePref={(k) => setPrefs((p) => ({ ...p, [k]: !p[k] }))}
               onOpenPetition={openPetition}
               onOpenNotification={onOpenNotification}
+              onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
             />
           ) : null}
