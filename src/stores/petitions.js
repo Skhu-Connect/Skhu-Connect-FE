@@ -150,6 +150,17 @@ export const usePetitions = create((set, get) => ({
     return answer;
   },
 
+  /** Admin 청원 숨김/복원. 목록·상세를 다시 부르지 않고 hidden 상태만 로컬 패치한다. */
+  hidePetition: async (id, reason) => {
+    const { hidden, hiddenReason } = await api.hideAdminPetition(id, reason);
+    set((s) => ({ petitions: s.petitions.map((p) => (p.id === Number(id) ? { ...p, hidden, hiddenReason } : p)) }));
+  },
+
+  restorePetition: async (id) => {
+    const { hidden, hiddenReason } = await api.restoreAdminPetition(id);
+    set((s) => ({ petitions: s.petitions.map((p) => (p.id === Number(id) ? { ...p, hidden, hiddenReason } : p)) }));
+  },
+
   markAllNotifRead: async () => {
     const notifications = await api.markAllNotifRead();
     set({ notifications });
