@@ -120,6 +120,10 @@ export const usePetitions = create((set, get) => ({
     return p;
   },
 
+  reportPetition: (id) => api.reportPetition(id),
+
+  reportComment: (id) => api.reportComment(id),
+
   /** parentCommentId 를 주면 그 root 댓글 아래 대댓글로 붙인다. */
   addComment: async (petitionId, body, parentCommentId = null) => {
     const c = await api.addComment(petitionId, body, parentCommentId);

@@ -315,6 +315,24 @@ export async function createPetition(args: { category: CategoryKey; title: strin
   return p;
 }
 
+/** 신고 사유 선택 화면이 생기기 전까지는 확인된 게시글 신고를 기타 사유로 접수한다. */
+export async function reportPetition(petitionId: number): Promise<void> {
+  // 신고 API는 토큰이 없을 때 401 대신 400을 준다. 앱 재개 뒤에도 쿠키 세션을 먼저 복구한다.
+  if (!accessToken) await refreshAccessToken();
+  await apiFetch("/connect/reports", {
+    method: "POST",
+    body: { petitionId, reasonType: "OTHER", reasonDetail: "사용자가 부적절한 게시글로 신고했습니다." },
+  });
+}
+
+export async function reportComment(commentId: number): Promise<void> {
+  if (!accessToken) await refreshAccessToken();
+  await apiFetch("/connect/reports", {
+    method: "POST",
+    body: { commentId, reasonType: "OTHER", reasonDetail: "사용자가 부적절한 댓글로 신고했습니다." },
+  });
+}
+
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘다.
     성공/무시 성공 시 true, 그 외 에러는 던진다 — App.tsx 가 실패 시 낙관적 UI 를 되돌린다. */
 export async function toggleEmpathy(petitionId: number, wasVoted: boolean): Promise<void> {
@@ -351,7 +369,7 @@ export async function toggleBookmark(petitionId: number, wasBookmarked: boolean)
    무시한다. */
 
 function adaptComment(c: any): Comment {
-  return { author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt) };
+  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt) };
 }
 
 export async function listComments(petitionId: number): Promise<Comment[]> {

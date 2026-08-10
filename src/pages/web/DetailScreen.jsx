@@ -54,7 +54,7 @@ function linkButtonStyle() {
   return { background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", padding: 0 };
 }
 
-function CommentRow({ c, reply, onToggleLike, onEdit, onDelete }) {
+function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(c.body);
 
@@ -80,6 +80,7 @@ function CommentRow({ c, reply, onToggleLike, onEdit, onDelete }) {
               <button type="button" onClick={() => onDelete(c.id)} style={linkButtonStyle()}>삭제</button>
             </span>
           )}
+          {!c.mine && !editing && <button type="button" onClick={() => onReport(c.id)} style={{ ...linkButtonStyle(), marginLeft: "auto" }}>🚨 신고</button>}
         </div>
         {editing ? (
           <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
@@ -118,6 +119,7 @@ function CommentsSection({ petitionId }) {
   const toggleCommentLike = usePetitions((s) => s.toggleCommentLike);
   const updateComment = usePetitions((s) => s.updateComment);
   const deleteComment = usePetitions((s) => s.deleteComment);
+  const reportComment = usePetitions((s) => s.reportComment);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -128,6 +130,15 @@ function CommentsSection({ petitionId }) {
   const editComment = (id, body) => updateComment(petitionId, id, body);
   const removeComment = (id) => {
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
+  };
+  const report = async (id) => {
+    if (!window.confirm("이 댓글을 신고할까요? 관리자가 검토합니다.")) return;
+    try {
+      await reportComment(id);
+      toast("댓글 신고가 접수되었습니다.");
+    } catch (e) {
+      toast(e.message || "댓글 신고 접수에 실패했습니다.");
+    }
   };
 
   const add = async () => {
@@ -149,7 +160,7 @@ function CommentsSection({ petitionId }) {
       <Card>
         {list.map((c) => (
           <div key={c.id}>
-            <CommentRow c={c} onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} />
+            <CommentRow c={c} onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} />
             <button
               type="button"
               onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
@@ -158,7 +169,7 @@ function CommentsSection({ petitionId }) {
               답글달기
             </button>
             {(c.replies ?? []).map((r) => (
-              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} />
+              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} />
             ))}
             {replyTo === c.id && (
               <div style={{ display: "flex", gap: 10, marginLeft: 48, paddingBottom: 14 }}>
@@ -202,9 +213,11 @@ export default function DetailScreen() {
   const bookmarked = usePetitions((s) => !!s.bookmarked[pid]);
   const vote = usePetitions((s) => s.vote);
   const bookmark = usePetitions((s) => s.bookmark);
+  const reportPetition = usePetitions((s) => s.reportPetition);
   const navigate = useNavigate();
 
   const [missing, setMissing] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -238,7 +251,26 @@ export default function DetailScreen() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} />
           <StatusBadge status={petitionStatus(p)} />
-          <div style={{ marginLeft: "auto" }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              type="button"
+              disabled={reporting}
+              onClick={async () => {
+                if (!window.confirm("이 게시글을 신고할까요? 관리자가 검토합니다.")) return;
+                setReporting(true);
+                try {
+                  await reportPetition(p.id);
+                  toast("신고가 접수되었습니다.");
+                } catch (e) {
+                  toast(e.message || "신고 접수에 실패했습니다.");
+                } finally {
+                  setReporting(false);
+                }
+              }}
+              style={{ background: "none", border: "none", cursor: reporting ? "not-allowed" : "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px", opacity: reporting ? 0.5 : 1 }}
+            >
+              🚨 신고
+            </button>
             <IconButton variant="ghost" ariaLabel="더보기"><Icon name="more" size={20} /></IconButton>
           </div>
         </div>

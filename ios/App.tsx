@@ -261,6 +261,26 @@ export default function App() {
     [petitions, flash],
   );
 
+  const reportPetition = useCallback(
+    (id: number) => {
+      Alert.alert("게시글을 신고할까요?", "관리자가 검토합니다.", [
+        { text: "취소", style: "cancel" },
+        { text: "신고", style: "destructive", onPress: () => api.reportPetition(id).then(() => flash("신고가 접수되었습니다")).catch((e) => flash(e instanceof Error ? e.message : "신고 접수에 실패했습니다")) },
+      ]);
+    },
+    [flash],
+  );
+
+  const reportComment = useCallback(
+    (id: number) => {
+      Alert.alert("댓글을 신고할까요?", "관리자가 검토합니다.", [
+        { text: "취소", style: "cancel" },
+        { text: "신고", style: "destructive", onPress: () => api.reportComment(id).then(() => flash("댓글 신고가 접수되었습니다")).catch((e) => flash(e instanceof Error ? e.message : "댓글 신고 접수에 실패했습니다")) },
+      ]);
+    },
+    [flash],
+  );
+
   const openPetition = useCallback((id: number) => {
     setOpenId(id);
     setScreen("detail");
@@ -432,6 +452,8 @@ export default function App() {
                 setShareOpen(true);
                 setCopied(false);
               }}
+              onReport={() => reportPetition(detail.id)}
+              onReportComment={reportComment}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}
               deepPrompt={deepId === detail.id && !deepUsed}

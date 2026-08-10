@@ -20,6 +20,8 @@ export type DetailProps = {
   onBack: () => void;
   onVote: () => void;
   onOpenShare: () => void;
+  onReport: () => void;
+  onReportComment: (commentId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
   /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
@@ -52,7 +54,10 @@ export function DetailScreen(p: DetailProps) {
           <Icon name="arrowLeft" size={20} color={colors.strong} />
         </Pressable>
         <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 상세</Text>
-        <Pressable onPress={p.onOpenShare} accessibilityRole="button" accessibilityLabel="공유" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
+        <Pressable onPress={p.onReport} accessibilityRole="button" accessibilityLabel="게시글 신고" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
+          <Text style={{ fontSize: 16 }}>🚨</Text>
+        </Pressable>
+        <Pressable onPress={p.onOpenShare} accessibilityRole="button" accessibilityLabel="공유" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="share" size={19} color={colors.body} />
         </Pressable>
       </View>
@@ -137,6 +142,7 @@ export function DetailScreen(p: DetailProps) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                       <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
                       <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{cm.date}</Text>
+                      {cm.id != null ? <Pressable onPress={() => p.onReportComment(cm.id!)} accessibilityRole="button" accessibilityLabel="댓글 신고" style={{ marginLeft: "auto", padding: 3 }}><Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>🚨 신고</Text></Pressable> : null}
                     </View>
                     <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
                   </View>

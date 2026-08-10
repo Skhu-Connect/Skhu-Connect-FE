@@ -340,6 +340,24 @@ export async function createPetition({ category: categoryKey, title, body }) {
   return adaptPetition(raw);
 }
 
+/** 신고 사유 선택 화면이 생기기 전까지는 확인된 게시글 신고를 기타 사유로 접수한다. */
+export async function reportPetition(id) {
+  // 신고 API는 인증 정보가 없을 때 401 대신 400을 준다. HMR 뒤 메모리 토큰이 비어도 쿠키 세션을 먼저 복구한다.
+  if (!accessToken) await refreshAccessToken();
+  await apiFetch("/connect/reports", {
+    method: "POST",
+    body: { petitionId: Number(id), reasonType: "OTHER", reasonDetail: "사용자가 부적절한 게시글로 신고했습니다." },
+  });
+}
+
+export async function reportComment(id) {
+  if (!accessToken) await refreshAccessToken();
+  await apiFetch("/connect/reports", {
+    method: "POST",
+    body: { commentId: Number(id), reasonType: "OTHER", reasonDetail: "사용자가 부적절한 댓글로 신고했습니다." },
+  });
+}
+
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다.
     myTotals 도 같이 증감시킨다 — 안 그러면 ensureFlags 가 세션당 한 번만 도는 캐시라
     마이페이지의 "누른 공감" 이 토글 직후엔 갱신되지 않고 다음 전체 새로고침까지 그대로 남는다. */
