@@ -20,11 +20,14 @@ export type Petition = {
   createdAt: string;
   comments: number;
   views: string;
-  /** "답변 완료" 여부는 별도 필드가 아니라 `status === "answered"` 로 판단한다 —
-      백엔드에 공식 답변 등록 기능 자체가 아직 없어(ARCHITECTURE.md) 실제로 채워지지 않는다. */
+  /** "답변 완료" 여부는 별도 필드가 아니라 `status === "answered"` 로 판단한다. */
   mine?: boolean;
   bookmarked?: boolean;
+  /** 청원 상세 GET(`/connect/petitions/{id}`)에만 온다 — 목록 응답에는 없어 상세 진입 시에만 채워진다. */
+  answer?: AdminAnswer | null;
 };
+
+export type AdminAnswer = { body: string; dept: string; date: string };
 
 export type Comment = { author: string; body: string; date: string };
 

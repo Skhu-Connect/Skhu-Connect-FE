@@ -2,11 +2,12 @@
    이 파일의 async 함수만 호출한다.
 
    웹 src/api/index.js 를 TS 로 포팅했다 — 어댑터·인증 흐름·이미 겪은 백엔드 제약(댓글 수
-   미포함, mine/voted 파생 필요, 알림 설정 변경 API 없음, 답변 등록 기능 자체가 미구현)이
-   동일하게 적용된다. 모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제,
-   비밀번호 재설정, 전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다. */
+   미포함, mine/voted 파생 필요, 알림 설정 변경 API 없음)이 동일하게 적용된다. 공식 답변 본문은
+   청원 상세 GET(`/connect/petitions/{id}`)의 officialAnswer 로 온다 — 목록 응답에는 없다.
+   모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 비밀번호 재설정,
+   전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다. */
 
-import type { CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
+import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
 
@@ -207,6 +208,14 @@ export async function listDepartments(): Promise<{ id: number; name: string }[]>
    오버레이(logic.ts 의 count())가 voted 일 때 +1 해 원래 총합을 복원하는 기존 구조를
    그대로 쓰기 위해서다(mock 시절 SEED.current 가 "나를 제외한 공감 수" 였던 것과 같은 자리). */
 
+// AnswerModal.jsx(웹)의 ANSWER_SOURCES 라벨과 동일하다 — 실 답변에는 담당자 이름이 없다(답변 주체만).
+const ANSWER_SOURCE_LABEL: Record<string, string> = { OPERATION_TEAM: "운영팀 답변", SCHOOL_OFFICIAL: "학교 공식 답변" };
+
+function adaptOfficialAnswer(raw: any): AdminAnswer | null {
+  if (!raw) return null;
+  return { body: raw.content, dept: ANSWER_SOURCE_LABEL[raw.answerSource] ?? "공식 답변", date: formatRelative(raw.createdAt) };
+}
+
 function adaptPetition(raw: any): Petition {
   const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
   const iVoted = votedIds.has(raw.id);
@@ -227,6 +236,7 @@ function adaptPetition(raw: any): Petition {
     views: "0", // 조회수는 백엔드가 아예 집계하지 않는다(웹과 동일한 한계).
     mine: myPetitionIds.has(raw.id),
     bookmarked: bookmarkedIds.has(raw.id),
+    answer: adaptOfficialAnswer(raw.officialAnswer),
   };
 }
 
@@ -255,6 +265,13 @@ export async function listPetitions(): Promise<Petition[]> {
   const petitions = (data?.content ?? []).map(adaptPetition);
   await Promise.all(petitions.map(async (p: Petition) => { p.comments = await countComments(p.id); }));
   return petitions;
+}
+
+/** 상세 진입 시 부른다 — 답변 본문(officialAnswer)은 이 응답에만 온다(목록 응답에는 없다). */
+export async function getPetition(petitionId: number): Promise<Petition> {
+  await ensureFlags();
+  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}`, { auth: false });
+  return adaptPetition(raw);
 }
 
 export async function createPetition(args: { category: CategoryKey; title: string; body: string }): Promise<Petition> {

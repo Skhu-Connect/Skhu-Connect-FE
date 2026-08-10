@@ -31,7 +31,6 @@ export function DetailScreen(p: DetailProps) {
   const d = p.petition;
   const c = count(d, p.votes);
   const reached = c >= d.threshold;
-  // 백엔드에 공식 답변 등록 기능 자체가 아직 없어(ARCHITECTURE.md) status 는 사실상 여기 도달하지 않는다.
   const answered = d.status === "answered";
 
   const steps = [
@@ -114,7 +113,20 @@ export function DetailScreen(p: DetailProps) {
               ))}
             </Card>
 
-            {/* 공식 답변 카드는 숨긴다 — 백엔드에 답변 등록 기능 자체가 없어 답변 본문을 받아올 방법이 없다. */}
+            {d.answer ? (
+              <Card style={{ borderLeftWidth: 4, borderLeftColor: colors.success, backgroundColor: "#EFFAF4" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="checkCircle" size={16} color="#fff" />
+                  </View>
+                  <View>
+                    <Text style={[t, { fontWeight: "700", fontSize: 13.5, color: colors.strong }]}>{d.answer.dept}</Text>
+                    <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{d.answer.date}</Text>
+                  </View>
+                </View>
+                <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 21.6 }]}>{d.answer.body}</Text>
+              </Card>
+            ) : null}
 
             <Card>
               <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, marginBottom: 6 }]}>댓글 {p.comments.length}</Text>

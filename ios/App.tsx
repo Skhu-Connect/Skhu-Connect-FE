@@ -141,6 +141,21 @@ export default function App() {
     };
   }, [screen, openId]);
 
+  /* 상세 화면 진입 시 공식 답변 본문을 불러온다 — 목록 응답엔 답변 본문이 없다(청원 상세 GET 에만 온다). */
+  useEffect(() => {
+    if (screen !== "detail" || openId == null) return;
+    let cancelled = false;
+    api
+      .getPetition(openId)
+      .then((p) => {
+        if (!cancelled && p.answer) setPetitions((prev) => prev.map((x) => (x.id === openId ? { ...x, answer: p.answer } : x)));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, openId]);
+
   /* MY 화면을 열 때마다 알림·내가 쓴 댓글을 다시 불러온다 — 로그인 시 한 번만 받으면 그 사이에
      다른 사용자의 공감·댓글로 새로 생긴 알림을 놓친다(탭바 벨 배지·피드 헤더 벨 점도 이 값을 쓴다). */
   useEffect(() => {
