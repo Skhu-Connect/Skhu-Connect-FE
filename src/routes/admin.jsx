@@ -9,6 +9,7 @@ import Dashboard from "../pages/admin/Dashboard";
 import Manage from "../pages/admin/Manage";
 import Owners from "../pages/admin/Owners";
 import Logs from "../pages/admin/Logs";
+import ThresholdSettings from "../pages/admin/ThresholdSettings";
 
 export function adminRoutes() {
   return (
@@ -19,6 +20,7 @@ export function adminRoutes() {
         <Route path="manage" element={<Manage />} />
         <Route path="owners" element={<Owners />} />
         <Route path="logs" element={<Logs />} />
+        <Route path="threshold-settings" element={<ThresholdSettings />} />
       </Route>
     </>
   );
