@@ -17,7 +17,9 @@ export const onVideo = {
   muted: "rgba(255,255,255,.84)",
   border: "rgba(255,255,255,.42)",
   borderFocus: "#fff",
-  surface: "rgba(255,255,255,.16)",
+  // 흰 반투명(.16)은 낮 장면(밝은 건물)이 필드 뒤를 지날 때 묻힌다(웹 AuthLayout과 같은 근거).
+  // 스크림과 같은 톤의 어두운 채움으로 바꿔 영상 밝기와 무관하게 항상 도드라지게 한다.
+  surface: "rgba(10,10,26,.55)",
   link: colors.indigo[200],
   danger: "#ff8a92",
 };
