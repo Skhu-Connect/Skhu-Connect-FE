@@ -2,7 +2,8 @@ import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-n
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
 import { BASIS_NOTE, CAT_CHIPS, CAT_LABEL, type CategoryKey } from "../data";
-import { basisFor, thresholdFor } from "../logic";
+import { basisFor } from "../logic";
+import { currentThreshold } from "../api";
 import { Button, Card, CategoryTag, Input, Select, Textarea, ThresholdBar } from "../ui";
 import { colors, font, radius } from "../theme";
 
@@ -64,7 +65,7 @@ export function SubmitScreen(p: SubmitProps) {
                 <Text style={[t, { fontSize: 12, color: colors.muted, fontWeight: "700" }]}>적용될 도달률</Text>
                 <CategoryTag category={key} size="sm" />
               </View>
-              <ThresholdBar current={0} threshold={thresholdFor(basis)} basisLabel={basis} />
+              <ThresholdBar current={0} threshold={currentThreshold(key)} basisLabel={basis} />
               <Text style={[t, { fontSize: 12, color: colors.muted, lineHeight: 18.6 }]}>{BASIS_NOTE[basis]}</Text>
             </Card>
           ) : null}

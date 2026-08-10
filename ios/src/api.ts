@@ -8,6 +8,7 @@
    전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다. */
 
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
+import { basisFor, thresholdFor } from "./logic";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
 
@@ -129,6 +130,34 @@ export function getVotedIds(): Set<number> {
   return new Set(votedIds);
 }
 
+/* ───────────────── 카테고리별 목표 공감 수 ─────────────────
+   thresholdFor(basisFor(key))(logic.ts)는 기준(basis) 단위 기본값일 뿐이고, 실제 관리자 설정값은
+   카테고리 단위로 다르다(같은 "전체 학생" 기준이어도 장학·시설·도서관 목표가 서로 다를 수 있다).
+   공개 GET /connect/threshold-settings 로 카테고리별 실제 값을 받아 앱 구동 시 1회 캐시한다. */
+const DEFAULT_THRESHOLD: Record<CategoryKey, number> = Object.fromEntries(
+  (Object.keys(CATEGORY_KEY_TO_ENUM) as CategoryKey[]).map((key) => [key, thresholdFor(basisFor(key))]),
+) as Record<CategoryKey, number>;
+let liveThreshold: Partial<Record<CategoryKey, number>> = {};
+let thresholdsLoaded = false;
+
+async function ensureCategoryThresholds() {
+  if (thresholdsLoaded) return;
+  thresholdsLoaded = true;
+  try {
+    const rows = await apiFetch<{ category: string; targetAgreementCount: number }[]>("/connect/threshold-settings", { auth: false });
+    liveThreshold = Object.fromEntries(
+      (rows ?? []).map((row) => [CATEGORY_ENUM_TO_KEY[row.category], row.targetAgreementCount]),
+    );
+  } catch {
+    thresholdsLoaded = false; // 실패 시 다음 호출에서 재시도, 그때까진 기본값 유지
+  }
+}
+
+/** 청원 등록 미리보기(Submit.tsx)가 쓰는 카테고리별 현재 목표 공감 수. */
+export function currentThreshold(category: CategoryKey): number {
+  return liveThreshold[category] ?? DEFAULT_THRESHOLD[category];
+}
+
 function resetSessionCaches() {
   flagsLoaded = false;
   votedIds = new Set();
@@ -227,7 +256,7 @@ function adaptPetition(raw: any): Petition {
     category: key,
     status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
     current: (raw.agreementCount ?? 0) - (iVoted ? 1 : 0),
-    threshold: raw.targetAgreementCount ?? 480,
+    threshold: raw.targetAgreementCount ?? currentThreshold(key),
     basis: BASIS_LABEL[key],
     author: "익명",
     createdAt: raw.createdAt,
@@ -260,7 +289,7 @@ async function countComments(petitionId: number): Promise<number> {
 }
 
 export async function listPetitions(): Promise<Petition[]> {
-  await ensureFlags();
+  await Promise.all([ensureFlags(), ensureCategoryThresholds()]);
   const data = await apiFetch<any>("/connect/petitions?size=100&sort=createdAt,desc", { auth: false });
   const petitions = (data?.content ?? []).map(adaptPetition);
   await Promise.all(petitions.map(async (p: Petition) => { p.comments = await countComments(p.id); }));
@@ -269,7 +298,7 @@ export async function listPetitions(): Promise<Petition[]> {
 
 /** 상세 진입 시 부른다 — 답변 본문(officialAnswer)은 이 응답에만 온다(목록 응답에는 없다). */
 export async function getPetition(petitionId: number): Promise<Petition> {
-  await ensureFlags();
+  await Promise.all([ensureFlags(), ensureCategoryThresholds()]);
   const raw = await apiFetch<any>(`/connect/petitions/${petitionId}`, { auth: false });
   return adaptPetition(raw);
 }
