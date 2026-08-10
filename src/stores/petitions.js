@@ -134,10 +134,19 @@ export const usePetitions = create((set, get) => ({
     return c;
   },
 
-  /** Admin 답변 등록 — 여기서 만든 레코드를 Web 상세가 answersById[id] 로 읽는다. */
-  answer: async (id, body) => {
-    const { petition, answer } = await api.answerPetition(id, body);
-    set((s) => ({ petitions: upsert(s.petitions, petition), answersById: { ...s.answersById, [petition.id]: answer } }));
+  /** Admin 공식 답변 조회 — AnswerModal 이 기존 답변 수정 진입 시 프리필에 쓴다. */
+  getAnswer: (petitionId) => api.getAdminAnswer(petitionId),
+
+  /** Admin 답변 등록/수정. isEdit 이면 PUT(기존 답변 갱신), 아니면 POST(신규 등록 + 상태가
+      답변완료로 바뀐다). 답변 엔드포인트는 청원 객체를 돌려주지 않아 로컬에서 상태만 패치한다. */
+  submitAnswer: async (id, content, answerSource, isEdit) => {
+    const answer = isEdit
+      ? await api.updateAdminAnswer(id, content, answerSource)
+      : await api.createAdminAnswer(id, content, answerSource);
+    set((s) => ({
+      petitions: s.petitions.map((p) => (p.id === Number(id) ? { ...p, status: "answered", answered: true } : p)),
+      answersById: { ...s.answersById, [Number(id)]: answer },
+    }));
     return answer;
   },
 
