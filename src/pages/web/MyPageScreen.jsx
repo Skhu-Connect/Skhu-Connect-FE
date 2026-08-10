@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import * as api from "../../api";
-import { Avatar, Button, Card, Icon, Select } from "../../components/ui";
+import { Avatar, Button, Card, Icon, Input, Select } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { NOTIF_META } from "../../components/web/notifMeta";
 
@@ -93,6 +93,53 @@ function MoreButton({ onClick }) {
   );
 }
 
+/* 신고 모달(DetailScreen.jsx ReportDialog)과 같은 뼈대(스크림 + 카드 폼)를 쓴다. */
+function DeleteAccountDialog({ onClose }) {
+  const deleteAccount = useSession((s) => s.deleteAccount);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!password.trim()) return setError("비밀번호를 입력해 주세요.");
+    setBusy(true);
+    try {
+      await deleteAccount(password);
+      toast("탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+    } catch (err) {
+      setError(err.message || "탈퇴 처리에 실패했습니다.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
+        <h2 id="delete-account-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>회원탈퇴</h2>
+        <p style={{ margin: "6px 0 14px", fontSize: 13.5, color: "var(--text-muted)" }}>계정 삭제를 위해 가입한 비밀번호를 입력해 주세요.</p>
+        <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "12px 14px", fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 16 }}>
+          탈퇴하면 계정 정보가 삭제되며, 이후 30일 동안은 같은 정보로 다시 가입할 수 없어요. 신중히 결정해 주세요.
+        </div>
+        <Input
+          type="password"
+          label="비밀번호"
+          placeholder="••••••••"
+          autoFocus
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => { setPassword(e.target.value); setError(""); }}
+          error={error || undefined}
+        />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>취소</Button>
+          <Button type="submit" variant="danger" disabled={busy || !password.trim()}>{busy ? "처리 중…" : "탈퇴하기"}</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function MyPageScreen() {
   const user = useSession((s) => s.user);
   const updateProfile = useSession((s) => s.updateProfile);
@@ -100,6 +147,7 @@ export default function MyPageScreen() {
   const savePrefs = useSession((s) => s.savePrefs);
   const logout = useSession((s) => s.logout);
   const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const petitions = usePetitions((s) => s.petitions);
   const bookmarked = usePetitions((s) => s.bookmarked);
@@ -184,6 +232,13 @@ export default function MyPageScreen() {
           </div>
 
           <Button variant="outline" block onClick={logout}>로그아웃</Button>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", padding: "2px 0" }}
+          >
+            회원탈퇴
+          </button>
         </div>
 
         {/* 오른쪽: 활동 — 알림 · 북마크한 건의 · 내가 쓴 댓글 */}
@@ -276,6 +331,8 @@ export default function MyPageScreen() {
           </div>
         </div>
       </div>
+
+      {deleteOpen && <DeleteAccountDialog onClose={() => setDeleteOpen(false)} />}
     </div>
   );
 }

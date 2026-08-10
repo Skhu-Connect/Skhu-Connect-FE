@@ -32,6 +32,11 @@ export const useSession = create((set) => ({
     set({ authed: false, user: null, prefs: null });
   },
 
+  deleteAccount: async (password) => {
+    await api.deleteAccount(password);
+    set({ authed: false, user: null, prefs: null });
+  },
+
   savePrefs: async (patch) => {
     const prefs = await api.savePrefs(patch);
     set({ prefs });

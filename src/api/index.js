@@ -11,7 +11,10 @@
 
    청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 비밀번호 재설정(POST
    /connect/auth/password/reset)은 백엔드엔 있지만 화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이
-   없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것. */
+   없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
+
+   회원탈퇴(deleteAccount)는 반대로 화면은 있지만 대응 백엔드 엔드포인트가 아직 없다
+   — /connect/users/me DELETE 를 호출하도록 만들어 뒀고, 엔드포인트가 열리면 그대로 연동된다. */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 
@@ -239,6 +242,15 @@ export async function logout() {
   } catch {
     /* 이미 만료됐어도 로컬 상태는 정리한다 */
   }
+  accessToken = null;
+  cachedMe = null;
+  resetSessionCaches();
+}
+
+export async function deleteAccount(password) {
+  const pw = String(password ?? "").trim();
+  if (!pw) throw new Error("비밀번호를 입력해 주세요.");
+  await apiFetch("/connect/users/me", { method: "DELETE", body: { password: pw } });
   accessToken = null;
   cachedMe = null;
   resetSessionCaches();
