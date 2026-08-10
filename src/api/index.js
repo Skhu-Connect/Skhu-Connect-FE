@@ -574,6 +574,35 @@ export async function restoreAdminPetition(petitionId) {
   return pickHiddenState(await adminApiFetch(`/connect/admin/petitions/${Number(petitionId)}/restore`, { method: "PATCH" }));
 }
 
+const REPORT_STATUS_TO_KEY = { PENDING: "pending", DISMISSED: "dismissed", ACTION_TAKEN: "actionTaken" };
+const REPORT_TARGET_TO_KEY = { PETITION: "petition", COMMENT: "comment" };
+
+function adaptAdminReport(raw) {
+  return {
+    id: raw.id,
+    status: REPORT_STATUS_TO_KEY[raw.status] ?? "pending",
+    targetType: REPORT_TARGET_TO_KEY[raw.targetType] ?? "petition",
+    petitionId: raw.petitionId,
+    commentId: raw.commentId ?? null,
+    reasonType: raw.reasonType,
+    reasonDetail: raw.reasonDetail,
+    processingReason: raw.processingReason ?? null,
+  };
+}
+
+/** 신고는 현재 최대 100건을 한 번에 관리한다. 페이지네이션이 필요해지면 이 호출에 page 를 노출한다. */
+export async function listAdminReports() {
+  const data = await adminApiFetch("/connect/admin/reports?size=100");
+  return (data?.content ?? []).map(adaptAdminReport);
+}
+
+export async function processAdminReport(reportId, status, processingReason) {
+  const reason = String(processingReason ?? "").trim();
+  const apiStatus = { dismissed: "DISMISSED", actionTaken: "ACTION_TAKEN" }[status];
+  if (!apiStatus || !reason) throw new Error("처리 사유를 입력해 주세요.");
+  return adaptAdminReport(await adminApiFetch(`/connect/admin/reports/${Number(reportId)}`, { method: "PATCH", body: { status: apiStatus, processingReason: reason } }));
+}
+
 function adaptAdminComment(raw) {
   return { id: raw.id, parentCommentId: raw.parentCommentId ?? null, content: raw.content, anonymousNumber: raw.anonymousNumber, hidden: raw.hidden, hiddenReason: raw.hiddenReason ?? null };
 }

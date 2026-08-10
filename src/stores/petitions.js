@@ -24,6 +24,7 @@ export const usePetitions = create((set, get) => ({
   owners: [],
   notifications: [],
   notifLogs: [],
+  reports: [],
   commentsById: {},
   answersById: {},
   voted: {},
@@ -61,13 +62,14 @@ export const usePetitions = create((set, get) => ({
   loadAdmin: async () => {
     set({ loading: true });
     try {
-      const [petitions, categories, owners, notifLogs] = await Promise.all([
+      const [petitions, categories, owners, notifLogs, reports] = await Promise.all([
         api.listAdminPetitions(),
         api.listCategories(),
         api.listOwners(),
         api.listNotifLogs(),
+        api.listAdminReports(),
       ]);
-      set({ petitions, categories, owners, notifLogs, answersById: answers(petitions) });
+      set({ petitions, categories, owners, notifLogs, reports, answersById: answers(petitions) });
     } finally {
       set({ loading: false });
     }
@@ -159,6 +161,11 @@ export const usePetitions = create((set, get) => ({
   restorePetition: async (id) => {
     const { hidden, hiddenReason } = await api.restoreAdminPetition(id);
     set((s) => ({ petitions: s.petitions.map((p) => (p.id === Number(id) ? { ...p, hidden, hiddenReason } : p)) }));
+  },
+
+  processReport: async (id, status, reason) => {
+    const report = await api.processAdminReport(id, status, reason);
+    set((s) => ({ reports: s.reports.map((r) => (r.id === report.id ? report : r)) }));
   },
 
   markAllNotifRead: async () => {
