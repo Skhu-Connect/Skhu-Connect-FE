@@ -34,7 +34,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: "#0a0a1a" }}>
       {showVideo ? (
-        <VideoView player={player} nativeControls={false} contentFit="cover" style={FILL} pointerEvents="none" />
+        <VideoView player={player} nativeControls={false} contentFit="cover" style={[FILL, { pointerEvents: "none" }]} />
       ) : (
         <Image source={require("../assets/campus-hero.jpg")} style={FILL} resizeMode="cover" />
       )}

@@ -79,9 +79,8 @@ export function Toast({ message, bottom }: { message: string; bottom: number }) 
   if (!message) return null;
   return (
     <View
-      pointerEvents="none"
       accessibilityLiveRegion="polite"
-      style={[{ position: "absolute", left: 20, right: 20, bottom, backgroundColor: colors.gray[900], borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 9 }, shadow.lg]}
+      style={[{ position: "absolute", left: 20, right: 20, bottom, backgroundColor: colors.gray[900], borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 9, pointerEvents: "none" }, shadow.lg]}
     >
       <Icon name="check" size={16} color={colors.teal[400]} strokeWidth={2.6} />
       <Text style={[t, { fontSize: 13, fontWeight: "700", color: "#fff" }]}>{message}</Text>
