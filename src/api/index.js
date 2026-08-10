@@ -31,6 +31,15 @@ const NOTIF_TYPE_TO_LEGACY = {
   COMMENT_LIKE: "empathy",
   REPLY_LIKE: "empathy",
 };
+const NOTIF_MESSAGE_FALLBACK = {
+  PETITION_AGREEMENT_60_PERCENT: "내 청원이 목표 공감의 60%에 도달했습니다.",
+  PETITION_AGREEMENT_100_PERCENT: "내 청원이 목표 공감에 도달해 검토가 시작됩니다.",
+  PETITION_UNDER_REVIEW: "내 청원을 담당 부서에서 검토하고 있습니다.",
+  PETITION_ANSWERED: "내 청원에 공식 답변이 등록되었습니다.",
+  COMMENT_REPLY: "내 댓글에 답글이 등록되었습니다.",
+  COMMENT_LIKE: "내 댓글에 공감이 추가되었습니다.",
+  REPLY_LIKE: "내 답글에 공감이 추가되었습니다.",
+};
 
 /* ───────────────── fetch 기반 ───────────────── */
 
@@ -340,21 +349,29 @@ export async function createPetition({ category: categoryKey, title, body }) {
   return adaptPetition(raw);
 }
 
-/** 신고 사유 선택 화면이 생기기 전까지는 확인된 게시글 신고를 기타 사유로 접수한다. */
-export async function reportPetition(id) {
+const REPORT_REASON_TYPES = new Set(["SPAM", "ABUSE", "INAPPROPRIATE", "FALSE_INFORMATION", "OTHER"]);
+
+function reportReason(reasonType, reasonDetail) {
+  const detail = String(reasonDetail ?? "").trim();
+  if (!REPORT_REASON_TYPES.has(reasonType)) throw new Error("신고 종류를 선택해 주세요.");
+  if (detail.length < 10 || detail.length > 500) throw new Error("신고 이유는 10자 이상 500자 이하로 입력해 주세요.");
+  return { reasonType, reasonDetail: detail };
+}
+
+export async function reportPetition(id, reasonType, reasonDetail) {
   // 신고 API는 인증 정보가 없을 때 401 대신 400을 준다. HMR 뒤 메모리 토큰이 비어도 쿠키 세션을 먼저 복구한다.
   if (!accessToken) await refreshAccessToken();
   await apiFetch("/connect/reports", {
     method: "POST",
-    body: { petitionId: Number(id), reasonType: "OTHER", reasonDetail: "사용자가 부적절한 게시글로 신고했습니다." },
+    body: { petitionId: Number(id), commentId: null, ...reportReason(reasonType, reasonDetail) },
   });
 }
 
-export async function reportComment(id) {
+export async function reportComment(id, reasonType, reasonDetail) {
   if (!accessToken) await refreshAccessToken();
   await apiFetch("/connect/reports", {
     method: "POST",
-    body: { commentId: Number(id), reasonType: "OTHER", reasonDetail: "사용자가 부적절한 댓글로 신고했습니다." },
+    body: { petitionId: null, commentId: Number(id), ...reportReason(reasonType, reasonDetail) },
   });
 }
 
@@ -448,8 +465,15 @@ export async function listOwners() {
 
 /* ───────────────── 알림 ───────────────── */
 
+export function notificationMessage(n) {
+  const message = String(n.message ?? "").trim();
+  // 이미 ? 또는 한자형 깨진 문자로 저장된 알림은 원문 복원이 불가능해 종류별 한국어 문구로 대체한다.
+  const broken = /[�]|[\u3400-\u9FFF]/.test(message) || (message.match(/\?/g)?.length ?? 0) >= 2;
+  return message && !broken ? message : (NOTIF_MESSAGE_FALLBACK[n.type] ?? "새 알림이 도착했습니다.");
+}
+
 function adaptNotification(n) {
-  return { id: n.id, type: NOTIF_TYPE_TO_LEGACY[n.type] ?? "answer", title: "", body: n.message, petitionId: n.petitionId, date: formatRelative(n.createdAt), read: n.read };
+  return { id: n.id, type: NOTIF_TYPE_TO_LEGACY[n.type] ?? "answer", title: "", body: notificationMessage(n), petitionId: n.petitionId, date: formatRelative(n.createdAt), read: n.read };
 }
 
 export async function listNotifications() {

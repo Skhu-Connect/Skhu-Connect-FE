@@ -1,4 +1,5 @@
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
@@ -7,8 +8,64 @@ import { count, ddayLabel, ymd } from "../logic";
 import type { Votes } from "../logic";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
+import type { ReportReasonType } from "../api";
 
 const t = { fontFamily: font };
+const REPORT_REASONS: { value: ReportReasonType; label: string }[] = [
+  { value: "SPAM", label: "광고·도배" },
+  { value: "ABUSE", label: "욕설·괴롭힘" },
+  { value: "INAPPROPRIATE", label: "부적절한 콘텐츠" },
+  { value: "FALSE_INFORMATION", label: "허위 정보" },
+  { value: "OTHER", label: "기타" },
+];
+
+function ReportSheet({ target, onClose, onSubmit }: { target: string; onClose: () => void; onSubmit: (reasonType: ReportReasonType, reasonDetail: string) => Promise<void> }) {
+  const [reasonType, setReasonType] = useState<ReportReasonType | null>(null);
+  const [reasonDetail, setReasonDetail] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!reasonType) return setError("신고 종류를 선택해 주세요.");
+    if (reasonDetail.trim().length < 10) return setError("신고 이유를 10자 이상 입력해 주세요.");
+    setBusy(true);
+    try {
+      await onSubmit(reasonType, reasonDetail);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "신고 접수에 실패했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, .45)" }}>
+        <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, gap: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}><Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>{target} 신고</Text><Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 3 }]}>관리자가 신고 내용과 사유를 검토합니다.</Text></View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="신고 창 닫기" hitSlop={10}><Text style={[t, { fontSize: 15, fontWeight: "700", color: colors.muted }]}>닫기</Text></Pressable>
+          </View>
+          <Text style={[t, { fontSize: 13, fontWeight: "700", color: colors.strong }]}>신고 종류</Text>
+          <View accessibilityRole="radiogroup" style={{ gap: 8 }}>
+            {REPORT_REASONS.map((reason) => {
+              const selected = reasonType === reason.value;
+              return <Pressable key={reason.value} onPress={() => { setReasonType(reason.value); setError(""); }} accessibilityRole="radio" accessibilityState={{ selected }} style={{ flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderColor: selected ? colors.indigo[600] : colors.line, borderRadius: 10, padding: 11, backgroundColor: selected ? colors.indigo[50] : "#fff" }}><View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 4, borderColor: selected ? colors.indigo[600] : colors.gray[300] }} /><Text style={[t, { fontSize: 13.5, fontWeight: selected ? "700" : "500", color: colors.strong }]}>{reason.label}</Text></Pressable>;
+            })}
+          </View>
+          <Text style={[t, { fontSize: 13, fontWeight: "700", color: colors.strong, marginTop: 2 }]}>신고 이유</Text>
+          <TextInput value={reasonDetail} onChangeText={(text) => { setReasonDetail(text); setError(""); }} multiline maxLength={500} placeholder="신고 이유를 10자 이상 입력해 주세요." placeholderTextColor={colors.muted} textAlignVertical="top" style={[t, { minHeight: 104, borderWidth: 1.5, borderColor: error ? colors.danger : colors.line, borderRadius: 10, padding: 12, fontSize: 13.5, color: colors.strong }]} />
+          {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
+          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+            <Pressable onPress={onClose} disabled={busy} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}><Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text></Pressable>
+            <Pressable onPress={submit} disabled={busy} accessibilityRole="button" style={{ backgroundColor: colors.danger, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, opacity: busy ? .5 : 1 }}><Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>{busy ? "접수 중…" : "신고하기"}</Text></Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
 
 export type DetailProps = {
   petition: Petition;
@@ -20,8 +77,8 @@ export type DetailProps = {
   onBack: () => void;
   onVote: () => void;
   onOpenShare: () => void;
-  onReport: () => void;
-  onReportComment: (commentId: number) => void;
+  onReport: (reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
+  onReportComment: (commentId: number, reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   bookmarked: boolean;
   onToggleBookmark: () => void;
   /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
@@ -34,6 +91,7 @@ export function DetailScreen(p: DetailProps) {
   const c = count(d, p.votes);
   const reached = c >= d.threshold;
   const answered = d.status === "answered";
+  const [reportTarget, setReportTarget] = useState<{ type: "petition" } | { type: "comment"; id: number } | null>(null);
 
   const steps = [
     { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
@@ -54,7 +112,7 @@ export function DetailScreen(p: DetailProps) {
           <Icon name="arrowLeft" size={20} color={colors.strong} />
         </Pressable>
         <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 상세</Text>
-        <Pressable onPress={p.onReport} accessibilityRole="button" accessibilityLabel="게시글 신고" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
+        <Pressable onPress={() => setReportTarget({ type: "petition" })} accessibilityRole="button" accessibilityLabel="게시글 신고" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
           <Text style={{ fontSize: 16 }}>🚨</Text>
         </Pressable>
         <Pressable onPress={p.onOpenShare} accessibilityRole="button" accessibilityLabel="공유" className="w-9 h-9 items-center justify-center rounded-full">
@@ -142,7 +200,7 @@ export function DetailScreen(p: DetailProps) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                       <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
                       <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{cm.date}</Text>
-                      {cm.id != null ? <Pressable onPress={() => p.onReportComment(cm.id!)} accessibilityRole="button" accessibilityLabel="댓글 신고" style={{ marginLeft: "auto", padding: 3 }}><Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>🚨 신고</Text></Pressable> : null}
+                      {cm.id != null ? <Pressable onPress={() => setReportTarget({ type: "comment", id: cm.id! })} accessibilityRole="button" accessibilityLabel="댓글 신고" style={{ marginLeft: "auto", padding: 3 }}><Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>🚨 신고</Text></Pressable> : null}
                     </View>
                     <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
                   </View>
@@ -205,6 +263,7 @@ export function DetailScreen(p: DetailProps) {
           <Icon name="link" size={20} color={colors.indigo[600]} />
         </Pressable>
       </View>
+      {reportTarget ? <ReportSheet target={reportTarget.type === "petition" ? "게시글" : "댓글"} onClose={() => setReportTarget(null)} onSubmit={(reasonType, reasonDetail) => reportTarget.type === "petition" ? p.onReport(reasonType, reasonDetail) : p.onReportComment(reportTarget.id, reasonType, reasonDetail)} /> : null}
     </View>
   );
 }

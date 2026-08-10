@@ -7,7 +7,7 @@ import { Badge, Button, Icon } from "../../components/ui";
 
 const STATUS = [["all", "전체"], ["pending", "대기"], ["actionTaken", "조치 완료"], ["dismissed", "기각"]];
 const TARGET = [["all", "전체"], ["petition", "글"], ["comment", "댓글"]];
-const REASONS = { SPAM: "도배·홍보", ABUSE: "욕설·비방", INAPPROPRIATE: "부적절한 내용", FALSE_INFORMATION: "허위 정보", OTHER: "기타" };
+const REASONS = { SPAM: "광고·도배", ABUSE: "욕설·괴롭힘", INAPPROPRIATE: "부적절한 콘텐츠", FALSE_INFORMATION: "허위 정보", OTHER: "기타" };
 const STATUS_META = {
   pending: { label: "대기", tone: "warning" },
   actionTaken: { label: "조치 완료", tone: "danger" },

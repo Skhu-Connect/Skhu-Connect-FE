@@ -315,21 +315,30 @@ export async function createPetition(args: { category: CategoryKey; title: strin
   return p;
 }
 
-/** 신고 사유 선택 화면이 생기기 전까지는 확인된 게시글 신고를 기타 사유로 접수한다. */
-export async function reportPetition(petitionId: number): Promise<void> {
+export type ReportReasonType = "SPAM" | "ABUSE" | "INAPPROPRIATE" | "FALSE_INFORMATION" | "OTHER";
+const REPORT_REASON_TYPES = new Set<ReportReasonType>(["SPAM", "ABUSE", "INAPPROPRIATE", "FALSE_INFORMATION", "OTHER"]);
+
+function reportReason(reasonType: ReportReasonType, reasonDetail: string) {
+  const detail = reasonDetail.trim();
+  if (!REPORT_REASON_TYPES.has(reasonType)) throw new Error("신고 종류를 선택해 주세요.");
+  if (detail.length < 10 || detail.length > 500) throw new Error("신고 이유는 10자 이상 500자 이하로 입력해 주세요.");
+  return { reasonType, reasonDetail: detail };
+}
+
+export async function reportPetition(petitionId: number, reasonType: ReportReasonType, reasonDetail: string): Promise<void> {
   // 신고 API는 토큰이 없을 때 401 대신 400을 준다. 앱 재개 뒤에도 쿠키 세션을 먼저 복구한다.
   if (!accessToken) await refreshAccessToken();
   await apiFetch("/connect/reports", {
     method: "POST",
-    body: { petitionId, reasonType: "OTHER", reasonDetail: "사용자가 부적절한 게시글로 신고했습니다." },
+    body: { petitionId, commentId: null, ...reportReason(reasonType, reasonDetail) },
   });
 }
 
-export async function reportComment(commentId: number): Promise<void> {
+export async function reportComment(commentId: number, reasonType: ReportReasonType, reasonDetail: string): Promise<void> {
   if (!accessToken) await refreshAccessToken();
   await apiFetch("/connect/reports", {
     method: "POST",
-    body: { commentId, reasonType: "OTHER", reasonDetail: "사용자가 부적절한 댓글로 신고했습니다." },
+    body: { petitionId: null, commentId, ...reportReason(reasonType, reasonDetail) },
   });
 }
 

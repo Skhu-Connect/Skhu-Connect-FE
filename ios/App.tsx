@@ -16,7 +16,7 @@ import { SubmitScreen, categoryOf } from "./src/screens/Submit";
 import { ShareSheet, TabBar, Toast } from "./src/shell";
 import { colors } from "./src/theme";
 import * as api from "./src/api";
-import type { Me } from "./src/api";
+import type { Me, ReportReasonType } from "./src/api";
 import * as push from "./src/push";
 
 type Screen = "feed" | "detail" | "submit" | "my";
@@ -261,25 +261,25 @@ export default function App() {
     [petitions, flash],
   );
 
-  const reportPetition = useCallback(
-    (id: number) => {
-      Alert.alert("게시글을 신고할까요?", "관리자가 검토합니다.", [
-        { text: "취소", style: "cancel" },
-        { text: "신고", style: "destructive", onPress: () => api.reportPetition(id).then(() => flash("신고가 접수되었습니다")).catch((e) => flash(e instanceof Error ? e.message : "신고 접수에 실패했습니다")) },
-      ]);
-    },
-    [flash],
-  );
+  const reportPetition = useCallback(async (id: number, reasonType: ReportReasonType, reasonDetail: string) => {
+    try {
+      await api.reportPetition(id, reasonType, reasonDetail);
+      flash("신고가 접수되었습니다");
+    } catch (e) {
+      flash(e instanceof Error ? e.message : "신고 접수에 실패했습니다");
+      throw e;
+    }
+  }, [flash]);
 
-  const reportComment = useCallback(
-    (id: number) => {
-      Alert.alert("댓글을 신고할까요?", "관리자가 검토합니다.", [
-        { text: "취소", style: "cancel" },
-        { text: "신고", style: "destructive", onPress: () => api.reportComment(id).then(() => flash("댓글 신고가 접수되었습니다")).catch((e) => flash(e instanceof Error ? e.message : "댓글 신고 접수에 실패했습니다")) },
-      ]);
-    },
-    [flash],
-  );
+  const reportComment = useCallback(async (id: number, reasonType: ReportReasonType, reasonDetail: string) => {
+    try {
+      await api.reportComment(id, reasonType, reasonDetail);
+      flash("댓글 신고가 접수되었습니다");
+    } catch (e) {
+      flash(e instanceof Error ? e.message : "댓글 신고 접수에 실패했습니다");
+      throw e;
+    }
+  }, [flash]);
 
   const openPetition = useCallback((id: number) => {
     setOpenId(id);
@@ -452,7 +452,7 @@ export default function App() {
                 setShareOpen(true);
                 setCopied(false);
               }}
-              onReport={() => reportPetition(detail.id)}
+              onReport={(reasonType, reasonDetail) => reportPetition(detail.id, reasonType, reasonDetail)}
               onReportComment={reportComment}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}

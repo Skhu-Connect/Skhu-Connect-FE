@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
-import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
+import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
 
@@ -52,6 +52,52 @@ function AdminAnswer({ a }) {
 
 function linkButtonStyle() {
   return { background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", padding: 0 };
+}
+
+const REPORT_REASONS = [
+  { value: "SPAM", label: "광고·도배" },
+  { value: "ABUSE", label: "욕설·괴롭힘" },
+  { value: "INAPPROPRIATE", label: "부적절한 콘텐츠" },
+  { value: "FALSE_INFORMATION", label: "허위 정보" },
+  { value: "OTHER", label: "기타" },
+];
+
+function ReportDialog({ target, onClose, onSubmit }) {
+  const [reasonType, setReasonType] = useState("");
+  const [reasonDetail, setReasonDetail] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!reasonType) return setError("신고 종류를 선택해 주세요.");
+    if (reasonDetail.trim().length < 10) return setError("신고 이유는 10자 이상 입력해 주세요.");
+    setBusy(true);
+    try {
+      await onSubmit(reasonType, reasonDetail);
+      toast(`${target} 신고가 접수되었습니다.`);
+      onClose();
+    } catch (err) {
+      setError(err.message || "신고 접수에 실패했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="report-title" style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <form onSubmit={submit} style={{ width: "min(100%, 440px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
+        <h2 id="report-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>{target} 신고</h2>
+        <p style={{ margin: "6px 0 20px", fontSize: 13.5, color: "var(--text-muted)" }}>관리자가 신고 내용과 사유를 검토합니다.</p>
+        <Select label="신고 종류" value={reasonType} onChange={(e) => { setReasonType(e.target.value); setError(""); }} options={REPORT_REASONS} />
+        <Textarea label="신고 이유" value={reasonDetail} onChange={(e) => { setReasonDetail(e.target.value); setError(""); }} maxLength={500} placeholder="신고 이유를 10자 이상 입력해 주세요." error={error || undefined} wrapStyle={{ marginTop: 16 }} />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>취소</Button>
+          <Button type="submit" variant="danger" disabled={busy}>{busy ? "접수 중…" : "신고하기"}</Button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
@@ -123,6 +169,7 @@ function CommentsSection({ petitionId }) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [replyText, setReplyText] = useState("");
+  const [reportId, setReportId] = useState(null);
   const list = comments ?? [];
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
@@ -131,15 +178,7 @@ function CommentsSection({ petitionId }) {
   const removeComment = (id) => {
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
   };
-  const report = async (id) => {
-    if (!window.confirm("이 댓글을 신고할까요? 관리자가 검토합니다.")) return;
-    try {
-      await reportComment(id);
-      toast("댓글 신고가 접수되었습니다.");
-    } catch (e) {
-      toast(e.message || "댓글 신고 접수에 실패했습니다.");
-    }
-  };
+  const report = (id) => setReportId(id);
 
   const add = async () => {
     if (!text.trim()) return;
@@ -156,6 +195,7 @@ function CommentsSection({ petitionId }) {
 
   return (
     <>
+      {reportId !== null && <ReportDialog target="댓글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportComment(reportId, reasonType, reasonDetail)} />}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", margin: "0 0 4px" }}>댓글 {total}</h2>
       <Card>
         {list.map((c) => (
@@ -217,7 +257,7 @@ export default function DetailScreen() {
   const navigate = useNavigate();
 
   const [missing, setMissing] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -243,6 +283,7 @@ export default function DetailScreen() {
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "22px var(--page-gutter) 90px" }}>
+      {reportOpen && <ReportDialog target="게시글" onClose={() => setReportOpen(false)} onSubmit={(reasonType, reasonDetail) => reportPetition(p.id, reasonType, reasonDetail)} />}
       <button type="button" onClick={() => navigate(-1)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-body)", fontWeight: 600, fontSize: 14, marginBottom: 18, fontFamily: "var(--font-sans)" }}>
         <Icon name="arrowLeft" size={18} /> 목록으로
       </button>
@@ -254,20 +295,8 @@ export default function DetailScreen() {
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
             <button
               type="button"
-              disabled={reporting}
-              onClick={async () => {
-                if (!window.confirm("이 게시글을 신고할까요? 관리자가 검토합니다.")) return;
-                setReporting(true);
-                try {
-                  await reportPetition(p.id);
-                  toast("신고가 접수되었습니다.");
-                } catch (e) {
-                  toast(e.message || "신고 접수에 실패했습니다.");
-                } finally {
-                  setReporting(false);
-                }
-              }}
-              style={{ background: "none", border: "none", cursor: reporting ? "not-allowed" : "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px", opacity: reporting ? 0.5 : 1 }}
+              onClick={() => setReportOpen(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px" }}
             >
               🚨 신고
             </button>
