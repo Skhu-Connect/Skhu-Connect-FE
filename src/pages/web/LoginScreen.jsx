@@ -9,6 +9,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input } from "../../components/ui";
+import { sanitizeNextPath } from "../../utils/nextPath";
 
 export default function LoginScreen() {
   const authed = useSession((s) => s.authed);
@@ -16,9 +17,7 @@ export default function LoginScreen() {
   // 폼 옆에 직접 띄운다 — /login 은 WebLayout 밖이라 <Toaster/> 가 없다.
   const [error, setError] = useState("");
   const [params] = useSearchParams();
-  const raw = params.get("next") || "/";
-  // 오픈 리다이렉트 방지: 앱 내부 절대경로만 허용한다(//evil.com 은 브라우저가 외부로 읽는다).
-  const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+  const next = sanitizeNextPath(params.get("next"));
 
   if (authed) return <Navigate to={next} replace />;
 
@@ -56,7 +55,7 @@ export default function LoginScreen() {
       </form>
 
       <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 20 }}>
-        아직 계정이 없으신가요? <Link to="/signup" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
+        아직 계정이 없으신가요? <Link to={`/signup?next=${encodeURIComponent(next)}`} style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
       </p>
 
       <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>

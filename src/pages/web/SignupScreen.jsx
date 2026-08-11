@@ -4,13 +4,14 @@
    (docs/api-spec.md, 사용자 확인 완료 — 헤더·마이페이지 이름 표시 제거는 별도 이슈 6-4). */
 
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
+import { sanitizeNextPath } from "../../utils/nextPath";
 
-function EmailStep({ onSent }) {
+function EmailStep({ onSent, loginHref }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
@@ -58,7 +59,7 @@ function EmailStep({ onSent }) {
       </form>
 
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, fontSize: 13 }}>
-        <Link to="/login" style={{ color: "var(--text-muted)", fontWeight: 600 }}>로그인으로 돌아가기</Link>
+        <Link to={loginHref} style={{ color: "var(--text-muted)", fontWeight: 600 }}>로그인으로 돌아가기</Link>
         <span style={{ color: "var(--border-strong)" }}>|</span>
         <a href="https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main" target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>학교 이메일을 모르시나요?</a>
       </div>
@@ -210,13 +211,16 @@ export default function SignupScreen() {
   const [step, setStep] = useState("email"); // email → code → account
   const [email, setEmail] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
+  const [params] = useSearchParams();
+  const next = sanitizeNextPath(params.get("next"));
 
-  if (authed) return <Navigate to="/" replace />;
+  if (authed) return <Navigate to={next} replace />;
 
   return (
     <AuthLayout>
       {step === "email" && (
         <EmailStep
+          loginHref={`/login?next=${encodeURIComponent(next)}`}
           onSent={(value) => {
             setEmail(value);
             setStep("code");
