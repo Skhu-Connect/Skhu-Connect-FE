@@ -108,6 +108,7 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   useEffect(() => {
     listDepartments()
@@ -159,24 +160,40 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
       <Input dark label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
       <Input dark label="비밀번호 확인" value={pwConfirm} onChangeText={setPwConfirm} placeholder="••••••••" secureTextEntry />
       <View style={{ gap: 8 }}>
-        <Pressable onPress={() => setTermsAgreed((agreed) => !agreed)} accessibilityRole="checkbox" accessibilityState={{ checked: termsAgreed }} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: onVideo.border, borderRadius: 3, alignItems: "center", justifyContent: "center", backgroundColor: termsAgreed ? onVideo.link : "transparent" }}>
-            {termsAgreed ? <Text style={[{ fontFamily: font }, { color: "#fff", fontSize: 12, fontWeight: "800" }]}>✓</Text> : null}
-          </View>
-          <Text style={[{ fontFamily: font }, { flex: 1, color: onVideo.text, fontSize: 13, fontWeight: "700" }]}>[필수] 이용약관에 동의합니다.</Text>
-        </Pressable>
-        <Pressable onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
-          <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>이용약관 보기</Text>
-        </Pressable>
-        <View style={{ gap: 4, marginTop: 4 }}>
-          <Text style={[{ fontFamily: font }, { color: onVideo.text, fontSize: 13, fontWeight: "700" }]}>개인정보 처리 안내</Text>
-          <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</Text>
-          <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</Text>
-          <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</Text>
-          <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} accessibilityRole="link">
-            <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>개인정보처리방침 보기</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Pressable onPress={() => setTermsAgreed((agreed) => !agreed)} accessibilityRole="checkbox" accessibilityState={{ checked: termsAgreed }} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: onVideo.border, borderRadius: 3, alignItems: "center", justifyContent: "center", backgroundColor: termsAgreed ? onVideo.link : "transparent" }}>
+              {termsAgreed ? <Text style={[{ fontFamily: font }, { color: "#fff", fontSize: 12, fontWeight: "800" }]}>✓</Text> : null}
+            </View>
+            <Text style={[{ fontFamily: font }, { flex: 1, color: onVideo.text, fontSize: 13, fontWeight: "700" }]}>[필수] 이용약관에 동의합니다.</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setTermsOpen((open) => !open)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: termsOpen }}
+            accessibilityLabel={termsOpen ? "약관 및 개인정보 처리 안내 접기" : "약관 및 개인정보 처리 안내 펼치기"}
+            hitSlop={8}
+            style={{ padding: 4, transform: [{ rotate: termsOpen ? "180deg" : "0deg" }] }}
+          >
+            <Icon name="chevronDown" size={16} color={onVideo.muted} />
           </Pressable>
         </View>
+        {termsOpen ? (
+          <View style={{ gap: 8 }}>
+            <Pressable onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
+              <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>이용약관 보기</Text>
+            </Pressable>
+            <View style={{ gap: 4 }}>
+              <Text style={[{ fontFamily: font }, { color: onVideo.text, fontSize: 13, fontWeight: "700" }]}>개인정보 처리 안내</Text>
+              <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</Text>
+              <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</Text>
+              <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</Text>
+              <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} accessibilityRole="link">
+                <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>개인정보처리방침 보기</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
       {error ? <ErrorText>{error}</ErrorText> : null}
       <Button variant="primary" size="lg" block disabled={saving} onPress={submit}>
