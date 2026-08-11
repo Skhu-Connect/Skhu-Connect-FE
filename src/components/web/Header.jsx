@@ -12,7 +12,7 @@ import { Avatar, Button, Icon, IconButton } from "../ui";
 import SettingsModal from "./SettingsModal";
 import { NOTIF_META } from "./notifMeta";
 
-function WordMark() {
+export function WordMark() {
   return (
     <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
       <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
