@@ -1,5 +1,6 @@
 /* sticky Header + 4개 하위 부품 (ROADMAP 1-2). 원본: web-app-v7.jsx 61–178행.
-   한 덩어리로 두는 이유: WordMark·SearchBox·NotifBell·AvatarMenu 는 이 헤더 밖에서 쓰이지 않는다.
+   한 덩어리로 두는 이유: SearchBox·NotifBell·AvatarMenu 는 이 헤더 밖에서 쓰이지 않는다.
+   WordMark 만 예외 — MobileShareHeader(모바일 공유 진입 축소 헤더)가 재사용한다.
 
    검색어는 URL 이 아니라 WebLayout 의 useState 다 — 검색 결과는 피드 화면 안에서 렌더된다.
    드롭다운 열림도 여기 로컬 상태다. */
