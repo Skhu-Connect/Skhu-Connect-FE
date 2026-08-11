@@ -225,7 +225,7 @@ export async function confirmSignupCode(email: string, code: string): Promise<st
   return verificationToken;
 }
 
-export async function signup(args: { loginId: string; password: string; departmentId: number; verificationToken: string }): Promise<Me | null> {
+export async function signup(args: { loginId: string; password: string; departmentId: number; verificationToken: string; termsAgreed: true; termsVersion: "1.0" }): Promise<Me | null> {
   await apiFetch("/connect/auth/signup", { method: "POST", auth: false, body: args });
   return login(args.loginId, args.password);
 }

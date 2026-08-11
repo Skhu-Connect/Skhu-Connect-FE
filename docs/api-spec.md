@@ -13,7 +13,7 @@
 - `POST /connect/auth/login` — `{loginId, password}` → `{accessToken, expiresInSeconds}`. 실패 시 `401
   {status:401, title:"Invalid credentials"}` — 학번 미등록/비번 틀림을 구분하지 않는다(README 보안 항목 6 이미
   서버가 지킴, 프론트는 title 을 그대로 쓰거나 고정 문구로 감싸면 된다).
-- `POST /connect/auth/signup` — `{verificationToken, loginId, password, departmentId}`. **이름 필드 없음.**
+- `POST /connect/auth/signup` — `{verificationToken, loginId, password, departmentId, termsAgreed:true, termsVersion:"1.0"}`. **이름 필드 없음.** 이용약관 동의는 필수이며, `termsAgreed`가 `true`가 아니거나 `termsVersion`이 `"1.0"`이 아니면 400.
   가입 전에 이메일 인증이 **필수**:
   1. `POST /connect/auth/email-verifications` `{email, purpose:"SIGN_UP"}` → 코드 발송 (스팸 방지 위해
      이메일 존재 여부 등은 응답에 안 실림)
