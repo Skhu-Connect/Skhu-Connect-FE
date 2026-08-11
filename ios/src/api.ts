@@ -7,8 +7,8 @@
    모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 비밀번호 재설정,
    전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다.
 
-   deleteAccount 는 반대로 화면(MY)은 있지만 대응 백엔드 엔드포인트가 아직 없다 —
-   DELETE /connect/users/me 를 호출하도록 만들어 뒀고, 엔드포인트가 열리면 그대로 연동된다. */
+   deleteAccount 는 DELETE /connect/users/me({password})로 연동 완료(2026-08-11, /v3/api-docs 로
+   계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
 
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";

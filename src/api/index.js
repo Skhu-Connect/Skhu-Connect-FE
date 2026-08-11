@@ -13,8 +13,8 @@
    /connect/auth/password/reset)은 백엔드엔 있지만 화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이
    없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
 
-   회원탈퇴(deleteAccount)는 반대로 화면은 있지만 대응 백엔드 엔드포인트가 아직 없다
-   — /connect/users/me DELETE 를 호출하도록 만들어 뒀고, 엔드포인트가 열리면 그대로 연동된다. */
+   회원탈퇴(deleteAccount)는 /connect/users/me DELETE({password})로 연동 완료(2026-08-11, /v3/api-docs
+   로 계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 
