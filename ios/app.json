@@ -17,6 +17,9 @@
       ],
       "entitlements": {
         "aps-environment": "production"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -53,8 +56,12 @@
         }
       ],
       "./plugins/withRNFirebaseDisableSpm.js",
-      "./plugins/withPrivacyManifest.js",
-      "expo-web-browser"
-    ]
+      "./plugins/withPrivacyManifest.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "21cb7312-de59-4f54-84d5-e2ca8b4a66f5"
+      }
+    }
   }
 }
