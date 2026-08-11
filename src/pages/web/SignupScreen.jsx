@@ -152,6 +152,7 @@ function AccountStep({ verificationToken, onBack }) {
   const [saving, setSaving] = useState(false);
   const [loadedDepartments, setLoadedDepartments] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   useEffect(() => {
     api.listDepartments().then((list) => {
@@ -207,18 +208,34 @@ function AccountStep({ verificationToken, onBack }) {
         <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         <Input label="비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         <div style={{ display: "grid", gap: 8, marginTop: 2, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-strong)", fontWeight: 700, cursor: "pointer" }}>
-            <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)} />
-            <span>[필수] 이용약관에 동의합니다.</span>
-          </label>
-          <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
-          <div style={{ display: "grid", gap: 4, marginTop: 4 }}>
-            <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
-            <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
-            <span>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</span>
-            <span>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</span>
-            <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-strong)", fontWeight: 700, cursor: "pointer" }}>
+              <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)} />
+              <span>[필수] 이용약관에 동의합니다.</span>
+            </label>
+            <button
+              type="button"
+              aria-expanded={termsOpen}
+              aria-controls="signup-terms-detail"
+              aria-label={termsOpen ? "약관 및 개인정보 처리 안내 접기" : "약관 및 개인정보 처리 안내 펼치기"}
+              onClick={() => setTermsOpen((open) => !open)}
+              style={{ marginLeft: "auto", display: "flex", alignItems: "center", background: "none", border: "none", padding: 4, cursor: "pointer", color: "var(--text-muted)" }}
+            >
+              <Icon name="chevronDown" size={16} style={{ transform: termsOpen ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} />
+            </button>
           </div>
+          {termsOpen && (
+            <div id="signup-terms-detail" style={{ display: "grid", gap: 8 }}>
+              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
+              <div style={{ display: "grid", gap: 4 }}>
+                <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
+                <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
+                <span>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</span>
+                <span>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</span>
+                <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
+              </div>
+            </div>
+          )}
         </div>
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
