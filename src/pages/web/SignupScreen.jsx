@@ -216,7 +216,7 @@ function AccountStep({ verificationToken, onBack }) {
             <button
               type="button"
               aria-expanded={termsOpen}
-              aria-controls="signup-terms-detail"
+              aria-controls={termsOpen ? "signup-terms-detail" : undefined}
               aria-label={termsOpen ? "약관 및 개인정보 처리 안내 접기" : "약관 및 개인정보 처리 안내 펼치기"}
               onClick={() => setTermsOpen((open) => !open)}
               style={{ marginLeft: "auto", display: "flex", alignItems: "center", background: "none", border: "none", padding: 4, cursor: "pointer", color: "var(--text-muted)" }}
@@ -226,13 +226,13 @@ function AccountStep({ verificationToken, onBack }) {
           </div>
           {termsOpen && (
             <div id="signup-terms-detail" style={{ display: "grid", gap: 8 }}>
-              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
+              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
               <div style={{ display: "grid", gap: 4 }}>
                 <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
                 <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
                 <span>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</span>
                 <span>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</span>
-                <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
+                <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
               </div>
             </div>
           )}
