@@ -175,8 +175,11 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
   const toggleLike = (id) => (authed ? toggleCommentLike(petitionId, id) : requireAuth());
-  const editComment = (id, body) => updateComment(petitionId, id, body);
+  // c.mine 버튼은 평소엔 게스트에게 안 보이지만, 로그아웃 후에도 store 댓글 캐시가 남아있어
+  // 재진입 시 새 fetch가 끝나기 전 잠깐 노출될 수 있다 — 다른 액션과 같은 패턴으로 방어한다.
+  const editComment = (id, body) => (authed ? updateComment(petitionId, id, body) : requireAuth());
   const removeComment = (id) => {
+    if (!authed) return requireAuth();
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
   };
   const report = (id) => (authed ? setReportId(id) : requireAuth());
@@ -270,7 +273,11 @@ export default function DetailScreen() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setMissing(false);
-    loadPetition(pid).then((found) => setMissing(!found));
+    // 잘못된 id(비숫자 등)는 서버가 404가 아닌 다른 오류로 응답할 수 있다 — 어떤 오류든
+    // "찾을 수 없음"으로 처리한다. catch 없이 두면 그 케이스만 무한 로딩에 빠진다.
+    loadPetition(pid)
+      .then((found) => setMissing(!found))
+      .catch(() => setMissing(true));
   }, [pid, loadPetition]);
 
   if (!p) {

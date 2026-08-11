@@ -13,7 +13,9 @@ import Header from "../components/web/Header";
 const FEED_PATHS = ["/", "/answered", "/mine"];
 // 공유받은 청원 상세는 비로그인도 볼 수 있다(의존 G) — 동의·댓글·신고 같은 개별 동작은
 // DetailScreen 이 authed 를 직접 확인해 로그인으로 보낸다.
-const GUEST_PATH = /^\/p\/\d+$/;
+// 숫자 id로 한정하지 않는다 — 오타난 id(/p/abc)도 DetailScreen이 기존 404("찾을 수 없음") 처리로
+// 이미 다루므로, 여기서 걸러 로그인으로 보내면 정상 not-found와 처리가 갈린다.
+const GUEST_PATH = /^\/p\/[^/]+$/;
 
 export default function WebLayout() {
   const authed = useSession((s) => s.authed);
