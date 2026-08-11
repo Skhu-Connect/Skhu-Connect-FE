@@ -50,7 +50,8 @@
           }
         }
       ],
-      "./plugins/withRNFirebaseDisableSpm.js"
+      "./plugins/withRNFirebaseDisableSpm.js",
+      "./plugins/withPrivacyManifest.js"
     ]
   }
 }
