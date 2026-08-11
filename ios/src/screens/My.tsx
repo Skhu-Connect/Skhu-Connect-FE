@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
-import { Avatar, Button, Input } from "../ui";
+import { listDepartments } from "../api";
+import { Avatar, Button, Input, Select } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
 const t = { fontFamily: font };
@@ -23,15 +24,40 @@ export type MyProps = {
   onMarkAllNotifRead: () => void;
   onLogout: () => void;
   onDeleteAccount: (password: string) => Promise<void>;
+  onUpdateDepartment: (departmentId: number, departmentName: string) => Promise<void>;
 };
 
 export function MyScreen(p: MyProps) {
   const [notifExpanded, setNotifExpanded] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
+  const [department, setDepartment] = useState(p.me?.departmentName ?? "");
+  const [departmentError, setDepartmentError] = useState("");
+  const [savingDepartment, setSavingDepartment] = useState(false);
   const shownNotifications = notifExpanded ? p.notifications : p.notifications.slice(0, PAGE_SIZE);
   const shownComments = commentsExpanded ? p.myComments : p.myComments.slice(0, PAGE_SIZE);
   const unread = p.notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    listDepartments().then(setDepartments).catch(() => setDepartmentError("학부 목록을 불러오지 못했습니다."));
+  }, []);
+  useEffect(() => setDepartment(p.me?.departmentName ?? ""), [p.me?.departmentName]);
+
+  const saveDepartment = async () => {
+    const selected = departments.find((item) => item.name === department);
+    if (!selected) return setDepartmentError("학부를 선택해 주세요.");
+    setSavingDepartment(true);
+    setDepartmentError("");
+    try {
+      await p.onUpdateDepartment(selected.id, selected.name);
+    } catch (e) {
+      setDepartment(p.me?.departmentName ?? "");
+      setDepartmentError(e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : e instanceof Error ? e.message : "학부 정보 수정에 실패했습니다.");
+    } finally {
+      setSavingDepartment(false);
+    }
+  };
 
   const stats = [
     { value: p.mineCount, label: "등록한 건의" },
@@ -62,6 +88,13 @@ export function MyScreen(p: MyProps) {
               <Text style={[t, { fontSize: 11, color: colors.muted, fontWeight: "600", marginTop: 3 }]}>{s.label}</Text>
             </View>
           ))}
+        </View>
+
+        <SectionTitle style={{ paddingTop: 18 }}>소속 학부 수정</SectionTitle>
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, padding: 15, gap: 12 }, shadow.sm]}>
+          <Select label="소속 학부" options={departments.map((item) => item.name)} value={department} onChange={setDepartment} placeholder="학부를 선택하세요" />
+          {departmentError ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{departmentError}</Text> : null}
+          <Button block disabled={savingDepartment || !departments.some((item) => item.name === department)} onPress={saveDepartment}>{savingDepartment ? "저장 중…" : "저장"}</Button>
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6 }}>

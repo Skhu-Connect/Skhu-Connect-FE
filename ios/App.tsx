@@ -390,6 +390,11 @@ export default function App() {
     [resetAuthState],
   );
 
+  const onUpdateDepartment = useCallback(async (departmentId: number, departmentName: string) => {
+    setMe(await api.updateDepartment(departmentId, departmentName));
+    flash("학부 정보가 수정되었습니다");
+  }, [flash]);
+
   const onTab = useCallback((next: Tab) => {
     setTab(next);
     setScreen(next === "my" ? "my" : "feed");
@@ -503,6 +508,7 @@ export default function App() {
               onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
               onDeleteAccount={onDeleteAccount}
+              onUpdateDepartment={onUpdateDepartment}
             />
           ) : null}
 
