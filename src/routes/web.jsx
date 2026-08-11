@@ -11,6 +11,7 @@ import SubmitScreen from "../pages/web/SubmitScreen";
 import BookmarkScreen from "../pages/web/BookmarkScreen";
 import MyPageScreen from "../pages/web/MyPageScreen";
 import SupportScreen from "../pages/web/SupportScreen";
+import PrivacyChoicesScreen from "../pages/web/PrivacyChoicesScreen";
 
 export function webRoutes() {
   return (
@@ -18,6 +19,7 @@ export function webRoutes() {
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/signup" element={<SignupScreen />} />
       <Route path="/support" element={<SupportScreen />} />
+      <Route path="/privacy-choices" element={<PrivacyChoicesScreen />} />
       <Route element={<WebLayout />}>
         <Route path="/" element={<FeedScreen nav="feed" />} />
         <Route path="/answered" element={<FeedScreen nav="answered" />} />
