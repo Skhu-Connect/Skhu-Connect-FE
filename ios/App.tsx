@@ -21,9 +21,11 @@ import * as push from "./src/push";
 
 type Screen = "feed" | "detail" | "submit" | "my";
 
-/* 공유 링크는 학생이 에타에 붙여넣는 https 주소지만, 앱이 받는 건 커스텀 스킴이다.
-   (https 로 바로 받으려면 서버에 apple-app-site-association 이 있어야 한다 — 범위 밖.) */
-const SHARE_HOST = "cheongwon.skhu.ac.kr";
+/* 공유 링크는 학생이 에타에 붙여넣는 실제 웹 도메인 https 주소다. Universal Link(app.json 의
+   associatedDomains + 웹 레포 public/apple-app-site-association)로 앱이 설치돼 있으면 이 주소를
+   그대로 열었을 때 바로 앱 상세로 온다 — petitionIdFromUrl 이 스킴을 안 가리고 "/p/<id>"만 보므로
+   커스텀 스킴 딥링크와 같은 코드 경로를 탄다. */
+const SHARE_HOST = "https://petition-system-two.vercel.app";
 
 function petitionIdFromUrl(url: string | null): number | null {
   if (!url) return null;
@@ -338,7 +340,7 @@ export default function App() {
 
   const shareUrl = `${SHARE_HOST}/p/${detail?.id ?? ""}`;
   const onCopy = useCallback(() => {
-    Clipboard.setStringAsync(`https://${shareUrl}`);
+    Clipboard.setStringAsync(shareUrl);
     setCopied(true);
     flash("링크를 복사했습니다");
   }, [shareUrl, flash]);

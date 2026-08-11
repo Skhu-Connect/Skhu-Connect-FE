@@ -12,6 +12,7 @@
       "bundleIdentifier": "ac.skhu.petition",
       "supportsTablet": false,
       "googleServicesFile": "./GoogleService-Info.plist",
+      "associatedDomains": ["applinks:petition-system-two.vercel.app"],
       "entitlements": {
         "aps-environment": "production"
       }
