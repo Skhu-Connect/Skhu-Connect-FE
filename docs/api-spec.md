@@ -40,11 +40,12 @@
   파생" 절 참고.
 - `excerpt` 는 `content.slice(0, 120)` 로 클라이언트에서 파생(mock 의 `createPetition` 이 하던 것과 동일 로직
   재사용).
-- 카테고리 라벨·임계치(`threshold`)·기준 문구(`basis`)·담당자(`owner`) — **서버에 이 정보를 주는 엔드포인트가
-  없다.** `targetAgreementCount` 는 서버가 이미 계산해서 청원 응답에 내려주므로 숫자 자체는 서버 값을 쓰고,
-  라벨·기준 문구·담당자 표시는 `mockDb.js` 의 `categories[]` 값(공개 정보 — 실명 없는 부서명 수준)을 그대로
-  클라이언트 상수로 남긴다. `ponytail: 서버가 카테고리 메타를 안 주는 동안의 임시 조치, /connect/categories
-  같은 엔드포인트가 생기면 그걸로 교체.`
+- 카테고리 라벨·기준 문구(`basis`)·담당자(`owner`) — 서버에 이 정보를 주는 엔드포인트가 없어 `mockDb.js` 의
+  `CATEGORY_META`(공개 정보 — 실명 없는 부서명 수준)를 클라이언트 상수로 쓴다.
+- 임계치(`threshold`, 카테고리별 목표 공감 수)는 `GET /connect/threshold-settings`(**인증 불필요**, `[{category,
+  targetAgreementCount}]`)로 관리자가 설정한 실제 값을 받아 `CATEGORY_META` 를 덮어쓴다(Skhu-Connect-BE #43).
+  이미 등록된 청원의 `threshold` 는 응답의 `targetAgreementCount` 를 그대로 쓴다 — 청원마다 등록 시점의 값이
+  고정되므로 그 뒤 관리자가 임계치를 바꿔도 기존 청원 목표는 유지된다.
 - `POST /connect/petitions` `{category, title, content}` → 201 `PetitionResponse`. `PUT`/`DELETE` 는 작성자만
   (403/409 가능) — Admin 답변 기능 아님, 그냥 본인 글 수정·삭제.
 - **관리자 답변(`answerPetition`) 엔드포인트가 없다.** 관리자 콘솔은 이번 라운드 범위 밖 — 계속 mock.

@@ -467,7 +467,31 @@ export async function listMyComments() {
 
 /* ───────────────── 카테고리 · 담당자 (학생/관리자 공용, 클라이언트 상수) ───────────────── */
 
+/* 라벨·기준 문구·담당자는 대응 엔드포인트가 없어 CATEGORY_META 상수를 쓰지만, threshold(목표
+   공감 수)는 공개 GET /connect/threshold-settings 로 관리자가 설정한 실제 값을 받아와 덮어쓴다
+   (세션당 1회, adminApiFetch 와 달리 인증 불필요 — 학생 화면도 호출 가능). */
+// refreshAccessToken(위 63행)과 같은 패턴 — 진행 중인 fetch 를 저장해 동시 호출이 서로 다른
+// 결과(하나는 서버값, 하나는 아직 안 덮인 폴백값)를 보지 않고 같은 요청을 같이 기다리게 한다.
+let categoryThresholdsPromise = null;
+
+async function ensureCategoryThresholds() {
+  if (!categoryThresholdsPromise) {
+    categoryThresholdsPromise = apiFetch("/connect/threshold-settings", { auth: false })
+      .then((rows) => {
+        for (const row of rows ?? []) {
+          const key = CATEGORY_ENUM_TO_KEY[row.category];
+          if (CATEGORY_META[key]) CATEGORY_META[key].threshold = row.targetAgreementCount;
+        }
+      })
+      .catch(() => {
+        categoryThresholdsPromise = null; // 실패 시 다음 호출에서 재시도, 그때까진 폴백값 유지
+      });
+  }
+  return categoryThresholdsPromise;
+}
+
 export async function listCategories() {
+  await ensureCategoryThresholds();
   return Object.entries(CATEGORY_META).map(([key, meta]) => ({ key, ...meta }));
 }
 

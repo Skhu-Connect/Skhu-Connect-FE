@@ -3,10 +3,9 @@
    학생 화면 데이터(세션·청원·댓글·공감·북마크·알림·학부)와 관리자 콘솔(로그인·청원 목록·공식
    답변·숨김복원·임계치 설정)은 이제 전부 실 백엔드에서 온다. 여기 남은 건 두 가지뿐이다.
 
-   1. CATEGORY_META — 카테고리 라벨·담당자 연락처. 실 백엔드에 대응 엔드포인트가 없어서
-      클라이언트 상수로 유지한다(threshold 필드는 관리자 화면에선 이미 실 백엔드
-      GET/PUT /connect/admin/threshold-settings 로 대체됐고, 여기 남은 값은 학생
-      SubmitScreen 미리보기 전용 폴백 — 서버 값으로 전환하려면 학생 웹 쪽 후속 이슈가 필요하다).
+   1. CATEGORY_META — 카테고리 라벨·담당자 연락처는 대응 엔드포인트가 없어 클라이언트 상수로
+      유지한다. threshold 필드는 초기값일 뿐이고, api/index.js 의 ensureCategoryThresholds() 가
+      공개 GET /connect/threshold-settings 로 받은 실제 값으로 세션당 1회 덮어쓴다.
    2. adminDb.notifLogs — 관리자 알림 로그. 대응 엔드포인트가 없어 계속 이 목으로 돈다. */
 
 export const CATEGORY_META = {
