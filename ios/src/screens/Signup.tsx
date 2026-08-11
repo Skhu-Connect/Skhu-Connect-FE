@@ -4,6 +4,7 @@
    흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(theme 의 onVideo 팔레트). */
 import { useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
@@ -180,7 +181,7 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
         </View>
         {termsOpen ? (
           <View style={{ gap: 8 }}>
-            <Pressable onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)} accessibilityRole="link">
               <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>이용약관 보기</Text>
             </Pressable>
             <View style={{ gap: 4 }}>
@@ -188,7 +189,7 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
               <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</Text>
               <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</Text>
               <Text style={[{ fontFamily: font }, { color: onVideo.muted, fontSize: 12.5, lineHeight: 19 }]}>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</Text>
-              <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} accessibilityRole="link">
+              <Pressable onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)} accessibilityRole="link">
                 <Text style={[{ fontFamily: font }, { color: onVideo.link, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" }]}>개인정보처리방침 보기</Text>
               </Pressable>
             </View>
