@@ -56,7 +56,7 @@ export default function LoginScreen() {
       </form>
 
       <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 20 }}>
-        아직 계정이 없으신가요? <Link to="/signup" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
+        아직 계정이 없으신가요? <Link to={`/signup?next=${encodeURIComponent(next)}`} style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
       </p>
 
       <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 18, lineHeight: 1.6 }}>
