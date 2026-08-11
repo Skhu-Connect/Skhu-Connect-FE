@@ -115,6 +115,9 @@ function Banner({
       <View style={{ position: "absolute", right: -50, top: -40, width: 190, height: 190, borderRadius: 95, backgroundColor: "rgba(255,255,255,.07)" }} />
       <Text style={[t, { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,.85)" }]}>익명 건의 · 공감으로 움직이는 캠퍼스</Text>
       <Text style={[t, { fontSize: 21, fontWeight: "800", color: "#fff", lineHeight: 27.7, marginTop: 5, letterSpacing: -0.21 }]}>당신의 목소리를 들려주세요</Text>
+      <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.9)", lineHeight: 19.5, marginTop: 8 }]}>
+        공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면{"\n"}담당 부서로 자동 전달됩니다.
+      </Text>
       <View style={{ flexDirection: "row", gap: 26, marginTop: 16 }}>
         {stats.map((s) => (
           <View key={s.label}>
