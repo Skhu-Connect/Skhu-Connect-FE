@@ -104,12 +104,6 @@ function Banner({
     );
   }
 
-  const stats = [
-    { value: `${petitions.length}건`, label: "진행 중 건의" },
-    { value: `${petitions.filter((x) => x.status !== "received").length}건`, label: "검토·답변" },
-    { value: "88%", label: "답변률" },
-  ];
-
   return (
     <LinearGradient {...gradient.hero} style={{ paddingTop: 20, paddingHorizontal: 18, paddingBottom: 22, overflow: "hidden" }}>
       <View style={{ position: "absolute", right: -50, top: -40, width: 190, height: 190, borderRadius: 95, backgroundColor: "rgba(255,255,255,.07)" }} />
@@ -118,14 +112,6 @@ function Banner({
       <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.9)", lineHeight: 19.5, marginTop: 8 }]}>
         공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면{"\n"}담당 부서로 자동 전달됩니다.
       </Text>
-      <View style={{ flexDirection: "row", gap: 26, marginTop: 16 }}>
-        {stats.map((s) => (
-          <View key={s.label}>
-            <Text style={[t, { fontSize: 22, fontWeight: "800", color: "#fff" }]}>{s.value}</Text>
-            <Text style={[t, { fontSize: 11.5, color: "rgba(255,255,255,.8)", fontWeight: "500", marginTop: 1 }]}>{s.label}</Text>
-          </View>
-        ))}
-      </View>
     </LinearGradient>
   );
 }
