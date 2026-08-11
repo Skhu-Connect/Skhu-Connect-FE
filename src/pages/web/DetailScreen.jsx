@@ -3,7 +3,8 @@
    답변 카드는 전역 단일 객체가 아니라 answersById[p.id] 를 읽는다 (의존 B). */
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
@@ -159,7 +160,7 @@ function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
   );
 }
 
-function CommentsSection({ petitionId }) {
+function CommentsSection({ petitionId, authed, requireAuth }) {
   const comments = usePetitions((s) => s.commentsById[petitionId]);
   const addComment = usePetitions((s) => s.addComment);
   const toggleCommentLike = usePetitions((s) => s.toggleCommentLike);
@@ -173,21 +174,26 @@ function CommentsSection({ petitionId }) {
   const list = comments ?? [];
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
-  const toggleLike = (id) => toggleCommentLike(petitionId, id);
-  const editComment = (id, body) => updateComment(petitionId, id, body);
+  const toggleLike = (id) => (authed ? toggleCommentLike(petitionId, id) : requireAuth());
+  // c.mine 버튼은 평소엔 게스트에게 안 보이지만, 로그아웃 후에도 store 댓글 캐시가 남아있어
+  // 재진입 시 새 fetch가 끝나기 전 잠깐 노출될 수 있다 — 다른 액션과 같은 패턴으로 방어한다.
+  const editComment = (id, body) => (authed ? updateComment(petitionId, id, body) : requireAuth());
   const removeComment = (id) => {
+    if (!authed) return requireAuth();
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
   };
-  const report = (id) => setReportId(id);
+  const report = (id) => (authed ? setReportId(id) : requireAuth());
 
   const add = async () => {
     if (!text.trim()) return;
+    if (!authed) return requireAuth();
     await addComment(petitionId, text);
     setText("");
   };
 
   const addReply = async (parentId) => {
     if (!replyText.trim()) return;
+    if (!authed) return requireAuth();
     await addComment(petitionId, replyText, parentId);
     setReplyText("");
     setReplyTo(null);
@@ -254,15 +260,24 @@ export default function DetailScreen() {
   const vote = usePetitions((s) => s.vote);
   const bookmark = usePetitions((s) => s.bookmark);
   const reportPetition = usePetitions((s) => s.reportPetition);
+  const authed = useSession((s) => s.authed);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [missing, setMissing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
+  // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 로그인 후 이 청원으로 복귀한다.
+  const requireAuth = () => navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+
   useEffect(() => {
     window.scrollTo(0, 0);
     setMissing(false);
-    loadPetition(pid).then((found) => setMissing(!found));
+    // 잘못된 id(비숫자 등)는 서버가 404가 아닌 다른 오류로 응답할 수 있다 — 어떤 오류든
+    // "찾을 수 없음"으로 처리한다. catch 없이 두면 그 케이스만 무한 로딩에 빠진다.
+    loadPetition(pid)
+      .then((found) => setMissing(!found))
+      .catch(() => setMissing(true));
   }, [pid, loadPetition]);
 
   if (!p) {
@@ -295,7 +310,7 @@ export default function DetailScreen() {
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
             <button
               type="button"
-              onClick={() => setReportOpen(true)}
+              onClick={() => (authed ? setReportOpen(true) : requireAuth())}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px" }}
             >
               🚨 신고
@@ -326,25 +341,28 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
-            onToggle={() => toggleVoteWithConfirm(vote, p.id, voted)}
+            onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted) : requireAuth())}
           />
           <IconButton
             variant={bookmarked ? "solid" : "outline"}
             size={52}
             ariaLabel={bookmarked ? "북마크 해제" : "북마크"}
             aria-pressed={bookmarked}
-            onClick={async () => toast((await bookmark(p.id)) ? "북마크에 저장했습니다" : "북마크를 해제했습니다")}
+            onClick={async () => {
+              if (!authed) return requireAuth();
+              toast((await bookmark(p.id)) ? "북마크에 저장했습니다" : "북마크를 해제했습니다");
+            }}
           >
             <Icon name="bookmark" size={20} />
           </IconButton>
         </div>
 
-        <ShareLink url={`cheongwon.skhu.ac.kr/p/${p.id}`} />
+        <ShareLink url={`${window.location.origin}/p/${p.id}`} />
       </Card>
 
       {answer && <div style={{ marginTop: 18 }}><AdminAnswer a={answer} /></div>}
 
-      <div style={{ marginTop: 26 }}><CommentsSection petitionId={pid} /></div>
+      <div style={{ marginTop: 26 }}><CommentsSection petitionId={pid} authed={authed} requireAuth={requireAuth} /></div>
     </div>
   );
 }
