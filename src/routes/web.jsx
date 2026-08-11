@@ -10,12 +10,14 @@ import DetailScreen from "../pages/web/DetailScreen";
 import SubmitScreen from "../pages/web/SubmitScreen";
 import BookmarkScreen from "../pages/web/BookmarkScreen";
 import MyPageScreen from "../pages/web/MyPageScreen";
+import SupportScreen from "../pages/web/SupportScreen";
 
 export function webRoutes() {
   return (
     <>
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/signup" element={<SignupScreen />} />
+      <Route path="/support" element={<SupportScreen />} />
       <Route element={<WebLayout />}>
         <Route path="/" element={<FeedScreen nav="feed" />} />
         <Route path="/answered" element={<FeedScreen nav="answered" />} />
