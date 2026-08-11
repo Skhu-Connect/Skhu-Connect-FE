@@ -3,7 +3,8 @@
    답변 카드는 전역 단일 객체가 아니라 answersById[p.id] 를 읽는다 (의존 B). */
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
@@ -159,7 +160,7 @@ function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
   );
 }
 
-function CommentsSection({ petitionId }) {
+function CommentsSection({ petitionId, authed, requireAuth }) {
   const comments = usePetitions((s) => s.commentsById[petitionId]);
   const addComment = usePetitions((s) => s.addComment);
   const toggleCommentLike = usePetitions((s) => s.toggleCommentLike);
@@ -173,21 +174,23 @@ function CommentsSection({ petitionId }) {
   const list = comments ?? [];
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
-  const toggleLike = (id) => toggleCommentLike(petitionId, id);
+  const toggleLike = (id) => (authed ? toggleCommentLike(petitionId, id) : requireAuth());
   const editComment = (id, body) => updateComment(petitionId, id, body);
   const removeComment = (id) => {
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
   };
-  const report = (id) => setReportId(id);
+  const report = (id) => (authed ? setReportId(id) : requireAuth());
 
   const add = async () => {
     if (!text.trim()) return;
+    if (!authed) return requireAuth();
     await addComment(petitionId, text);
     setText("");
   };
 
   const addReply = async (parentId) => {
     if (!replyText.trim()) return;
+    if (!authed) return requireAuth();
     await addComment(petitionId, replyText, parentId);
     setReplyText("");
     setReplyTo(null);
@@ -254,10 +257,15 @@ export default function DetailScreen() {
   const vote = usePetitions((s) => s.vote);
   const bookmark = usePetitions((s) => s.bookmark);
   const reportPetition = usePetitions((s) => s.reportPetition);
+  const authed = useSession((s) => s.authed);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [missing, setMissing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+
+  // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 로그인 후 이 청원으로 복귀한다.
+  const requireAuth = () => navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -295,7 +303,7 @@ export default function DetailScreen() {
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
             <button
               type="button"
-              onClick={() => setReportOpen(true)}
+              onClick={() => (authed ? setReportOpen(true) : requireAuth())}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px" }}
             >
               🚨 신고
@@ -326,25 +334,28 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
-            onToggle={() => toggleVoteWithConfirm(vote, p.id, voted)}
+            onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted) : requireAuth())}
           />
           <IconButton
             variant={bookmarked ? "solid" : "outline"}
             size={52}
             ariaLabel={bookmarked ? "북마크 해제" : "북마크"}
             aria-pressed={bookmarked}
-            onClick={async () => toast((await bookmark(p.id)) ? "북마크에 저장했습니다" : "북마크를 해제했습니다")}
+            onClick={async () => {
+              if (!authed) return requireAuth();
+              toast((await bookmark(p.id)) ? "북마크에 저장했습니다" : "북마크를 해제했습니다");
+            }}
           >
             <Icon name="bookmark" size={20} />
           </IconButton>
         </div>
 
-        <ShareLink url={`cheongwon.skhu.ac.kr/p/${p.id}`} />
+        <ShareLink url={`${window.location.origin}/p/${p.id}`} />
       </Card>
 
       {answer && <div style={{ marginTop: 18 }}><AdminAnswer a={answer} /></div>}
 
-      <div style={{ marginTop: 26 }}><CommentsSection petitionId={pid} /></div>
+      <div style={{ marginTop: 26 }}><CommentsSection petitionId={pid} authed={authed} requireAuth={requireAuth} /></div>
     </div>
   );
 }
