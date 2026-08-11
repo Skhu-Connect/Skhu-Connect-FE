@@ -53,7 +53,7 @@ export default function PrivacyChoicesScreen() {
           <Section title="알림 설정">
             <p style={{ margin: 0 }}>푸시 알림 사용 여부는 기기 설정에서 변경할 수 있습니다.</p>
             <p style={{ marginBottom: 0 }}><b>iOS:</b> 설정 &gt; 알림 &gt; 성공잇다</p>
-            <p style={{ marginBottom: 0 }}>앱 내 알림 항목은 <b>MY &gt; 알림 설정</b>에서 확인할 수 있습니다.</p>
+            <p style={{ marginBottom: 0 }}>앱 내 알림 항목은 <b>마이페이지 &gt; 알림 설정</b>에서 확인할 수 있습니다.</p>
           </Section>
 
           <Section title="개인정보 관련 문의">
