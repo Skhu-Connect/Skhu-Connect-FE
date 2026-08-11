@@ -33,7 +33,10 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+# .env*.local 만으로는 .env 가 안 잡힌다. Expo 는 프로젝트 루트의 .env 를 자동으로
+# process.env 에 싣고 이 레포는 공개라, 한 번 커밋되면 히스토리에 남는다.
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
