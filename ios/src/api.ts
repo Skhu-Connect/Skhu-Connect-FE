@@ -7,8 +7,8 @@
    모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 비밀번호 재설정,
    전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다.
 
-   deleteAccount 는 DELETE /connect/users/me({password})로 연동 완료(2026-08-11, /v3/api-docs 로
-   계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
+   deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
+   PATCH /connect/users/me/department({departmentId})로 연동한다. */
 
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
@@ -30,7 +30,8 @@ const STATUS_ENUM_TO_KEY: Record<string, StatusKey> = { OPEN: "received", UNDER_
 /* ───────────────── fetch 기반 ───────────────── */
 
 let accessToken: string | null = null; // 메모리에만 둔다(AsyncStorage 0건 — 보안 항목)
-let refreshing: Promise<void> | null = null;
+let refreshing: { version: number; request: Promise<void> } | null = null;
+let sessionVersion = 0;
 
 async function rawFetch(path: string, opts: { method?: string; body?: unknown; auth?: boolean } = {}) {
   const { method = "GET", body, auth = true } = opts;
@@ -40,18 +41,20 @@ async function rawFetch(path: string, opts: { method?: string; body?: unknown; a
 }
 
 async function refreshAccessToken() {
-  if (!refreshing) {
-    refreshing = rawFetch("/connect/auth/token/refresh", { method: "POST", auth: false })
+  const version = sessionVersion;
+  if (!refreshing || refreshing.version !== version) {
+    const request = rawFetch("/connect/auth/token/refresh", { method: "POST", auth: false })
       .then(async (res) => {
         if (!res.ok) throw new Error("세션이 만료되었습니다.");
         const data = await res.json();
-        accessToken = data.accessToken;
+        if (version === sessionVersion) accessToken = data.accessToken;
       })
       .finally(() => {
-        refreshing = null;
+        if (refreshing?.request === request) refreshing = null;
       });
+    refreshing = { version, request };
   }
-  return refreshing;
+  return refreshing.request;
 }
 
 class ApiError extends Error {
@@ -73,11 +76,13 @@ async function parseError(res: Response) {
 }
 
 async function apiFetch<T = any>(path: string, opts: { method?: string; body?: unknown; auth?: boolean } = {}): Promise<T> {
+  const version = sessionVersion;
   let res = await rawFetch(path, opts);
   if (res.status === 401 && opts.auth !== false) {
     try {
+      if (version !== sessionVersion) throw new Error("세션이 변경되었습니다.");
       await refreshAccessToken();
-      res = await rawFetch(path, opts);
+      if (version === sessionVersion) res = await rawFetch(path, opts);
     } catch {
       /* 재발급 실패 — 아래에서 원래 401 을 던진다 */
     }
@@ -171,11 +176,14 @@ function resetSessionCaches() {
 /* ───────────────── 세션 ───────────────── */
 
 export type Me = { loginId: string; email: string; departmentName: string };
+let cachedMe: Me | null = null;
 
-export async function getMe(): Promise<Me | null> {
+export async function getMe(version = sessionVersion): Promise<Me | null> {
   if (!accessToken) return null;
   const me = await apiFetch<any>("/connect/users/me");
-  return { loginId: me.loginId, email: me.email, departmentName: me.departmentName };
+  if (version !== sessionVersion) return null;
+  cachedMe = { loginId: me.loginId, email: me.email, departmentName: me.departmentName };
+  return cachedMe;
 }
 
 /** 콜드 스타트 부팅 시 호출한다: accessToken 은 메모리 전용이라 앱을 껐다 켜면 사라지지만
@@ -197,6 +205,8 @@ export async function login(loginId: string, password: string): Promise<Me | nul
   if (!id || !pw) throw new Error("아이디와 비밀번호를 입력해 주세요.");
   const { accessToken: token } = await apiFetch<{ accessToken: string }>("/connect/auth/login", { method: "POST", auth: false, body: { loginId: id, password: pw } });
   accessToken = token;
+  sessionVersion += 1;
+  cachedMe = null;
   resetSessionCaches();
   return getMe();
 }
@@ -221,12 +231,14 @@ export async function signup(args: { loginId: string; password: string; departme
 }
 
 export async function logout(): Promise<void> {
+  sessionVersion += 1;
+  accessToken = null;
+  cachedMe = null;
   try {
     await apiFetch("/connect/auth/logout", { method: "POST", auth: false });
   } catch {
     /* 이미 만료됐어도 로컬 상태는 정리한다 */
   }
-  accessToken = null;
   resetSessionCaches();
 }
 
@@ -235,7 +247,25 @@ export async function deleteAccount(password: string): Promise<void> {
   if (!pw) throw new Error("비밀번호를 입력해 주세요.");
   await apiFetch("/connect/users/me", { method: "DELETE", body: { password: pw } });
   accessToken = null;
+  cachedMe = null;
   resetSessionCaches();
+}
+
+export async function updateDepartment(departmentId: number, departmentName: string): Promise<Me> {
+  if (!Number.isSafeInteger(departmentId) || departmentId < 1) throw new Error("학부를 선택해 주세요.");
+  const version = sessionVersion;
+  await apiFetch("/connect/users/me/department", { method: "PATCH", body: { departmentId } });
+  if (version !== sessionVersion) throw new Error("세션이 변경되었습니다.");
+  try {
+    const me = await getMe(version);
+    if (me) return me;
+  } catch {
+    /* 204는 이미 확정됐으므로, 프로필 재조회 실패 시 선택한 학부명으로 화면을 맞춘다. */
+  }
+  if (version !== sessionVersion) throw new Error("세션이 변경되었습니다.");
+  if (!cachedMe) throw new Error("학부 정보를 불러오지 못했습니다.");
+  cachedMe = { ...cachedMe, departmentName };
+  return cachedMe;
 }
 
 export async function listDepartments(): Promise<{ id: number; name: string }[]> {
