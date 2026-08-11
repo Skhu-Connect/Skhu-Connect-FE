@@ -9,6 +9,7 @@ import { useSession } from "../../stores/session";
 import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
+import { sanitizeNextPath } from "../../utils/nextPath";
 
 function EmailStep({ onSent, loginHref }) {
   const [email, setEmail] = useState("");
@@ -211,9 +212,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
   const [params] = useSearchParams();
-  const raw = params.get("next") || "/";
-  // 오픈 리다이렉트 방지: LoginScreen과 동일한 규칙(앱 내부 절대경로만 허용).
-  const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+  const next = sanitizeNextPath(params.get("next"));
 
   if (authed) return <Navigate to={next} replace />;
 
