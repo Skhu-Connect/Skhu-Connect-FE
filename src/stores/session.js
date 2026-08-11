@@ -43,8 +43,8 @@ export const useSession = create((set) => ({
     return prefs;
   },
 
-  updateProfile: async (patch) => {
-    const user = await api.updateProfile(patch);
+  updateDepartment: async (departmentId, departmentName) => {
+    const user = await api.updateDepartment(departmentId, departmentName);
     set({ user });
     return user;
   },

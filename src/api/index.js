@@ -6,8 +6,8 @@
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
    임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listOwners/listNotifLogs(담당자 연락처·
    알림 로그)는 대응 엔드포인트가 없어 여전히 mockDb.js 의 CATEGORY_META/adminDb 로 동작한다.
-   getPrefs/savePrefs(알림 3종 개별 토글)와 updateProfile(학부 수정)도 대응 엔드포인트가 없어
-   로컬 상태로만 유지한다(새로고침하면 초기화).
+   getPrefs/savePrefs(알림 3종 개별 토글)는 대응 엔드포인트가 없어 로컬 상태로만 유지한다
+   (새로고침하면 초기화).
 
    청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 비밀번호 재설정(POST
    /connect/auth/password/reset)은 백엔드엔 있지만 화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이
@@ -256,9 +256,16 @@ export async function deleteAccount(password) {
   resetSessionCaches();
 }
 
-/** 학부 수정 PATCH 엔드포인트가 없다 — 로컬에만 반영(새로고침하면 초기화, 알려진 한계). */
-export async function updateProfile(patch) {
-  cachedMe = { ...cachedMe, ...patch };
+export async function updateDepartment(departmentId, departmentName) {
+  if (!Number.isSafeInteger(departmentId) || departmentId < 1) throw new Error("학부를 선택해 주세요.");
+  await apiFetch("/connect/users/me/department", { method: "PATCH", body: { departmentId } });
+  try {
+    const user = await getMe();
+    if (user) return user;
+  } catch {
+    /* 204는 이미 확정됐으므로, 프로필 재조회 실패 시 선택한 학부명으로 화면을 맞춘다. */
+  }
+  cachedMe = { ...cachedMe, dept: departmentName };
   return { ...cachedMe };
 }
 

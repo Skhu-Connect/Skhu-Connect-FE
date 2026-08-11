@@ -143,7 +143,7 @@ function DeleteAccountDialog({ onClose }) {
 
 export default function MyPageScreen() {
   const user = useSession((s) => s.user);
-  const updateProfile = useSession((s) => s.updateProfile);
+  const updateDepartment = useSession((s) => s.updateDepartment);
   const prefs = useSession((s) => s.prefs) ?? {};
   const savePrefs = useSession((s) => s.savePrefs);
   const logout = useSession((s) => s.logout);
@@ -160,22 +160,33 @@ export default function MyPageScreen() {
   const loadMyComments = usePetitions((s) => s.loadMyComments);
 
   const [departments, setDepartments] = useState([]);
-  const [dept, setDept] = useState(user.dept);
+  const [deptId, setDeptId] = useState("");
   const [saving, setSaving] = useState(false);
   const [notifExpanded, setNotifExpanded] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
 
   useEffect(() => {
-    api.listDepartments().then(setDepartments);
+    api.listDepartments()
+      .then((list) => {
+        setDepartments(list);
+        setDeptId(String(list.find((department) => department.label === user.dept)?.value ?? ""));
+      })
+      .catch((error) => toast(error instanceof Error ? error.message : "학부 목록을 불러오지 못했습니다."));
+  }, [user.dept]);
+
+  useEffect(() => {
     loadMyComments();
   }, [loadMyComments]);
 
   const save = async () => {
+    const department = departments.find((item) => String(item.value) === deptId);
     setSaving(true);
     try {
-      await updateProfile({ dept });
+      await updateDepartment(Number(deptId), department?.label ?? "");
       toast("학부 정보가 수정되었습니다");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "학부 정보 수정에 실패했습니다.");
     } finally {
       setSaving(false);
     }
@@ -209,10 +220,10 @@ export default function MyPageScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <SectionHeader icon="pencil" bg="var(--indigo-50)" fg="var(--indigo-600)" title="소속 학부 수정" />
             <Card padding="var(--pad-card-lg)" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-              <Select label="소속 학부" options={departments} value={dept} onChange={(e) => setDept(e.target.value)} placeholder="학부를 선택하세요" />
+              <Select label="소속 학부" options={departments} value={deptId} onChange={(e) => setDeptId(e.target.value)} placeholder="학부를 선택하세요" />
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <Button variant="outline" onClick={() => navigate("/mine")}>내 건의 보기</Button>
-                <Button variant="primary" disabled={!dept || saving} onClick={save}>저장</Button>
+                <Button variant="primary" disabled={!deptId || saving} onClick={save}>저장</Button>
               </div>
             </Card>
           </div>
