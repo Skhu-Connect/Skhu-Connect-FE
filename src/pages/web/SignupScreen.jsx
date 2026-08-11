@@ -11,6 +11,10 @@ import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
 import { sanitizeNextPath } from "../../utils/nextPath";
 
+const TERMS_VERSION = "1.0";
+const TERMS_PATH = "/terms-of-service.html";
+const PRIVACY_POLICY_PATH = "/privacy-policy.html";
+
 function EmailStep({ onSent, loginHref }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -147,6 +151,7 @@ function AccountStep({ verificationToken, onBack }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadedDepartments, setLoadedDepartments] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
 
   useEffect(() => {
     api.listDepartments().then((list) => {
@@ -174,9 +179,13 @@ function AccountStep({ verificationToken, onBack }) {
       setError("비밀번호가 서로 다릅니다.");
       return;
     }
+    if (!termsAgreed) {
+      setError("회원가입을 진행하려면 이용약관에 동의해주세요.");
+      return;
+    }
     setSaving(true);
     try {
-      await signup({ loginId, password, departmentId: Number(dept), verificationToken });
+      await signup({ loginId, password, departmentId: Number(dept), verificationToken, termsAgreed: true, termsVersion: TERMS_VERSION });
     } catch {
       setError("회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -197,6 +206,20 @@ function AccountStep({ verificationToken, onBack }) {
         <Select label="소속 학부" options={departments} value={dept} onChange={(e) => setDept(e.target.value)} placeholder={loadedDepartments ? "학부를 선택하세요" : "불러오는 중…"} />
         <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         <Input label="비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
+        <div style={{ display: "grid", gap: 8, marginTop: 2, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-strong)", fontWeight: 700, cursor: "pointer" }}>
+            <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)} />
+            <span>[필수] 이용약관에 동의합니다.</span>
+          </label>
+          <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
+          <div style={{ display: "grid", gap: 4, marginTop: 4 }}>
+            <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
+            <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
+            <span>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</span>
+            <span>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</span>
+            <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-600)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
+          </div>
+        </div>
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
         )}

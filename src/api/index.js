@@ -231,8 +231,8 @@ export async function confirmSignupCode(email, code) {
   return verificationToken;
 }
 
-export async function signup({ loginId, password, departmentId, verificationToken }) {
-  await apiFetch("/connect/auth/signup", { method: "POST", auth: false, body: { loginId, password, departmentId, verificationToken } });
+export async function signup({ loginId, password, departmentId, verificationToken, termsAgreed, termsVersion }) {
+  await apiFetch("/connect/auth/signup", { method: "POST", auth: false, body: { loginId, password, departmentId, verificationToken, termsAgreed, termsVersion } });
   return login(loginId, password);
 }
 
