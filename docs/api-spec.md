@@ -24,6 +24,9 @@
   newPassword}`) 흐름도 공유한다 — 이번 라운드 범위 밖(사용자 지시).
 - `GET /connect/users/me` → `{email, loginId, departmentCode, departmentName, notificationEnabled}`.
   **이름·프로필 이미지 없음.** 학부 변경 PATCH 엔드포인트 없음 — 마이페이지 학부 수정은 이번 라운드 범위 밖.
+- `DELETE /connect/users/me` `{password}` → 204(성공)/400(비밀번호 누락)/401(토큰 무효 또는 비밀번호
+  불일치)/404(사용자 없음). 동일 학교 이메일은 탈퇴 후 30일 재가입 제한(서버 처리, 프론트 확인 불필요).
+  웹·iOS 모두 연동 완료(2026-08-11 확인).
 
 ## 청원
 
