@@ -211,7 +211,7 @@ function AccountStep({ verificationToken, onBack }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-strong)", fontWeight: 700, cursor: "pointer" }}>
               <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)} />
-              <span>[필수] 이용약관에 동의합니다.</span>
+              <span>[필수] 이용약관(EULA) 및 커뮤니티 정책에 동의합니다.</span>
             </label>
             <button
               type="button"
@@ -226,7 +226,7 @@ function AccountStep({ verificationToken, onBack }) {
           </div>
           {termsOpen && (
             <div id="signup-terms-detail" style={{ display: "grid", gap: 8 }}>
-              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 보기</a>
+              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 및 커뮤니티 정책 보기</a>
               <div style={{ display: "grid", gap: 4 }}>
                 <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
                 <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
