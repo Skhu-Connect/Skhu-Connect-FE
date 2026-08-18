@@ -237,7 +237,9 @@ function PetitionCard({
               hitSlop={8}
               style={{ marginLeft: "auto", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}
             >
-              <Icon name="userX" size={17} color={colors.muted} />
+              {/* muted 회색이면 장식처럼 보여 그냥 지나친다 — 파괴적 동작이라 danger 로 세운다
+                  (확인창의 "차단하기" 버튼과 같은 색). coral 은 같은 카드의 공감 버튼 색이라 안 쓴다. */}
+              <Icon name="userX" size={17} color={colors.danger} />
             </Pressable>
           ) : null}
         </View>

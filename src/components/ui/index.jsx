@@ -596,7 +596,10 @@ function CardBlockMenu({ onBlock }) {
 
   return (
     <div style={{ marginLeft: "auto", position: "relative" }} onClick={(e) => e.stopPropagation()}>
-      <IconButton size={28} variant="ghost" ariaLabel="작성자 차단" onClick={() => setConfirming(true)}>
+      {/* ghost 의 muted 회색이면 장식처럼 보여 그냥 지나친다 — 파괴적 동작이라 danger 로 세운다
+          (아래 "차단하기" 버튼과 같은 색). coral 은 같은 카드의 공감 버튼 색이라 안 쓴다.
+          Icon 은 color 기본값이 currentColor 라 버튼 색을 그대로 물려받는다. */}
+      <IconButton size={28} variant="ghost" ariaLabel="작성자 차단" onClick={() => setConfirming(true)} style={{ color: "var(--danger-500)" }}>
         <Icon name="userX" size={17} />
       </IconButton>
 
