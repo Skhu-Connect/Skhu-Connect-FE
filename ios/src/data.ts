@@ -29,7 +29,8 @@ export type Petition = {
 
 export type AdminAnswer = { body: string; dept: string; date: string };
 
-export type Comment = { id?: number; author: string; body: string; date: string };
+/** mine 은 서버 CommentResponse.myComment 다 — 내 댓글엔 신고·차단 버튼을 띄우지 않는다. */
+export type Comment = { id?: number; author: string; body: string; date: string; mine: boolean };
 
 /** MY 화면 "내가 쓴 댓글" 전용 — 웹 src/api/index.js의 adaptMyComment와 동일하게 title은 없다. */
 export type MyComment = { id: number; petitionId: number; body: string; date: string };
@@ -159,11 +160,11 @@ export const SEED: Petition[] = [
 
 export const SEED_COMMENTS: Record<number, Comment[]> = {
   1: [
-    { author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리가 없어 고생했어요.", date: "2일 전" },
-    { author: "익명 2", body: "타 대학도 하는데 우리만 안 하는 게 아쉽습니다.", date: "1일 전" },
-    { author: "익명 3", body: "안전 문제는 최소 인력 배치로 충분할 것 같습니다.", date: "20시간 전" },
+    { author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리가 없어 고생했어요.", date: "2일 전", mine: false },
+    { author: "익명 2", body: "타 대학도 하는데 우리만 안 하는 게 아쉽습니다.", date: "1일 전", mine: false },
+    { author: "익명 3", body: "안전 문제는 최소 인력 배치로 충분할 것 같습니다.", date: "20시간 전", mine: false },
   ],
-  4: [{ author: "익명 1", body: "답변 감사합니다. 다음 학기부터 체감되면 좋겠습니다.", date: "1주 전" }],
+  4: [{ author: "익명 1", body: "답변 감사합니다. 다음 학기부터 체감되면 좋겠습니다.", date: "1주 전", mine: false }],
 };
 
 /** id 는 markNotifRead 호출에 쓴다. */

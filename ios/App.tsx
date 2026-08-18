@@ -269,14 +269,50 @@ export default function App() {
                 .then(() => {
                   setPetitions((prev) => prev.filter((p) => p.id !== id));
                   flash("작성자를 차단했습니다");
+                  /* 차단은 작성자 단위라 그 사람이 쓴 다른 글도 사라져야 한다. 청원 응답에 작성자
+                     정보가 없어 로컬에서는 형제 글을 못 고른다 — 서버가 걸러준 목록으로 갈아끼운다.
+                     위에서 이미 누른 글은 지웠으므로 이건 뒤늦게 조용히 정리되면 된다. */
+                  api.listPetitions().then(setPetitions).catch(() => {});
                 })
-                .catch(() => flash("차단에 실패했습니다"));
+                .catch((e) => flash(e instanceof Error ? e.message : "차단에 실패했습니다"));
             },
           },
         ],
       );
     },
     [flash],
+  );
+
+  /* 댓글 작성자 차단. 청원 차단과 같은 API 다(targetType 만 다르다) — 서버가 이후 청원·댓글 조회
+     양쪽에서 이 작성자를 전부 걸러주므로, 성공 뒤에는 지금 보는 댓글 목록과 피드를 다시 불러
+     정리한다. 차단한 사람이 이 청원의 작성자이기도 하면 청원 자체가 목록에서 빠지는데, 그때는
+     아래 "청원을 찾을 수 없음" 가드가 피드로 되돌린다. */
+  const blockCommentAuthor = useCallback(
+    (commentId: number) => {
+      Alert.alert(
+        "이 댓글을 쓴 사용자를 차단할까요?",
+        "차단하면 이 사용자가 쓴 모든 글과 댓글이 앞으로 보이지 않습니다. 지금은 해제할 수 없습니다.",
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "차단하기",
+            style: "destructive",
+            onPress: () => {
+              api
+                .blockCommentAuthor(commentId)
+                .then(() => {
+                  flash("작성자를 차단했습니다");
+                  const id = openId;
+                  if (id != null) api.listComments(id).then((cs) => setComments((all) => ({ ...all, [id]: cs }))).catch(() => {});
+                  api.listPetitions().then(setPetitions).catch(() => {});
+                })
+                .catch((e) => flash(e instanceof Error ? e.message : "차단에 실패했습니다"));
+            },
+          },
+        ],
+      );
+    },
+    [flash, openId],
   );
 
   const toggleBookmark = useCallback(
@@ -503,6 +539,7 @@ export default function App() {
               }}
               onReport={(reasonType, reasonDetail) => reportPetition(detail.id, reasonType, reasonDetail)}
               onReportComment={reportComment}
+              onBlockComment={blockCommentAuthor}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}
               deepPrompt={deepId === detail.id && !deepUsed}

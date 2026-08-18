@@ -388,16 +388,28 @@ export async function reportComment(commentId: number, reasonType: ReportReasonT
   });
 }
 
-/** 청원 작성자를 영구 차단한다(POST /connect/users/me/blocks). 단방향·해제 불가 — 서버가 그 뒤
-    listPetitions/getPetition 에서 이 작성자의 글을 걸러준다(위 auth 주석 참고). 409(이미 차단)는
-    성공 취급한다 — toggleEmpathy 와 같은 이유. */
-export async function blockPetitionAuthor(petitionId: number): Promise<void> {
+/** 콘텐츠 작성자를 영구 차단한다(POST /connect/users/me/blocks). 단방향·해제 불가 — 서버가 그 뒤
+    청원 목록/상세와 댓글 목록 양쪽에서 이 작성자를 전부 걸러준다(PetitionRepository·CommentRepository
+    의 block 필터, 둘 다 writer.id 로만 비교한다). 청원이든 댓글이든 targetType 만 다르고 나머지는
+    같아서 한 함수로 둔다. 409(이미 차단)는 성공 취급한다 — toggleEmpathy 와 같은 이유. */
+async function blockAuthor(targetType: "PETITION" | "COMMENT", contentId: number): Promise<void> {
   try {
-    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType: "PETITION", contentId: petitionId } });
+    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType, contentId } });
   } catch (e) {
     if (e instanceof ApiError && e.status === 409) return;
+    /* 404 의 서버 title 은 "Content writer not found"/"Content not found" 영어 원문이라 그대로 못 쓴다.
+       탈퇴한 작성자 차단은 백엔드가 열어줄 예정이라(2026-08-18 협의), 그 전후 모두 맞는 문구로 둔다. */
+    if (e instanceof ApiError && e.status === 404) throw new Error("이미 삭제되었거나 탈퇴한 사용자예요. 차단할 수 없습니다.");
     throw e;
   }
+}
+
+export function blockPetitionAuthor(petitionId: number): Promise<void> {
+  return blockAuthor("PETITION", petitionId);
+}
+
+export function blockCommentAuthor(commentId: number): Promise<void> {
+  return blockAuthor("COMMENT", commentId);
 }
 
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘다.
@@ -436,7 +448,7 @@ export async function toggleBookmark(petitionId: number, wasBookmarked: boolean)
    무시한다. */
 
 function adaptComment(c: any): Comment {
-  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt) };
+  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), mine: !!c.myComment };
 }
 
 export async function listComments(petitionId: number): Promise<Comment[]> {

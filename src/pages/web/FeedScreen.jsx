@@ -117,7 +117,7 @@ export default function FeedScreen({ nav = "feed" }) {
   const handleBlock = (id) => {
     blockPetitionAuthor(id)
       .then(() => toast("작성자를 차단했습니다"))
-      .catch(() => toast("차단에 실패했습니다"));
+      .catch((e) => toast(e?.message || "차단에 실패했습니다"));
   };
 
   const base = nav === "answered" ? petitions.filter((p) => p.status === "answered") : nav === "mine" ? petitions.filter((p) => p.mine) : petitions;

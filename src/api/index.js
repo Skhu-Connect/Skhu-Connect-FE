@@ -402,12 +402,24 @@ export async function reportComment(id, reasonType, reasonDetail) {
 /** 청원 작성자를 영구 차단한다(POST /connect/users/me/blocks). 단방향·해제 불가 — 서버가 그 뒤
     listPetitions/getPetition 에서 이 작성자의 글을 걸러준다(위 auth 주석 참고). 409(이미 차단)는
     성공 취급한다 — toggleEmpathy 와 같은 이유. */
-export async function blockPetitionAuthor(id) {
+async function blockAuthor(targetType, contentId) {
   try {
-    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType: "PETITION", contentId: Number(id) } });
+    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType, contentId: Number(contentId) } });
   } catch (e) {
-    if (e.status !== 409) throw e;
+    if (e.status === 409) return;
+    /* 404 의 서버 title 은 "Content writer not found"/"Content not found" 영어 원문이라 그대로 못 쓴다.
+       탈퇴한 작성자 차단은 백엔드가 열어줄 예정이라(2026-08-18 협의), 그 전후 모두 맞는 문구로 둔다. */
+    if (e.status === 404) throw new Error("이미 삭제되었거나 탈퇴한 사용자예요. 차단할 수 없습니다.");
+    throw e;
   }
+}
+
+export function blockPetitionAuthor(id) {
+  return blockAuthor("PETITION", id);
+}
+
+export function blockCommentAuthor(id) {
+  return blockAuthor("COMMENT", id);
 }
 
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다.

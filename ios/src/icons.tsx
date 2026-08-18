@@ -25,6 +25,8 @@ export type IconName =
   | "chevronDown"
   | "message"
   | "userX"
+  | "flag"
+  | "moreVertical"
   | "graduationCap"
   | "facilityBuilding"
   | "dormHouse"
@@ -163,6 +165,24 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       return <Polyline points="6 9 12 15 18 9" {...p} />;
     case "message":
       return <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" {...p} />;
+    /* 댓글 메뉴(신고·차단) 트리거. 점 3개는 stroke 원이 아니라 채운 원이다 — heartSolid 와 같은 예외. */
+    case "moreVertical":
+      return (
+        <>
+          <Circle cx={12} cy={5} r={1.6} fill={color} stroke="none" />
+          <Circle cx={12} cy={12} r={1.6} fill={color} stroke="none" />
+          <Circle cx={12} cy={19} r={1.6} fill={color} stroke="none" />
+        </>
+      );
+    /* 신고 트리거. 이모지(🚨) 대신 쓴다 — 옆의 차단·공유가 전부 선아이콘이라 이모지만 튀었다.
+       웹 Icon.jsx 의 같은 이름 지오메트리(lucide flag)를 그대로 옮겼다. */
+    case "flag":
+      return (
+        <>
+          <Path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" {...p} />
+          <Path d="M4 22v-7" {...p} />
+        </>
+      );
     /* 작성자 차단 트리거. 웹 Icon.jsx 의 같은 이름 지오메트리(lucide user-x)를 그대로 옮겼다. */
     case "userX":
       return (

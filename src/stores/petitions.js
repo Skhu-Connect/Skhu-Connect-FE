@@ -125,6 +125,26 @@ export const usePetitions = create((set, get) => ({
   blockPetitionAuthor: async (id) => {
     await api.blockPetitionAuthor(id);
     set((s) => ({ petitions: s.petitions.filter((p) => p.id !== id) }));
+    /* 차단은 작성자 단위라 그 사람이 쓴 다른 글도 사라져야 한다. 청원 응답에 작성자 정보가 없어
+       로컬에서는 형제 글을 못 고른다 — 서버가 걸러준 목록으로 갈아끼운다. 위에서 누른 글은 이미
+       지웠으므로 이건 뒤늦게 정리돼도 된다(실패해도 다음 로드에서 맞춰진다). */
+    try {
+      set({ petitions: await api.listPetitions() });
+    } catch {
+      /* 목록 갱신 실패는 차단 자체를 되돌릴 이유가 아니다 */
+    }
+  },
+
+  /** 댓글 작성자 영구 차단. 청원 차단과 같은 API 다(targetType 만 다르다) — 서버가 청원·댓글 조회
+      양쪽에서 이 작성자를 걸러주므로 둘 다 다시 불러 정리한다. */
+  blockCommentAuthor: async (petitionId, commentId) => {
+    await api.blockCommentAuthor(commentId);
+    try {
+      const [comments, petitions] = await Promise.all([api.listComments(petitionId), api.listPetitions()]);
+      set((s) => ({ commentsById: { ...s.commentsById, [petitionId]: comments }, petitions }));
+    } catch {
+      /* 차단은 이미 성공했다 — 갱신 실패는 되돌릴 이유가 아니고 다음 로드에서 맞춰진다 */
+    }
   },
 
   reportPetition: (id, reasonType, reasonDetail) => api.reportPetition(id, reasonType, reasonDetail),

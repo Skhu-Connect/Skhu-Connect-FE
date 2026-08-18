@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { Avatar, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
+import { Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
 
@@ -101,7 +101,60 @@ function ReportDialog({ target, onClose, onSubmit }) {
   );
 }
 
-function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
+/* 댓글 행의 신고·차단. 줄에 펼치지 않고 ⋮ 뒤에 둔다 — 공감까지 셋이 나란히 붙으면 줄이 복잡하고,
+   에타처럼 목록 행의 부가 동작을 오버플로 메뉴에 두는 게 학생들에게 익숙한 형태다.
+   여는 방식(트리거 + 바깥 클릭 닫기)은 FeedScreen 의 SortMenu 와 같은 패턴이다. */
+function CommentMenu({ onReport, onBlock }) {
+  const [open, setOpen] = useState(false);
+  const item = (danger) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    width: "100%",
+    padding: "9px 10px",
+    border: "none",
+    borderRadius: 8,
+    background: "none",
+    cursor: "pointer",
+    fontFamily: "var(--font-sans)",
+    fontSize: 13,
+    fontWeight: 600,
+    color: danger ? "var(--danger-500)" : "var(--text-body)",
+    textAlign: "left",
+  });
+
+  return (
+    <span style={{ marginLeft: "auto", position: "relative" }}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="댓글 메뉴"
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, background: "none", border: "none", borderRadius: "50%", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
+      >
+        <Icon name="moreVertical" size={16} />
+      </button>
+      {open && (
+        <>
+          <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
+          <div role="menu" style={{ position: "absolute", right: 0, top: 28, minWidth: 128, background: "var(--surface-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-lg)", padding: 6, zIndex: 31 }}>
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onReport(); }} style={item(false)}>
+              <Icon name="flag" size={15} />
+              신고
+            </button>
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onBlock(); }} style={item(true)}>
+              <Icon name="userX" size={15} />
+              차단
+            </button>
+          </div>
+        </>
+      )}
+    </span>
+  );
+}
+
+function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport, onBlock }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(c.body);
 
@@ -127,7 +180,7 @@ function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport }) {
               <button type="button" onClick={() => onDelete(c.id)} style={linkButtonStyle()}>삭제</button>
             </span>
           )}
-          {!c.mine && !editing && <button type="button" onClick={() => onReport(c.id)} style={{ ...linkButtonStyle(), marginLeft: "auto" }}>🚨 신고</button>}
+          {!c.mine && !editing && <CommentMenu onReport={() => onReport(c.id)} onBlock={() => onBlock(c.id)} />}
         </div>
         {editing ? (
           <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
@@ -167,10 +220,12 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
   const updateComment = usePetitions((s) => s.updateComment);
   const deleteComment = usePetitions((s) => s.deleteComment);
   const reportComment = usePetitions((s) => s.reportComment);
+  const blockCommentAuthor = usePetitions((s) => s.blockCommentAuthor);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [reportId, setReportId] = useState(null);
+  const [blockId, setBlockId] = useState(null);
   const list = comments ?? [];
   // 대댓글도 포함한 실제 총 댓글 수 — 서버 목록 응답에 별도 총계가 없어 트리를 직접 센다.
   const total = list.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
@@ -183,6 +238,12 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
     if (window.confirm("댓글을 삭제할까요?")) deleteComment(petitionId, id);
   };
   const report = (id) => (authed ? setReportId(id) : requireAuth());
+  const block = (id) => (authed ? setBlockId(id) : requireAuth());
+  const confirmBlock = () => {
+    blockCommentAuthor(petitionId, blockId)
+      .then(() => toast("작성자를 차단했습니다"))
+      .catch((e) => toast(e?.message || "차단에 실패했습니다"));
+  };
 
   const add = async () => {
     if (!text.trim()) return;
@@ -202,11 +263,12 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
   return (
     <>
       {reportId !== null && <ReportDialog target="댓글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportComment(reportId, reasonType, reasonDetail)} />}
+      {blockId !== null && <BlockConfirmDialog title="이 댓글을 쓴 사용자를 차단할까요?" onConfirm={confirmBlock} onClose={() => setBlockId(null)} />}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", margin: "0 0 4px" }}>댓글 {total}</h2>
       <Card>
         {list.map((c) => (
           <div key={c.id}>
-            <CommentRow c={c} onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} />
+            <CommentRow c={c} onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} onBlock={block} />
             <button
               type="button"
               onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
@@ -215,7 +277,7 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
               답글달기
             </button>
             {(c.replies ?? []).map((r) => (
-              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} />
+              <CommentRow key={r.id} c={r} reply onToggleLike={toggleLike} onEdit={editComment} onDelete={removeComment} onReport={report} onBlock={block} />
             ))}
             {replyTo === c.id && (
               <div style={{ display: "flex", gap: 10, marginLeft: 48, paddingBottom: 14 }}>
@@ -311,9 +373,10 @@ export default function DetailScreen() {
             <button
               type="button"
               onClick={() => (authed ? setReportOpen(true) : requireAuth())}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px" }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px", display: "flex", alignItems: "center", gap: 4 }}
             >
-              🚨 신고
+              <Icon name="flag" size={14} />
+              신고
             </button>
             <IconButton variant="ghost" ariaLabel="더보기"><Icon name="more" size={20} /></IconButton>
           </div>

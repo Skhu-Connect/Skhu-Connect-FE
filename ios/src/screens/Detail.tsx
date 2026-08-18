@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
@@ -79,11 +79,22 @@ export type DetailProps = {
   onOpenShare: () => void;
   onReport: (reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   onReportComment: (commentId: number, reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
+  onBlockComment: (commentId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
   /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
   deepPrompt: boolean;
 };
+
+/* Feed.tsx 의 askSort 와 같은 이유로 Alert.alert 를 쓴다 — iOS 에서 버튼 목록이 액션시트처럼 뜬다.
+   항목 2개짜리 메뉴에 커스텀 드롭다운을 새로 만들지 않는다. 실제 차단 확인창은 App.tsx 가 띄운다. */
+function askCommentAction(commentId: number, onReport: (id: number) => void, onBlock: (id: number) => void) {
+  Alert.alert("댓글", undefined, [
+    { text: "신고", onPress: () => onReport(commentId) },
+    { text: "차단", style: "destructive", onPress: () => onBlock(commentId) },
+    { text: "취소", style: "cancel" },
+  ]);
+}
 
 export function DetailScreen(p: DetailProps) {
   const insets = useSafeAreaInsets();
@@ -112,8 +123,9 @@ export function DetailScreen(p: DetailProps) {
           <Icon name="arrowLeft" size={20} color={colors.strong} />
         </Pressable>
         <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 상세</Text>
+        {/* 옆의 공유가 선아이콘이라 이모지 하나만 튀었다 — 같은 형식으로 맞춘다. */}
         <Pressable onPress={() => setReportTarget({ type: "petition" })} accessibilityRole="button" accessibilityLabel="게시글 신고" className="ml-auto w-9 h-9 items-center justify-center rounded-full">
-          <Text style={{ fontSize: 16 }}>🚨</Text>
+          <Icon name="flag" size={19} color={colors.body} />
         </Pressable>
         <Pressable onPress={p.onOpenShare} accessibilityRole="button" accessibilityLabel="공유" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="share" size={19} color={colors.body} />
@@ -200,7 +212,20 @@ export function DetailScreen(p: DetailProps) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                       <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
                       <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{cm.date}</Text>
-                      {cm.id != null ? <Pressable onPress={() => setReportTarget({ type: "comment", id: cm.id! })} accessibilityRole="button" accessibilityLabel="댓글 신고" style={{ marginLeft: "auto", padding: 3 }}><Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>🚨 신고</Text></Pressable> : null}
+                      {/* 내 댓글엔 안 띄운다 — 자기 신고는 무의미하고, 본인 차단은 서버가 400 으로 막는다(웹 CommentRow 와 같은 조건).
+                          신고·차단을 줄에 펼치지 않고 ⋮ 뒤에 넣는다 — 공감까지 셋이 나란히 붙으면 줄이 복잡하고,
+                          에타처럼 목록 행의 부가 동작을 오버플로 메뉴에 두는 게 학생들에게 익숙한 형태다. */}
+                      {cm.id != null && !cm.mine ? (
+                        <Pressable
+                          onPress={() => askCommentAction(cm.id!, (id) => setReportTarget({ type: "comment", id }), p.onBlockComment)}
+                          accessibilityRole="button"
+                          accessibilityLabel="댓글 메뉴"
+                          hitSlop={8}
+                          style={{ marginLeft: "auto", width: 24, height: 24, alignItems: "center", justifyContent: "center" }}
+                        >
+                          <Icon name="moreVertical" size={16} color={colors.muted} />
+                        </Pressable>
+                      ) : null}
                     </View>
                     <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
                   </View>
