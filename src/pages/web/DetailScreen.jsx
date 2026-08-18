@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, Select, StatusBadge, Textarea, ThresholdBar, petitionStatus } from "../../components/ui";
+import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
+import { ReportDialog } from "../../components/web/ReportDialog";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
 
 function ShareLink({ url }) {
@@ -55,105 +56,6 @@ function linkButtonStyle() {
   return { background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", padding: 0 };
 }
 
-const REPORT_REASONS = [
-  { value: "SPAM", label: "광고·도배" },
-  { value: "ABUSE", label: "욕설·괴롭힘" },
-  { value: "INAPPROPRIATE", label: "부적절한 콘텐츠" },
-  { value: "FALSE_INFORMATION", label: "허위 정보" },
-  { value: "OTHER", label: "기타" },
-];
-
-function ReportDialog({ target, onClose, onSubmit }) {
-  const [reasonType, setReasonType] = useState("");
-  const [reasonDetail, setReasonDetail] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!reasonType) return setError("신고 종류를 선택해 주세요.");
-    if (reasonDetail.trim().length < 10) return setError("신고 이유는 10자 이상 입력해 주세요.");
-    setBusy(true);
-    try {
-      await onSubmit(reasonType, reasonDetail);
-      toast(`${target} 신고가 접수되었습니다.`);
-      onClose();
-    } catch (err) {
-      setError(err.message || "신고 접수에 실패했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div role="dialog" aria-modal="true" aria-labelledby="report-title" style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
-      <form onSubmit={submit} style={{ width: "min(100%, 440px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
-        <h2 id="report-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>{target} 신고</h2>
-        <p style={{ margin: "6px 0 20px", fontSize: 13.5, color: "var(--text-muted)" }}>관리자가 신고 내용과 사유를 검토합니다.</p>
-        <Select label="신고 종류" value={reasonType} onChange={(e) => { setReasonType(e.target.value); setError(""); }} options={REPORT_REASONS} />
-        <Textarea label="신고 이유" value={reasonDetail} onChange={(e) => { setReasonDetail(e.target.value); setError(""); }} maxLength={500} placeholder="신고 이유를 10자 이상 입력해 주세요." error={error || undefined} wrapStyle={{ marginTop: 16 }} />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>취소</Button>
-          <Button type="submit" variant="danger" disabled={busy}>{busy ? "접수 중…" : "신고하기"}</Button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-/* 댓글 행의 신고·차단. 줄에 펼치지 않고 ⋮ 뒤에 둔다 — 공감까지 셋이 나란히 붙으면 줄이 복잡하고,
-   에타처럼 목록 행의 부가 동작을 오버플로 메뉴에 두는 게 학생들에게 익숙한 형태다.
-   여는 방식(트리거 + 바깥 클릭 닫기)은 FeedScreen 의 SortMenu 와 같은 패턴이다. */
-function CommentMenu({ onReport, onBlock }) {
-  const [open, setOpen] = useState(false);
-  const item = (danger) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 9,
-    width: "100%",
-    padding: "9px 10px",
-    border: "none",
-    borderRadius: 8,
-    background: "none",
-    cursor: "pointer",
-    fontFamily: "var(--font-sans)",
-    fontSize: 13,
-    fontWeight: 600,
-    color: danger ? "var(--danger-500)" : "var(--text-body)",
-    textAlign: "left",
-  });
-
-  return (
-    <span style={{ marginLeft: "auto", position: "relative" }}>
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="댓글 메뉴"
-        onClick={() => setOpen((o) => !o)}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, background: "none", border: "none", borderRadius: "50%", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
-      >
-        <Icon name="moreVertical" size={16} />
-      </button>
-      {open && (
-        <>
-          <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
-          <div role="menu" style={{ position: "absolute", right: 0, top: 28, minWidth: 128, background: "var(--surface-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-lg)", padding: 6, zIndex: 31 }}>
-            <button type="button" role="menuitem" onClick={() => { setOpen(false); onReport(); }} style={item(false)}>
-              <Icon name="flag" size={15} />
-              신고
-            </button>
-            <button type="button" role="menuitem" onClick={() => { setOpen(false); onBlock(); }} style={item(true)}>
-              <Icon name="userX" size={15} />
-              차단
-            </button>
-          </div>
-        </>
-      )}
-    </span>
-  );
-}
-
 function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport, onBlock }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(c.body);
@@ -180,7 +82,7 @@ function CommentRow({ c, reply, onToggleLike, onEdit, onDelete, onReport, onBloc
               <button type="button" onClick={() => onDelete(c.id)} style={linkButtonStyle()}>삭제</button>
             </span>
           )}
-          {!c.mine && !editing && <CommentMenu onReport={() => onReport(c.id)} onBlock={() => onBlock(c.id)} />}
+          {!c.mine && !editing && <ActionMenu onReport={() => onReport(c.id)} onBlock={() => onBlock(c.id)} />}
         </div>
         {editing ? (
           <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
@@ -322,12 +224,14 @@ export default function DetailScreen() {
   const vote = usePetitions((s) => s.vote);
   const bookmark = usePetitions((s) => s.bookmark);
   const reportPetition = usePetitions((s) => s.reportPetition);
+  const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
   const authed = useSession((s) => s.authed);
   const navigate = useNavigate();
   const location = useLocation();
 
   const [missing, setMissing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
 
   // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 로그인 후 이 청원으로 복귀한다.
   const requireAuth = () => navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
@@ -361,6 +265,21 @@ export default function DetailScreen() {
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "22px var(--page-gutter) 90px" }}>
       {reportOpen && <ReportDialog target="게시글" onClose={() => setReportOpen(false)} onSubmit={(reasonType, reasonDetail) => reportPetition(p.id, reasonType, reasonDetail)} />}
+      {/* 차단하면 이 청원 자체가 안 보이게 되므로 목록으로 돌려보낸다 — 그대로 두면 빈 상세에 남는다. */}
+      {blockOpen && (
+        <BlockConfirmDialog
+          title="이 글을 쓴 사용자를 차단할까요?"
+          onConfirm={() =>
+            blockPetitionAuthor(p.id)
+              .then(() => {
+                toast("작성자를 차단했습니다");
+                navigate("/");
+              })
+              .catch((e) => toast(e?.message || "차단에 실패했습니다"))
+          }
+          onClose={() => setBlockOpen(false)}
+        />
+      )}
       <button type="button" onClick={() => navigate(-1)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-body)", fontWeight: 600, fontSize: 14, marginBottom: 18, fontFamily: "var(--font-sans)" }}>
         <Icon name="arrowLeft" size={18} /> 목록으로
       </button>
@@ -370,15 +289,15 @@ export default function DetailScreen() {
           <CategoryTag category={p.category} />
           <StatusBadge status={petitionStatus(p)} />
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
-            <button
-              type="button"
-              onClick={() => (authed ? setReportOpen(true) : requireAuth())}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 4px", display: "flex", alignItems: "center", gap: 4 }}
-            >
-              <Icon name="flag" size={14} />
-              신고
-            </button>
-            <IconButton variant="ghost" ariaLabel="더보기"><Icon name="more" size={20} /></IconButton>
+            {/* 원래 신고 버튼과 핸들러 없는 장식용 "더보기" 가 나란히 있었다 — 댓글·피드 카드와 같은
+                ⋮ 메뉴 하나로 합친다. 내 글엔 안 띄운다(자기 신고·본인 차단은 서버가 막는다). */}
+            {!p.mine && (
+              <ActionMenu
+                label="게시글 메뉴"
+                onReport={() => (authed ? setReportOpen(true) : requireAuth())}
+                onBlock={() => (authed ? setBlockOpen(true) : requireAuth())}
+              />
+            )}
           </div>
         </div>
 

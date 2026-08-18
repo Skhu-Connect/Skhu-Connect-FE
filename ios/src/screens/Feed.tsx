@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
 import { CAT_CHIPS, type CategoryKey, type Petition } from "../data";
 import { count, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
 import { Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar } from "../ui";
+import { ReportSheet } from "../reportSheet";
+import type { ReportReasonType } from "../api";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
@@ -25,11 +28,14 @@ export type FeedProps = {
   onOpen: (id: number) => void;
   onVote: (id: number) => void;
   onBlock: (id: number) => void;
+  onReport: (petitionId: number, reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   onOpenMy: () => void;
 };
 
 export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
+  /* 상세까지 안 들어가고도 신고할 수 있게 카드 메뉴에 신고를 넣었다 — 시트는 상세와 같은 것을 쓴다. */
+  const [reportId, setReportId] = useState<number | null>(null);
 
   return (
     <View className="flex-1 bg-page">
@@ -40,11 +46,19 @@ export function FeedScreen(p: FeedProps) {
         <FilterBar {...p} />
         <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 26 }}>
           {p.list.map((item) => (
-            <PetitionCard key={item.id} p={item} votes={p.votes} onOpen={p.onOpen} onVote={p.onVote} onBlock={p.onBlock} />
+            <PetitionCard key={item.id} p={item} votes={p.votes} onOpen={p.onOpen} onVote={p.onVote} onBlock={p.onBlock} onReport={setReportId} />
           ))}
           {p.list.length === 0 ? <Empty tab={tab} /> : null}
         </View>
       </ScrollView>
+
+      {reportId != null ? (
+        <ReportSheet
+          target="게시글"
+          onClose={() => setReportId(null)}
+          onSubmit={(reasonType, reasonDetail) => p.onReport(reportId, reasonType, reasonDetail)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -198,6 +212,15 @@ function askSort(current: Sort, onSort: (s: Sort) => void) {
   ]);
 }
 
+/* askSort 와 같은 이유로 Alert.alert 를 쓴다 — 상세 화면의 askPetitionAction 과 같은 구성이다. */
+function askPetitionAction(onReport: () => void, onBlock: () => void) {
+  Alert.alert("게시글", undefined, [
+    { text: "신고", onPress: onReport },
+    { text: "차단", style: "destructive", onPress: onBlock },
+    { text: "취소", style: "cancel" },
+  ]);
+}
+
 function ChipRow({ children }: { children: React.ReactNode }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 14 }}>
@@ -212,12 +235,14 @@ function PetitionCard({
   onOpen,
   onVote,
   onBlock,
+  onReport,
 }: {
   p: Petition;
   votes: Votes;
   onOpen: (id: number) => void;
   onVote: (id: number) => void;
   onBlock: (id: number) => void;
+  onReport: (id: number) => void;
 }) {
   const c = count(p, votes);
 
@@ -231,15 +256,14 @@ function PetitionCard({
           {/* 내 글엔 안 보인다 — 서버가 본인 차단을 400 으로 막는다(자기 자신 차단 방지). */}
           {!p.mine ? (
             <Pressable
-              onPress={() => onBlock(p.id)}
+              onPress={() => askPetitionAction(() => onReport(p.id), () => onBlock(p.id))}
               accessibilityRole="button"
-              accessibilityLabel="작성자 차단"
+              accessibilityLabel="게시글 메뉴"
               hitSlop={8}
               style={{ marginLeft: "auto", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}
             >
-              {/* muted 회색이면 장식처럼 보여 그냥 지나친다 — 파괴적 동작이라 danger 로 세운다
-                  (확인창의 "차단하기" 버튼과 같은 색). coral 은 같은 카드의 공감 버튼 색이라 안 쓴다. */}
-              <Icon name="userX" size={17} color={colors.danger} />
+              {/* 상세·댓글과 같은 ⋮ 다 — 신고·차단은 메뉴 안으로 들어갔다. */}
+              <Icon name="moreVertical" size={17} color={colors.muted} />
             </Pressable>
           ) : null}
         </View>

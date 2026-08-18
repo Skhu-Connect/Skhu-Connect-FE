@@ -14,16 +14,39 @@ import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 const TERMS_VERSION = "1.0";
 
+/* iOS Signup 의 ConsentRow 와 같은 줄 구성(체크박스 + 보기 링크)이다. */
+function ConsentRow({ checked, label, href, onToggle }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, color: "var(--text-strong)", cursor: "pointer" }}>
+        <input type="checkbox" checked={checked} onChange={onToggle} />
+        <span>{label}</span>
+      </label>
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--indigo-200)", textDecoration: "underline", textUnderlineOffset: 3, flexShrink: 0 }}>
+        보기
+      </a>
+    </div>
+  );
+}
+
 function EmailStep({ onSent, loginHref }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  /* 약관·개인정보 동의를 여기 둔다 — 이메일 인증을 다 거친 뒤 마지막 단계에서야 보여주면
+     "가입 절차를 밟고 나서" 동의를 강요받는 꼴이다. iOS 는 처음부터 이 단계에 있었다. */
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     const value = email.trim();
     if (!value || !value.includes("@")) {
       setError("학교 이메일을 입력해 주세요.");
+      return;
+    }
+    if (!termsAgreed || !privacyAgreed) {
+      setError("이용약관과 개인정보처리방침에 모두 동의해 주세요.");
       return;
     }
     setError("");
@@ -53,6 +76,20 @@ function EmailStep({ onSent, loginHref }) {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <ConsentRow
+            checked={termsAgreed}
+            label="[필수] 이용약관(EULA) 및 커뮤니티 정책에 동의합니다."
+            href={TERMS_PATH}
+            onToggle={() => { setTermsAgreed((v) => !v); setError(""); }}
+          />
+          <ConsentRow
+            checked={privacyAgreed}
+            label="[필수] 개인정보처리방침에 동의합니다."
+            href={PRIVACY_POLICY_PATH}
+            onToggle={() => { setPrivacyAgreed((v) => !v); setError(""); }}
+          />
+        </div>
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
         )}
@@ -150,8 +187,6 @@ function AccountStep({ verificationToken, onBack }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadedDepartments, setLoadedDepartments] = useState(false);
-  const [termsAgreed, setTermsAgreed] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
 
   useEffect(() => {
     api.listDepartments().then((list) => {
@@ -179,10 +214,6 @@ function AccountStep({ verificationToken, onBack }) {
       setError("비밀번호가 서로 다릅니다.");
       return;
     }
-    if (!termsAgreed) {
-      setError("회원가입을 진행하려면 이용약관에 동의해주세요.");
-      return;
-    }
     setSaving(true);
     try {
       await signup({ loginId, password, departmentId: Number(dept), verificationToken, termsAgreed: true, termsVersion: TERMS_VERSION });
@@ -206,36 +237,7 @@ function AccountStep({ verificationToken, onBack }) {
         <Select label="소속 학부" options={departments} value={dept} onChange={(e) => setDept(e.target.value)} placeholder={loadedDepartments ? "학부를 선택하세요" : "불러오는 중…"} />
         <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         <Input label="비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
-        <div style={{ display: "grid", gap: 8, marginTop: 2, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-strong)", fontWeight: 700, cursor: "pointer" }}>
-              <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)} />
-              <span>[필수] 이용약관(EULA) 및 커뮤니티 정책에 동의합니다.</span>
-            </label>
-            <button
-              type="button"
-              aria-expanded={termsOpen}
-              aria-controls={termsOpen ? "signup-terms-detail" : undefined}
-              aria-label={termsOpen ? "약관 및 개인정보 처리 안내 접기" : "약관 및 개인정보 처리 안내 펼치기"}
-              onClick={() => setTermsOpen((open) => !open)}
-              style={{ marginLeft: "auto", display: "flex", alignItems: "center", background: "none", border: "none", padding: 4, cursor: "pointer", color: "var(--text-muted)" }}
-            >
-              <Icon name="chevronDown" size={16} style={{ transform: termsOpen ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} />
-            </button>
-          </div>
-          {termsOpen && (
-            <div id="signup-terms-detail" style={{ display: "grid", gap: 8 }}>
-              <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>이용약관 및 커뮤니티 정책 보기</a>
-              <div style={{ display: "grid", gap: 4 }}>
-                <strong style={{ color: "var(--text-strong)" }}>개인정보 처리 안내</strong>
-                <span>성공잇다는 회원가입 및 서비스 제공을 위해 학교 이메일, 로그인 ID, 소속 학과 등의 정보를 처리합니다.</span>
-                <span>해당 정보는 학교 구성원 확인, 계정 생성·관리 및 서비스 제공을 위해 이용됩니다.</span>
-                <span>자세한 개인정보 처리 항목, 이용 목적 및 보유 정책은 개인정보처리방침에서 확인할 수 있습니다.</span>
-                <a href={PRIVACY_POLICY_PATH} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3, width: "fit-content" }}>개인정보처리방침 보기</a>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* 약관 동의는 1단계(EmailStep)로 옮겼다 — 여기선 signup 호출에 termsAgreed 만 실어 보낸다. */}
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
         )}

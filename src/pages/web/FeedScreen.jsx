@@ -10,6 +10,7 @@ import { usePetitions } from "../../stores/petitions";
 import { Button, Icon } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
 import { toast } from "../../components/Toast";
+import { ReportDialog } from "../../components/web/ReportDialog";
 
 function HeroBanner() {
   return (
@@ -114,6 +115,8 @@ export default function FeedScreen({ nav = "feed" }) {
   const [sort, setSort] = useState(useLocation().state?.sort ?? "hot");
   // 차단은 스토어(petitions)에서 바로 지워지므로 여기선 API 호출과 토스트만 맡는다.
   const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
+  const reportPetition = usePetitions((s) => s.reportPetition);
+  const [reportId, setReportId] = useState(null);
   const handleBlock = (id) => {
     blockPetitionAuthor(id)
       .then(() => toast("작성자를 차단했습니다"))
@@ -140,6 +143,7 @@ export default function FeedScreen({ nav = "feed" }) {
 
   return (
     <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 26 }}>
+      {reportId !== null && <ReportDialog target="게시글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)} />}
       {intro}
       <FilterBar
         categories={[{ key: "all", label: "전체" }, ...categories]}
@@ -156,7 +160,7 @@ export default function FeedScreen({ nav = "feed" }) {
           {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>건의 등록</Button>}
         </EmptyState>
       ) : (
-        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onBlock={handleBlock} />
+        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onReport={setReportId} onBlock={handleBlock} />
       )}
     </div>
   );

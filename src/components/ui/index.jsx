@@ -614,21 +614,60 @@ export function BlockConfirmDialog({ title, onConfirm, onClose }) {
   );
 }
 
-/** 카드 우측 상단 — 작성자 차단. 해제 기능은 없다(서버가 애초에 지원 안 함). */
-function CardBlockMenu({ onBlock }) {
-  const [confirming, setConfirming] = useState(false);
+/** 신고·차단 오버플로 메뉴. 피드 카드·청원 상세·댓글이 모두 이걸 쓴다 — 같은 두 동작이
+    화면마다 다른 모양이면 어디서 뭘 할 수 있는지 매번 다시 찾아야 한다.
+    카드 위에서도 쓰이므로 클릭이 카드 이동으로 새지 않게 막는다. */
+export function ActionMenu({ onReport, onBlock, label = "메뉴" }) {
+  const [open, setOpen] = useState(false);
+  const item = (danger) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    width: "100%",
+    padding: "9px 10px",
+    border: "none",
+    borderRadius: 8,
+    background: "none",
+    cursor: "pointer",
+    fontFamily: "var(--font-sans)",
+    fontSize: 13,
+    fontWeight: 600,
+    color: danger ? "var(--danger-500)" : "var(--text-body)",
+    textAlign: "left",
+  });
 
   return (
-    <div style={{ marginLeft: "auto", position: "relative" }} onClick={(e) => e.stopPropagation()}>
-      {/* ghost 의 muted 회색이면 장식처럼 보여 그냥 지나친다 — 파괴적 동작이라 danger 로 세운다
-          (아래 "차단하기" 버튼과 같은 색). coral 은 같은 카드의 공감 버튼 색이라 안 쓴다.
-          Icon 은 color 기본값이 currentColor 라 버튼 색을 그대로 물려받는다. */}
-      <IconButton size={28} variant="ghost" ariaLabel="작성자 차단" onClick={() => setConfirming(true)} style={{ color: "var(--danger-500)" }}>
-        <Icon name="userX" size={17} />
-      </IconButton>
-
-      {confirming && <BlockConfirmDialog title="이 글을 쓴 사용자를 차단할까요?" onConfirm={() => onBlock?.()} onClose={() => setConfirming(false)} />}
-    </div>
+    <span style={{ marginLeft: "auto", position: "relative", display: "inline-flex" }} onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, background: "none", border: "none", borderRadius: "50%", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
+      >
+        <Icon name="moreVertical" size={17} />
+      </button>
+      {open && (
+        <>
+          <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
+          <div role="menu" style={{ position: "absolute", right: 0, top: 30, minWidth: 128, background: "var(--surface-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-lg)", padding: 6, zIndex: 31 }}>
+            {onReport && (
+              <button type="button" role="menuitem" onClick={() => { setOpen(false); onReport(); }} style={item(false)}>
+                <Icon name="flag" size={15} />
+                신고
+              </button>
+            )}
+            {onBlock && (
+              <button type="button" role="menuitem" onClick={() => { setOpen(false); onBlock(); }} style={item(true)}>
+                <Icon name="userX" size={15} />
+                차단
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </span>
   );
 }
 
@@ -646,11 +685,13 @@ export function PetitionCard({
   comments = 0,
   voted = false,
   onToggleVote,
+  onReport,
   onBlock,
   onClick,
   style,
   ...rest
 }) {
+  const [blocking, setBlocking] = useState(false);
   return (
     <div
       onClick={onClick}
@@ -685,8 +726,21 @@ export function PetitionCard({
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <CategoryTag category={category} size="sm" />
         <StatusBadge status={status} size="sm" />
-        {onBlock && <CardBlockMenu onBlock={onBlock} />}
+        {(onReport || onBlock) && (
+          <ActionMenu
+            label="게시글 메뉴"
+            onReport={onReport}
+            onBlock={onBlock && (() => setBlocking(true))}
+          />
+        )}
       </div>
+      {blocking && (
+        <BlockConfirmDialog
+          title="이 글을 쓴 사용자를 차단할까요?"
+          onConfirm={() => onBlock()}
+          onClose={() => setBlocking(false)}
+        />
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <h3 style={{ margin: 0, font: "var(--text-h3)", color: "var(--text-strong)" }}>{title}</h3>
         {excerpt && (

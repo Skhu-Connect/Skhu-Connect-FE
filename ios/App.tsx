@@ -516,6 +516,7 @@ export default function App() {
               onOpen={openPetition}
               onVote={vote}
               onBlock={blockPetitionAuthor}
+              onReport={reportPetition}
               onOpenMy={() => {
                 setTab("my");
                 setScreen("my");
@@ -540,6 +541,7 @@ export default function App() {
               onReport={(reasonType, reasonDetail) => reportPetition(detail.id, reasonType, reasonDetail)}
               onReportComment={reportComment}
               onBlockComment={blockCommentAuthor}
+              onBlockPetition={blockPetitionAuthor}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}
               deepPrompt={deepId === detail.id && !deepUsed}
