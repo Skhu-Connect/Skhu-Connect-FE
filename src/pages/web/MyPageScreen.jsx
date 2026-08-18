@@ -16,6 +16,7 @@ import * as api from "../../api";
 import { Avatar, Button, Card, Icon, Input, Select } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { NOTIF_META } from "../../components/web/notifMeta";
+import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 // SettingsModal.jsx 의 ROWS 를 그대로 옮겼다.
 const PREF_ROWS = [
@@ -78,6 +79,21 @@ function SectionHeader({ icon, bg, fg, title, meta }) {
       <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "var(--text-strong)" }}>{title}</h2>
       {meta && <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)" }}>{meta}</span>}
     </div>
+  );
+}
+
+/* 회원가입 때 동의받은 약관 두 가지를 마이페이지에서도 다시 볼 수 있게 한다(사용자 지시). */
+function HelpLinkRow({ href, label, first = false }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 18px", background: "none", border: "none", borderTop: first ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)", textDecoration: "none" }}
+    >
+      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>{label}</span>
+      <Icon name="link" size={15} color="var(--text-muted)" />
+    </a>
   );
 }
 
@@ -240,6 +256,14 @@ export default function MyPageScreen() {
                   <Toggle on={!!prefs[key]} label={title} onClick={() => savePrefs({ [key]: !prefs[key] })} />
                 </div>
               ))}
+            </Card>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <SectionHeader icon="fileText" bg="var(--gray-150)" fg="var(--gray-700)" title="도움말" />
+            <Card padding={0} style={{ overflow: "hidden" }}>
+              <HelpLinkRow href={TERMS_PATH} label="이용약관 및 커뮤니티 정책" first />
+              <HelpLinkRow href={PRIVACY_POLICY_PATH} label="개인정보처리방침" />
             </Card>
           </div>
 

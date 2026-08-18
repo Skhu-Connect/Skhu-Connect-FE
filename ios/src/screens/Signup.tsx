@@ -10,10 +10,9 @@ import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
 import { font, onVideo } from "../theme";
 import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
+import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 
 const PORTAL_URL = "https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main";
-const TERMS_URL = "https://petition-system-two.vercel.app/terms-of-service.html";
-const PRIVACY_POLICY_URL = "https://petition-system-two.vercel.app/privacy-policy.html";
 const TERMS_VERSION = "1.0";
 
 function ErrorText({ children }: { children: string }) {

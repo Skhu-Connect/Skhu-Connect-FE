@@ -24,6 +24,7 @@ export type FeedProps = {
   onSort: (s: Sort) => void;
   onOpen: (id: number) => void;
   onVote: (id: number) => void;
+  onBlock: (id: number) => void;
   onOpenMy: () => void;
 };
 
@@ -39,7 +40,7 @@ export function FeedScreen(p: FeedProps) {
         <FilterBar {...p} />
         <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 26 }}>
           {p.list.map((item) => (
-            <PetitionCard key={item.id} p={item} votes={p.votes} onOpen={p.onOpen} onVote={p.onVote} />
+            <PetitionCard key={item.id} p={item} votes={p.votes} onOpen={p.onOpen} onVote={p.onVote} onBlock={p.onBlock} />
           ))}
           {p.list.length === 0 ? <Empty tab={tab} /> : null}
         </View>
@@ -205,7 +206,19 @@ function ChipRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PetitionCard({ p, votes, onOpen, onVote }: { p: Petition; votes: Votes; onOpen: (id: number) => void; onVote: (id: number) => void }) {
+function PetitionCard({
+  p,
+  votes,
+  onOpen,
+  onVote,
+  onBlock,
+}: {
+  p: Petition;
+  votes: Votes;
+  onOpen: (id: number) => void;
+  onVote: (id: number) => void;
+  onBlock: (id: number) => void;
+}) {
   const c = count(p, votes);
 
   return (
@@ -215,6 +228,18 @@ function PetitionCard({ p, votes, onOpen, onVote }: { p: Petition; votes: Votes;
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} size="sm" />
           <StatusBadge status={p.status} size="sm" />
+          {/* 내 글엔 안 보인다 — 서버가 본인 차단을 400 으로 막는다(자기 자신 차단 방지). */}
+          {!p.mine ? (
+            <Pressable
+              onPress={() => onBlock(p.id)}
+              accessibilityRole="button"
+              accessibilityLabel="작성자 차단"
+              hitSlop={8}
+              style={{ marginLeft: "auto", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}
+            >
+              <Icon name="userX" size={17} color={colors.muted} />
+            </Pressable>
+          ) : null}
         </View>
 
         <Text style={[t, { fontWeight: "700", fontSize: 15.5, color: colors.strong, lineHeight: 21.7, letterSpacing: -0.155 }]}>{p.title}</Text>

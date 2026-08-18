@@ -34,7 +34,7 @@ export function EmptyState({ title, desc, children }) {
 }
 
 /** 카드 그리드. p.current 에는 내 공감이 이미 반영돼 있다(api view) — 여기서 +1 하지 않는다. */
-export function PetitionGrid({ list, authorOf }) {
+export function PetitionGrid({ list, authorOf, onBlock }) {
   const voted = usePetitions((s) => s.voted);
   const vote = usePetitions((s) => s.vote);
   const navigate = useNavigate();
@@ -54,6 +54,7 @@ export function PetitionGrid({ list, authorOf }) {
           comments={p.comments}
           voted={!!voted[p.id]}
           onToggleVote={() => toggleVoteWithConfirm(vote, p.id, voted[p.id])}
+          onBlock={onBlock && !p.mine ? () => onBlock(p.id) : undefined}
           onClick={() => navigate(`/p/${p.id}`)}
         />
       ))}

@@ -4,6 +4,7 @@
    Tailwind 클래스로 바꾸면 값이 드리프트하고 계산값(size*0.4, pct+"%")이 죽는다.
    export 이름은 원본과 동일하다. */
 
+import { useState } from "react";
 export { Icon, ICON_NAMES } from "./Icon.jsx";
 import { Icon } from "./Icon.jsx";
 
@@ -583,6 +584,47 @@ export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학�
   );
 }
 
+/* 실 백엔드 POST /connect/users/me/blocks 를 쓴다(FeedScreen.jsx 의 handleBlock 참고) — 서버가
+   영구 차단을 기억하고 이후 목록·상세 조회에서 그 작성자 글을 걸러준다. "게시글만 차단"에 대응하는
+   서버 기능은 없어 그 옵션은 두지 않는다. */
+const BLOCK_TITLE = "이 글을 쓴 사용자를 차단할까요?";
+const BLOCK_BODY = "차단하면 이 사용자가 쓴 모든 글과 댓글이 앞으로 보이지 않습니다. 지금은 해제할 수 없습니다.";
+
+/** 카드 우측 상단 — 작성자 차단. 해제 기능은 없다(서버가 애초에 지원 안 함). */
+function CardBlockMenu({ onBlock }) {
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div style={{ marginLeft: "auto", position: "relative" }} onClick={(e) => e.stopPropagation()}>
+      <IconButton size={28} variant="ghost" ariaLabel="작성자 차단" onClick={() => setConfirming(true)}>
+        <Icon name="userX" size={17} />
+      </IconButton>
+
+      {confirming && (
+        <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(24,24,54,.45)", padding: 20 }} onClick={() => setConfirming(false)}>
+          <div style={{ width: "100%", maxWidth: 360, background: "var(--surface-card)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 22 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 16.5, fontWeight: 800, color: "var(--text-strong)" }}>{BLOCK_TITLE}</h3>
+            <p style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>{BLOCK_BODY}</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Button variant="ghost" block onClick={() => setConfirming(false)}>취소</Button>
+              <Button
+                variant="danger"
+                block
+                onClick={() => {
+                  onBlock?.();
+                  setConfirming(false);
+                }}
+              >
+                차단하기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* 청원 하나를 요약하는 피드 아이템. 청원 프리미티브를 조합한다. */
 export function PetitionCard({
   title,
@@ -597,6 +639,7 @@ export function PetitionCard({
   comments = 0,
   voted = false,
   onToggleVote,
+  onBlock,
   onClick,
   style,
   ...rest
@@ -605,6 +648,7 @@ export function PetitionCard({
     <div
       onClick={onClick}
       style={{
+        position: "relative",
         background: "var(--surface-card)",
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-lg)",
@@ -634,6 +678,7 @@ export function PetitionCard({
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <CategoryTag category={category} size="sm" />
         <StatusBadge status={status} size="sm" />
+        {onBlock && <CardBlockMenu onBlock={onBlock} />}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <h3 style={{ margin: 0, font: "var(--text-h3)", color: "var(--text-strong)" }}>{title}</h3>

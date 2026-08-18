@@ -24,6 +24,7 @@ export type IconName =
   | "link"
   | "chevronDown"
   | "message"
+  | "userX"
   | "graduationCap"
   | "facilityBuilding"
   | "dormHouse"
@@ -162,6 +163,15 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       return <Polyline points="6 9 12 15 18 9" {...p} />;
     case "message":
       return <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" {...p} />;
+    /* 작성자 차단 트리거. 웹 Icon.jsx 의 같은 이름 지오메트리(lucide user-x)를 그대로 옮겼다. */
+    case "userX":
+      return (
+        <>
+          <Circle cx={9} cy={7} r={4} {...p} />
+          <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" {...p} />
+          <Path d="m17 8 5 5M22 8l-5 5" {...p} />
+        </>
+      );
 
     /* 건의 분류 5종. 웹 src/components/ui/Icon.jsx 의 같은 이름 지오메트리를 그대로 옮겼다
        (원본: skhu_tag_components/category/icon_only/*.svg). */

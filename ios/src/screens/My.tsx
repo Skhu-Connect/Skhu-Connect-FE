@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
 import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
 import { listDepartments } from "../api";
+import { Icon } from "../icons";
+import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 import { Avatar, Button, Input, Select } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
 
@@ -190,6 +193,12 @@ export function MyScreen(p: MyProps) {
           {!commentsExpanded && p.myComments.length > PAGE_SIZE ? <MoreButton onPress={() => setCommentsExpanded(true)} /> : null}
         </View>
 
+        <SectionTitle style={{ paddingTop: 18 }}>도움말</SectionTitle>
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
+          <HelpLinkRow label="이용약관 및 커뮤니티 정책" url={TERMS_URL} first />
+          <HelpLinkRow label="개인정보처리방침" url={PRIVACY_POLICY_URL} />
+        </View>
+
         <View style={{ paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
           <Button variant="outline" block onPress={p.onLogout}>
             로그아웃
@@ -278,6 +287,21 @@ function MoreButton({ onPress }: { onPress: () => void }) {
       style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle, alignItems: "center" }}
     >
       <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>더보기</Text>
+    </Pressable>
+  );
+}
+
+/* 회원가입 때 동의받은 약관 두 가지를 마이페이지에서도 다시 볼 수 있게 한다(사용자 지시).
+   기기 내 브라우저로 연다 — Signup.tsx 의 "보기" 버튼과 같은 방식. */
+function HelpLinkRow({ label, url, first = false }: { label: string; url: string; first?: boolean }) {
+  return (
+    <Pressable
+      onPress={() => WebBrowser.openBrowserAsync(url)}
+      accessibilityRole="link"
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14, paddingHorizontal: 15, borderTopWidth: first ? 0 : 1, borderTopColor: colors.subtle }}
+    >
+      <Text style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>{label}</Text>
+      <Icon name="link" size={16} color={colors.muted} />
     </Pressable>
   );
 }

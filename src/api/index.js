@@ -335,18 +335,23 @@ async function countComments(petitionId) {
   }
 }
 
+/* listPetitions/getPetition 은 로그인 중이면 토큰을 보낸다(auth 기본값 true) — 서버가
+   "로그인한 사용자는 영구 차단한 작성자의 청원을 볼 수 없습니다" 를 이 토큰으로 판단한다
+   (Skhu-Connect-BE User Block, 2026-08-18 확인). 비로그인일 땐 accessToken 이 없어 헤더 자체가
+   안 붙으므로 기존 동작과 같다. */
 export async function listPetitions() {
   await ensureFlags();
-  const data = await apiFetch("/connect/petitions?size=100&sort=createdAt,desc", { auth: false });
+  const data = await apiFetch("/connect/petitions?size=100&sort=createdAt,desc");
   const petitions = (data?.content ?? []).map(adaptPetition);
   await Promise.all(petitions.map(async (p) => { p.comments = await countComments(p.id); }));
   return petitions;
 }
 
+/** 차단한 작성자의 청원은 404 — 호출부가 이미 null 로 받아 "청원을 찾을 수 없음" 을 탄다. */
 export async function getPetition(id) {
   await ensureFlags();
   try {
-    const raw = await apiFetch(`/connect/petitions/${Number(id)}`, { auth: false });
+    const raw = await apiFetch(`/connect/petitions/${Number(id)}`);
     const p = adaptPetition(raw);
     p.comments = await countComments(p.id);
     return p;
@@ -392,6 +397,17 @@ export async function reportComment(id, reasonType, reasonDetail) {
     method: "POST",
     body: { petitionId: null, commentId: Number(id), ...reportReason(reasonType, reasonDetail) },
   });
+}
+
+/** 청원 작성자를 영구 차단한다(POST /connect/users/me/blocks). 단방향·해제 불가 — 서버가 그 뒤
+    listPetitions/getPetition 에서 이 작성자의 글을 걸러준다(위 auth 주석 참고). 409(이미 차단)는
+    성공 취급한다 — toggleEmpathy 와 같은 이유. */
+export async function blockPetitionAuthor(id) {
+  try {
+    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType: "PETITION", contentId: Number(id) } });
+  } catch (e) {
+    if (e.status !== 409) throw e;
+  }
 }
 
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘 뒤 재조회한다.

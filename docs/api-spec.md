@@ -93,6 +93,19 @@
   `notificationEnabled` 하나만 있고 그것도 변경 엔드포인트가 없다. 환경설정 모달의 토글은 이번 라운드
   범위 밖(사용자 지시) — UI 는 남기되 저장은 안 되거나, 토글 자체를 잠그는 건 이번 이슈에서 정한다.
 
+## 차단 (2026-08-18 추가 확인)
+
+- `POST /connect/users/me/blocks` `{targetType: "PETITION"|"COMMENT", contentId}` → 201
+  `{createdAt}`. 청원 또는 댓글·대댓글 id로 **작성자를 영구 차단**한다 — 단방향, 해제 불가, 차단
+  대상에게 알리지 않는다. 400(본인 차단)/404(콘텐츠·작성자 없음)/409(이미 차단, 성공 취급).
+  **목록 endpoint 없음** — 차단한 사용자 목록 화면은 서버 지원 밖.
+- `GET /connect/petitions`·`GET /connect/petitions/{id}`: **로그인한 사용자에게는 차단한 작성자의
+  청원이 걸러진다**(목록에서 빠짐, 상세는 404). 그런데 이 판단은 요청의 Authorization 토큰으로 하므로,
+  로그인 중에도 `auth:false` 로 부르면(과거 관성) 필터가 안 걸린다 — `listPetitions`/`getPetition` 은
+  기본 auth(토큰 있으면 첨부)로 부른다.
+- "게시글만 차단(작성자는 그대로)"에 대응하는 서버 기능은 없다 — 그래서 그 옵션은 만들지 않았다.
+  차단은 작성자 단위로만 가능하다(청원 카드의 차단 버튼은 항상 "작성자 차단").
+
 ## 학부
 
 - `GET /connect/departments` → `[{id, code, name}]`. **인증 불필요.**

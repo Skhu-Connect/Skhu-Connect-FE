@@ -120,6 +120,13 @@ export const usePetitions = create((set, get) => ({
     return p;
   },
 
+  /** 작성자 영구 차단. 성공하면 이 청원을 스토어에서 바로 지운다 — 서버는 이후 재조회부터
+      이 작성자의 글을 걸러주지만(청원 목록/상세 auth 필터), 지금 화면에도 즉시 반영해야 한다. */
+  blockPetitionAuthor: async (id) => {
+    await api.blockPetitionAuthor(id);
+    set((s) => ({ petitions: s.petitions.filter((p) => p.id !== id) }));
+  },
+
   reportPetition: (id, reasonType, reasonDetail) => api.reportPetition(id, reasonType, reasonDetail),
 
   reportComment: (id, reasonType, reasonDetail) => api.reportComment(id, reasonType, reasonDetail),

@@ -329,18 +329,23 @@ async function countComments(petitionId: number): Promise<number> {
   }
 }
 
+/* listPetitions/getPetition 은 로그인 중이면 토큰을 보낸다(auth 기본값 true) — 서버가
+   "로그인한 사용자는 영구 차단한 작성자의 청원을 볼 수 없습니다" 를 이 토큰으로 판단한다
+   (Skhu-Connect-BE User Block, 2026-08-18 확인). 비로그인일 땐 accessToken 이 없어 헤더 자체가
+   안 붙으므로 기존 동작과 같다. */
 export async function listPetitions(): Promise<Petition[]> {
   await Promise.all([ensureFlags(), ensureCategoryThresholds()]);
-  const data = await apiFetch<any>("/connect/petitions?size=100&sort=createdAt,desc", { auth: false });
+  const data = await apiFetch<any>("/connect/petitions?size=100&sort=createdAt,desc");
   const petitions = (data?.content ?? []).map(adaptPetition);
   await Promise.all(petitions.map(async (p: Petition) => { p.comments = await countComments(p.id); }));
   return petitions;
 }
 
-/** 상세 진입 시 부른다 — 답변 본문(officialAnswer)은 이 응답에만 온다(목록 응답에는 없다). */
+/** 상세 진입 시 부른다 — 답변 본문(officialAnswer)은 이 응답에만 온다(목록 응답에는 없다).
+    차단한 작성자의 청원은 404 — App.tsx 가 이미 "청원을 찾을 수 없음" 으로 피드로 돌려보낸다. */
 export async function getPetition(petitionId: number): Promise<Petition> {
   await Promise.all([ensureFlags(), ensureCategoryThresholds()]);
-  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}`, { auth: false });
+  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}`);
   return adaptPetition(raw);
 }
 
@@ -381,6 +386,18 @@ export async function reportComment(commentId: number, reasonType: ReportReasonT
     method: "POST",
     body: { petitionId: null, commentId, ...reportReason(reasonType, reasonDetail) },
   });
+}
+
+/** 청원 작성자를 영구 차단한다(POST /connect/users/me/blocks). 단방향·해제 불가 — 서버가 그 뒤
+    listPetitions/getPetition 에서 이 작성자의 글을 걸러준다(위 auth 주석 참고). 409(이미 차단)는
+    성공 취급한다 — toggleEmpathy 와 같은 이유. */
+export async function blockPetitionAuthor(petitionId: number): Promise<void> {
+  try {
+    await apiFetch("/connect/users/me/blocks", { method: "POST", body: { targetType: "PETITION", contentId: petitionId } });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) return;
+    throw e;
+  }
 }
 
 /** 409/404 는 "서버가 이미 의도한 상태" 로 간주하고 로컬 집합을 그 상태로 맞춘다.

@@ -9,6 +9,7 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
 import { Button, Icon } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
+import { toast } from "../../components/Toast";
 
 function HeroBanner() {
   return (
@@ -111,6 +112,13 @@ export default function FeedScreen({ nav = "feed" }) {
   const [cat, setCat] = useState("all");
   // 청원 등록 직후에는 최신순으로 연다 — 공감 0인 새 청원이 공감순에서 맨 아래로 밀리기 때문.
   const [sort, setSort] = useState(useLocation().state?.sort ?? "hot");
+  // 차단은 스토어(petitions)에서 바로 지워지므로 여기선 API 호출과 토스트만 맡는다.
+  const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
+  const handleBlock = (id) => {
+    blockPetitionAuthor(id)
+      .then(() => toast("작성자를 차단했습니다"))
+      .catch(() => toast("차단에 실패했습니다"));
+  };
 
   const base = nav === "answered" ? petitions.filter((p) => p.status === "answered") : nav === "mine" ? petitions.filter((p) => p.mine) : petitions;
   let list = base.filter((p) => cat === "all" || p.category === cat);
@@ -148,7 +156,7 @@ export default function FeedScreen({ nav = "feed" }) {
           {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>건의 등록</Button>}
         </EmptyState>
       ) : (
-        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} />
+        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onBlock={handleBlock} />
       )}
     </div>
   );

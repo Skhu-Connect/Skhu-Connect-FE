@@ -10,10 +10,9 @@ import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
 import { sanitizeNextPath } from "../../utils/nextPath";
+import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 const TERMS_VERSION = "1.0";
-const TERMS_PATH = "/terms-of-service.html";
-const PRIVACY_POLICY_PATH = "/privacy-policy.html";
 
 function EmailStep({ onSent, loginHref }) {
   const [email, setEmail] = useState("");

@@ -250,6 +250,35 @@ export default function App() {
     [votes, doVote],
   );
 
+  /* 실 백엔드 POST /connect/users/me/blocks 를 쓴다: 서버가 영구 차단을 기억하고 이후
+     listPetitions/getPetition 에서 그 작성자 글을 걸러준다(api.ts 주석 참고). 이 청원은 지금
+     화면에서도 바로 지워 즉시 반영한다. 해제 기능은 없다(서버가 애초에 지원 안 함). */
+  const blockPetitionAuthor = useCallback(
+    (id: number) => {
+      Alert.alert(
+        "이 글을 쓴 사용자를 차단할까요?",
+        "차단하면 이 사용자가 쓴 모든 글과 댓글이 앞으로 보이지 않습니다. 지금은 해제할 수 없습니다.",
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "차단하기",
+            style: "destructive",
+            onPress: () => {
+              api
+                .blockPetitionAuthor(id)
+                .then(() => {
+                  setPetitions((prev) => prev.filter((p) => p.id !== id));
+                  flash("작성자를 차단했습니다");
+                })
+                .catch(() => flash("차단에 실패했습니다"));
+            },
+          },
+        ],
+      );
+    },
+    [flash],
+  );
+
   const toggleBookmark = useCallback(
     (id: number) => {
       const wasBookmarked = !!petitions.find((p) => p.id === id)?.bookmarked;
@@ -450,6 +479,7 @@ export default function App() {
               onSort={setSort}
               onOpen={openPetition}
               onVote={vote}
+              onBlock={blockPetitionAuthor}
               onOpenMy={() => {
                 setTab("my");
                 setScreen("my");
