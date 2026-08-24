@@ -268,7 +268,9 @@ export default function FeedScreen({ nav = "feed" }) {
   const [cat, setCat] = useState("all");
   // 청원 등록 직후에는 최신순으로 연다 — 공감 0인 새 청원이 공감순에서 맨 아래로 밀리기 때문.
   const [sort, setSort] = useState(useLocation().state?.sort ?? "hot");
-  const [period, setPeriod] = useState("day");
+  /* 기본값이 일간이면 최근 24시간에 등록된 건의가 있어야 두 카드가 차는데, 이 서비스는 등록
+     빈도가 그만큼 높지 않아 첫 화면이 거의 늘 비어 보인다. 월간으로 열어 두고 좁히는 건 탭에 맡긴다. */
+  const [period, setPeriod] = useState("month");
   // 차단은 스토어(petitions)에서 바로 지워지므로 여기선 API 호출과 토스트만 맡는다.
   const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
   const reportPetition = usePetitions((s) => s.reportPetition);

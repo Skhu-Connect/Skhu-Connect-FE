@@ -310,7 +310,9 @@ function SummaryCard({ newCount, newEmpathy, period }: { newCount: number; newEm
 
 /** 홈 탭 · 검색 중이 아닐 때만 보인다 — 웹 FeedScreen.jsx 의 nav==='feed' && !q 와 같은 조건. */
 function Dashboard({ tab, petitions, query, onOpen, onMore }: { tab: Tab; petitions: Petition[]; query: string; onOpen: (id: number) => void; onMore: () => void }) {
-  const [period, setPeriod] = useState<PeriodKey>("day");
+  /* 기본값이 일간이면 최근 24시간에 등록된 건의가 있어야 두 카드가 차는데, 이 서비스는 등록
+     빈도가 그만큼 높지 않아 첫 화면이 거의 늘 비어 보인다. 월간으로 열어 두고 좁히는 건 탭에 맡긴다. */
+  const [period, setPeriod] = useState<PeriodKey>("month");
   if (tab !== "home" || query.trim()) return null;
 
   const periodDef = PERIODS.find((per) => per.key === period) ?? PERIODS[0];
