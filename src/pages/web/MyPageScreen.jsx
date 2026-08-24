@@ -69,6 +69,91 @@ function HeroCard({ dept, loginId, stats }) {
   );
 }
 
+/* 계정 정보 변경(아이디·비밀번호) 진입 행. HelpLinkRow 와 같은 뼈대인데 외부 링크가 아니라
+   onClick 으로 다이얼로그를 연다 — 화살표를 link 대신 chevronRight 로 바꿔 "안에서 열리는" 동작임을 구분한다. */
+function AccountRow({ icon, label, onClick, first = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 18px", background: "none", border: "none", borderTop: first ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+    >
+      <Icon name={icon} size={15} color="var(--text-muted)" />
+      <span style={{ flex: 1, textAlign: "left", fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>{label}</span>
+      <Icon name="chevronRight" size={15} color="var(--text-muted)" />
+    </button>
+  );
+}
+
+/* 비밀번호 변경. ponytail: 백엔드에 로그인 상태 비밀번호 변경 API가 없다(POST
+   /connect/auth/password/reset 은 로그아웃 상태 이메일 인증 전용 — FindPasswordScreen.jsx 참고) —
+   화면만 먼저 만들고, API가 생기면 이 submit 을 연결한다. */
+function ChangePasswordDialog({ onClose }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+    if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
+    toast("비밀번호 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+    onClose();
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="change-password-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <h2 id="change-password-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>비밀번호 변경</h2>
+          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔드려요.</p>
+        </div>
+        <Input type="password" label="현재 비밀번호" placeholder="••••••••" autoComplete="current-password" value={current} onChange={(e) => { setCurrent(e.target.value); setError(""); }} />
+        <Input type="password" label="새 비밀번호" placeholder="••••••••" autoComplete="new-password" value={next} onChange={(e) => { setNext(e.target.value); setError(""); }} />
+        <Input type="password" label="새 비밀번호 확인" placeholder="••••••••" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setError(""); }} />
+        {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
+          <Button type="button" variant="outline" onClick={onClose}>취소</Button>
+          <Button type="submit" variant="primary">변경</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* 아이디 변경. 위와 같은 이유로 화면만 먼저 만든다 — 백엔드에 loginId 변경 엔드포인트가 없다. */
+function ChangeIdDialog({ onClose }) {
+  const [newId, setNewId] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
+    toast("아이디 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+    onClose();
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="change-id-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <h2 id="change-id-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>아이디 변경</h2>
+          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>본인 확인을 위해 비밀번호를 함께 입력해 주세요.</p>
+        </div>
+        <Input label="새 아이디" placeholder="새 아이디를 입력하세요" value={newId} onChange={(e) => { setNewId(e.target.value); setError(""); }} />
+        <Input type="password" label="비밀번호" placeholder="••••••••" autoComplete="current-password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />
+        {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
+          <Button type="button" variant="outline" onClick={onClose}>취소</Button>
+          <Button type="submit" variant="primary">변경</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 /* PageIntro(FeedParts.jsx) 의 "아이콘 타일 + 제목" 패턴을 섹션 헤더 크기로 축소했다. */
 function SectionHeader({ icon, bg, fg, title, meta }) {
   return (
@@ -165,6 +250,8 @@ export default function MyPageScreen() {
   const logout = useSession((s) => s.logout);
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [changeIdOpen, setChangeIdOpen] = useState(false);
 
   const petitions = usePetitions((s) => s.petitions);
   const bookmarked = usePetitions((s) => s.bookmarked);
@@ -241,6 +328,14 @@ export default function MyPageScreen() {
                 <Button variant="outline" onClick={() => navigate("/mine")}>내 건의 보기</Button>
                 <Button variant="primary" disabled={!deptId || saving} onClick={save}>저장</Button>
               </div>
+            </Card>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <SectionHeader icon="lock" bg="var(--indigo-50)" fg="var(--indigo-600)" title="계정 정보 변경" />
+            <Card padding={0} style={{ overflow: "hidden" }}>
+              <AccountRow icon="user" label="아이디 변경" onClick={() => setChangeIdOpen(true)} first />
+              <AccountRow icon="lock" label="비밀번호 변경" onClick={() => setChangePwOpen(true)} />
             </Card>
           </div>
 
@@ -369,6 +464,8 @@ export default function MyPageScreen() {
       </div>
 
       {deleteOpen && <DeleteAccountDialog onClose={() => setDeleteOpen(false)} />}
+      {changePwOpen && <ChangePasswordDialog onClose={() => setChangePwOpen(false)} />}
+      {changeIdOpen && <ChangeIdDialog onClose={() => setChangeIdOpen(false)} />}
     </div>
   );
 }

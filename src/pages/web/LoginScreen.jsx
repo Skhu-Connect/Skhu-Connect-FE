@@ -54,7 +54,13 @@ export default function LoginScreen() {
         <Button type="submit" variant="primary" size="lg" block style={{ marginTop: 4 }}>로그인</Button>
       </form>
 
-      <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 20 }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 18, fontSize: 12.5 }}>
+        <Link to="/find-id" style={{ color: "var(--text-muted)", fontWeight: 600 }}>아이디 찾기</Link>
+        <span style={{ color: "var(--border-strong)" }}>|</span>
+        <Link to="/find-password" style={{ color: "var(--text-muted)", fontWeight: 600 }}>비밀번호 찾기</Link>
+      </div>
+
+      <p style={{ textAlign: "center", fontSize: 13.5, marginTop: 16 }}>
         아직 계정이 없으신가요? <Link to={`/signup?next=${encodeURIComponent(next)}`} style={{ color: "var(--indigo-200)", fontWeight: 700 }}>회원가입</Link>
       </p>
 

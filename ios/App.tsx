@@ -11,6 +11,8 @@ import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
 import { LoginScreen } from "./src/screens/Login";
 import { SignupScreen } from "./src/screens/Signup";
+import { FindIdScreen } from "./src/screens/FindId";
+import { FindPasswordScreen } from "./src/screens/FindPassword";
 import { MyScreen } from "./src/screens/My";
 import { SubmitScreen, categoryOf } from "./src/screens/Submit";
 import { ShareSheet, TabBar, Toast } from "./src/shell";
@@ -38,7 +40,7 @@ function petitionIdFromUrl(url: string | null): number | null {
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [authed, setAuthed] = useState(false);
-  const [authScreen, setAuthScreen] = useState<"login" | "signup">("login");
+  const [authScreen, setAuthScreen] = useState<"login" | "signup" | "findId" | "findPassword">("login");
   const [screen, setScreen] = useState<Screen>("feed");
   const [tab, setTab] = useState<Tab>("home");
 
@@ -483,10 +485,17 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         {authScreen === "login" ? (
-          <LoginScreen deepTitle={deepPetition?.title} onLogin={onLogin} onSignup={() => setAuthScreen("signup")} />
-        ) : (
-          <SignupScreen onBack={() => setAuthScreen("login")} onSignup={onLogin} />
-        )}
+          <LoginScreen
+            deepTitle={deepPetition?.title}
+            onLogin={onLogin}
+            onSignup={() => setAuthScreen("signup")}
+            onFindId={() => setAuthScreen("findId")}
+            onFindPassword={() => setAuthScreen("findPassword")}
+          />
+        ) : null}
+        {authScreen === "signup" ? <SignupScreen onBack={() => setAuthScreen("login")} onSignup={onLogin} /> : null}
+        {authScreen === "findId" ? <FindIdScreen onBack={() => setAuthScreen("login")} /> : null}
+        {authScreen === "findPassword" ? <FindPasswordScreen onBack={() => setAuthScreen("login")} /> : null}
       </SafeAreaProvider>
     );
   }

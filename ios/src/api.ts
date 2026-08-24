@@ -4,8 +4,13 @@
    웹 src/api/index.js 를 TS 로 포팅했다 — 어댑터·인증 흐름·이미 겪은 백엔드 제약(댓글 수
    미포함, mine/voted 파생 필요, 알림 설정 변경 API 없음)이 동일하게 적용된다. 공식 답변 본문은
    청원 상세 GET(`/connect/petitions/{id}`)의 officialAnswer 로 온다 — 목록 응답에는 없다.
-   모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 비밀번호 재설정,
-   전체 읽음)은 포팅하지 않았다 — 진입점이 없는 코드는 만들지 않는다.
+   모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 전체 읽음)은 포팅하지
+   않았다 — 진입점이 없는 코드는 만들지 않는다.
+
+   비밀번호 재설정은 로그인 화면의 "비밀번호 찾기" 링크(FindPasswordScreen)로 연동했다
+   (웹 FindPasswordScreen 과 동일한 흐름, 2026-08-22). 아이디 찾기(FindIdScreen)는 학교 이메일
+   인증·비밀번호 확인 두 방식 화면까지만 있다 — loginId 조회/변경 엔드포인트가 없어 마지막 단계는
+   API 호출 없이 "준비 중" 안내로 끝난다. MY 화면의 아이디·비밀번호 변경도 같은 이유로 화면만 있다.
 
    deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
    PATCH /connect/users/me/department({departmentId})로 연동한다. */
@@ -228,6 +233,27 @@ export async function confirmSignupCode(email: string, code: string): Promise<st
 export async function signup(args: { loginId: string; password: string; departmentId: number; verificationToken: string; termsAgreed: true; termsVersion: "1.0" }): Promise<Me | null> {
   await apiFetch("/connect/auth/signup", { method: "POST", auth: false, body: args });
   return login(args.loginId, args.password);
+}
+
+/** 비밀번호 찾기 3단계 뒤 호출한다: sendPasswordResetCode → confirmPasswordResetCode(→verificationToken) → resetPassword.
+    가입 이메일 인증(sendSignupCode/confirmSignupCode)과 같은 엔드포인트를 purpose 만 바꿔 쓴다. */
+export async function sendPasswordResetCode(email: string): Promise<void> {
+  await apiFetch("/connect/auth/email-verifications", { method: "POST", auth: false, body: { email, purpose: "PASSWORD_RESET" } });
+}
+
+export async function confirmPasswordResetCode(email: string, code: string): Promise<string> {
+  const { verificationToken } = await apiFetch<{ verificationToken: string }>("/connect/auth/email-verifications/confirm", {
+    method: "POST",
+    auth: false,
+    body: { email, code, purpose: "PASSWORD_RESET" },
+  });
+  return verificationToken;
+}
+
+export async function resetPassword(verificationToken: string, newPassword: string): Promise<void> {
+  const pw = newPassword.trim();
+  if (!pw) throw new Error("새 비밀번호를 입력해 주세요.");
+  await apiFetch("/connect/auth/password/reset", { method: "POST", auth: false, body: { verificationToken, newPassword: pw } });
 }
 
 export async function logout(): Promise<void> {
