@@ -9,9 +9,14 @@
    getPrefs/savePrefs(알림 3종 개별 토글)는 대응 엔드포인트가 없어 로컬 상태로만 유지한다
    (새로고침하면 초기화).
 
-   청원 수정/삭제(PUT·DELETE /connect/petitions/{id}), 비밀번호 재설정(POST
-   /connect/auth/password/reset)은 백엔드엔 있지만 화면에 진입점(수정 메뉴·비밀번호 찾기 링크)이
+   청원 수정/삭제(PUT·DELETE /connect/petitions/{id})는 백엔드엔 있지만 화면에 진입점(수정 메뉴)이
    없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
+
+   비밀번호 재설정은 로그인 화면의 "비밀번호 찾기" 링크(FindPasswordScreen)로 연동 완료했다
+   (2026-08-22). 아이디 찾기(FindIdScreen, 2026-08-24)는 학교 이메일 인증·비밀번호 확인 두 방식
+   화면까지만 만들었다 — loginId 조회/변경에 대응하는 백엔드 엔드포인트가 없어 마지막 단계는
+   API 호출 없이 "준비 중" 안내로 끝난다. 마이페이지의 아이디·비밀번호 변경(MyPageScreen)도 같은
+   이유로 화면만 있다. 엔드포인트가 생기면 이 두 화면의 마지막 단계 submit 을 실제 호출로 바꾼다.
 
    회원탈퇴(deleteAccount)는 /connect/users/me DELETE({password})로 연동 완료(2026-08-11, /v3/api-docs
    로 계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
@@ -236,6 +241,23 @@ export async function signup({ loginId, password, departmentId, verificationToke
   return login(loginId, password);
 }
 
+/** 비밀번호 찾기 3단계 뒤 호출한다: sendPasswordResetCode → confirmPasswordResetCode(→verificationToken) → resetPassword.
+    가입 이메일 인증(sendSignupCode/confirmSignupCode)과 같은 엔드포인트를 purpose 만 바꿔 쓴다. */
+export async function sendPasswordResetCode(email) {
+  await apiFetch("/connect/auth/email-verifications", { method: "POST", auth: false, body: { email, purpose: "PASSWORD_RESET" } });
+}
+
+export async function confirmPasswordResetCode(email, code) {
+  const { verificationToken } = await apiFetch("/connect/auth/email-verifications/confirm", { method: "POST", auth: false, body: { email, code, purpose: "PASSWORD_RESET" } });
+  return verificationToken;
+}
+
+export async function resetPassword(verificationToken, newPassword) {
+  const pw = String(newPassword ?? "").trim();
+  if (!pw) throw new Error("새 비밀번호를 입력해 주세요.");
+  await apiFetch("/connect/auth/password/reset", { method: "POST", auth: false, body: { verificationToken, newPassword: pw } });
+}
+
 export async function logout() {
   try {
     await apiFetch("/connect/auth/logout", { method: "POST", auth: false });
@@ -311,6 +333,8 @@ function adaptPetition(raw) {
     threshold: raw.targetAgreementCount ?? meta.threshold,
     basis: meta.basis,
     author: "익명",
+    // 홈 화면 "급상승 건의"/"기간 요약"이 기간별 신규 건의를 가려내는 데 쓴다(FeedScreen.jsx).
+    createdAt: raw.createdAt,
     // 댓글 수는 목록 응답에 없다 — 상세 진입 시 listComments 로 실제 값이 덮인다(store loadPetition).
     comments: 0,
     views: 0,

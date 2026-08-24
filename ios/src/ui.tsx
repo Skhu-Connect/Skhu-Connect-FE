@@ -328,7 +328,7 @@ type TagSize = "sm" | "md";
 
 /* 분류는 색이 아니라 아이콘 모양으로 구분한다 — 웹 CATEGORIES 와 같은 짝이다
    (원본 태그 에셋이 전부 무채색 선 아이콘 + 텍스트다). */
-const CAT_ICON: Record<CategoryKey, IconName> = {
+export const CAT_ICON: Record<CategoryKey, IconName> = {
   scholarship: "graduationCap",
   facility: "facilityBuilding",
   dorm: "dormHouse",

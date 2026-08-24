@@ -23,6 +23,7 @@ export type IconName =
   | "lock"
   | "link"
   | "chevronDown"
+  | "chevronRight"
   | "message"
   | "userX"
   | "flag"
@@ -31,7 +32,10 @@ export type IconName =
   | "facilityBuilding"
   | "dormHouse"
   | "bookOpen"
-  | "peopleGroup";
+  | "peopleGroup"
+  | "trending"
+  | "calendar"
+  | "fileText";
 
 type Props = {
   name: IconName;
@@ -163,6 +167,8 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       );
     case "chevronDown":
       return <Polyline points="6 9 12 15 18 9" {...p} />;
+    case "chevronRight":
+      return <Path d="m9 18 6-6-6-6" {...p} />;
     case "message":
       return <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" {...p} />;
     /* 댓글 메뉴(신고·차단) 트리거. 점 3개는 stroke 원이 아니라 채운 원이다 — heartSolid 와 같은 예외. */
@@ -234,6 +240,30 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
           <Circle cx={16} cy={8} r={3} {...p} />
           <Path d="M2.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" {...p} />
           <Path d="M10.5 20c.3-4 2.4-6 5.5-6s5.2 2 5.5 6" {...p} />
+        </>
+      );
+
+    /* 홈 대시보드(급상승·기간요약) 3종. 웹 src/components/ui/Icon.jsx 의 같은 이름 지오메트리를
+       그대로 옮겼다. */
+    case "trending":
+      return (
+        <>
+          <Path d="m22 7-8.5 8.5-5-5L2 17" {...p} />
+          <Path d="M16 7h6v6" {...p} />
+        </>
+      );
+    case "calendar":
+      return (
+        <>
+          <Rect x={3} y={4} width={18} height={18} rx={2} {...p} />
+          <Path d="M16 2v4M8 2v4M3 10h18" {...p} />
+        </>
+      );
+    case "fileText":
+      return (
+        <>
+          <Path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" {...p} />
+          <Path d="M14 2v5h5M16 13H8M16 17H8" {...p} />
         </>
       );
   }
