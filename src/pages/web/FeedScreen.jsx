@@ -324,8 +324,20 @@ export default function FeedScreen({ nav = "feed" }) {
     <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 26 }}>
       {reportId !== null && <ReportDialog target="게시글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)} />}
       {intro}
+      {/* 웹은 데스크톱 폭이 넉넉해 두 카드를 2열로 두어도 건의 목록이 첫 화면에 들어온다 —
+          그래서 상단에 둔다. 세로로 쌓이는 iOS 는 목록 아래로 내렸다(Feed.tsx). */}
+      {nav === "feed" && !q && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
+          <div style={{ flex: "2 1 420px" }}>
+            <TrendingList list={trending} period={period} onPeriod={setPeriod} onMore={showAllByEmpathy} />
+          </div>
+          <div style={{ flex: "1 1 300px" }}>
+            <PeriodSummary newCount={newCount} newEmpathy={newEmpathy} period={period} />
+          </div>
+        </div>
+      )}
       {/* 머리말 → 필터 → 건수 순으로 한 덩어리(gap 12)로 묶는다. 부모 gap(26)보다 좁게 붙여야
-          칩 줄이 따로 노는 것처럼 보이지 않는다. */}
+          칩 줄이 위 대시보드에 딸린 것처럼 보이지 않는다. */}
       <div ref={listRef} style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 20 }}>
         {nav === "feed" && !q && (
           <ListHeading>
@@ -350,18 +362,6 @@ export default function FeedScreen({ nav = "feed" }) {
         </EmptyState>
       ) : (
         <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onReport={setReportId} onBlock={handleBlock} />
-      )}
-      {/* 본문(건의 목록) 다음에 오는 보조 위젯이다 — 위에 두면 건의를 보려고 매번 그만큼 스크롤해야
-          한다(사용자 지시, 에브리타임 홈 참고). */}
-      {nav === "feed" && !q && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
-          <div style={{ flex: "2 1 420px" }}>
-            <TrendingList list={trending} period={period} onPeriod={setPeriod} onMore={showAllByEmpathy} />
-          </div>
-          <div style={{ flex: "1 1 300px" }}>
-            <PeriodSummary newCount={newCount} newEmpathy={newEmpathy} period={period} />
-          </div>
-        </div>
       )}
     </div>
   );
