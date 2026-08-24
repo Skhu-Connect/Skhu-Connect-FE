@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
 import { listDepartments } from "../api";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 import { Avatar, Button, Input, Select } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
@@ -34,6 +34,8 @@ export function MyScreen(p: MyProps) {
   const [notifExpanded, setNotifExpanded] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [changeIdOpen, setChangeIdOpen] = useState(false);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [department, setDepartment] = useState(p.me?.departmentName ?? "");
   const [departmentError, setDepartmentError] = useState("");
@@ -98,6 +100,12 @@ export function MyScreen(p: MyProps) {
           <Select label="소속 학부" options={departments.map((item) => item.name)} value={department} onChange={setDepartment} placeholder="학부를 선택하세요" />
           {departmentError ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{departmentError}</Text> : null}
           <Button block disabled={savingDepartment || !departments.some((item) => item.name === department)} onPress={saveDepartment}>{savingDepartment ? "저장 중…" : "저장"}</Button>
+        </View>
+
+        <SectionTitle style={{ paddingTop: 18 }}>계정 정보 변경</SectionTitle>
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
+          <AccountRow icon="user" label="아이디 변경" onPress={() => setChangeIdOpen(true)} first />
+          <AccountRow icon="lock" label="비밀번호 변경" onPress={() => setChangePwOpen(true)} />
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6 }}>
@@ -218,7 +226,144 @@ export function MyScreen(p: MyProps) {
           }}
         />
       ) : null}
+      {changePwOpen ? <ChangePasswordSheet onClose={() => setChangePwOpen(false)} /> : null}
+      {changeIdOpen ? <ChangeIdSheet onClose={() => setChangeIdOpen(false)} /> : null}
     </View>
+  );
+}
+
+/* 계정 정보 변경(아이디·비밀번호) 진입 행. HelpLinkRow 와 같은 뼈대인데 밖으로 안 나가고
+   시트를 연다 — 그래서 link 대신 화면 안 이동을 뜻하는 아이콘(user/lock)만 왼쪽에 둔다. */
+function AccountRow({ icon, label, onPress, first = false }: { icon: IconName; label: string; onPress: () => void; first?: boolean }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14, paddingHorizontal: 15, borderTopWidth: first ? 0 : 1, borderTopColor: colors.subtle }}
+    >
+      <Icon name={icon} size={16} color={colors.muted} />
+      <Text style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/* 비밀번호 변경. ponytail: 백엔드에 로그인 상태 비밀번호 변경 API가 없다(POST
+   /connect/auth/password/reset 은 로그아웃 상태 이메일 인증 전용 — FindPassword.tsx 참고) —
+   화면만 먼저 만들고, API가 생기면 submit 을 연결한다. 안내는 시트 안에서 바로 보여준다
+   (App.tsx 의 전역 토스트는 이 화면에 연결돼 있지 않다). */
+function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const submit = () => {
+    if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+    if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
+    setError("");
+    setNotice("비밀번호 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+  };
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, .45)" }}>
+        <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, gap: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>비밀번호 변경</Text>
+              <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 3 }]}>현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔드려요.</Text>
+            </View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="닫기" hitSlop={10}>
+              <Text style={[t, { fontSize: 15, fontWeight: "700", color: colors.muted }]}>닫기</Text>
+            </Pressable>
+          </View>
+
+          {notice ? (
+            <>
+              <View style={{ backgroundColor: colors.page, borderRadius: 10, padding: 12 }}>
+                <Text style={[t, { fontSize: 12.5, color: colors.body, lineHeight: 19 }]}>{notice}</Text>
+              </View>
+              <Pressable onPress={onClose} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, alignItems: "center" }}>
+                <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>확인</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Input label="현재 비밀번호" value={current} onChangeText={(v) => { setCurrent(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+              <Input label="새 비밀번호" value={next} onChangeText={(v) => { setNext(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+              <Input label="새 비밀번호 확인" value={confirm} onChangeText={(v) => { setConfirm(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+              {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
+              <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+                <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
+                </Pressable>
+                <Pressable onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>변경</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+/* 아이디 변경. 위와 같은 이유로 화면만 먼저 만든다 — 백엔드에 loginId 변경 엔드포인트가 없다. */
+function ChangeIdSheet({ onClose }: { onClose: () => void }) {
+  const [newId, setNewId] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const submit = () => {
+    if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
+    setError("");
+    setNotice("아이디 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+  };
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, .45)" }}>
+        <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, gap: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>아이디 변경</Text>
+              <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 3 }]}>본인 확인을 위해 비밀번호를 함께 입력해 주세요.</Text>
+            </View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="닫기" hitSlop={10}>
+              <Text style={[t, { fontSize: 15, fontWeight: "700", color: colors.muted }]}>닫기</Text>
+            </Pressable>
+          </View>
+
+          {notice ? (
+            <>
+              <View style={{ backgroundColor: colors.page, borderRadius: 10, padding: 12 }}>
+                <Text style={[t, { fontSize: 12.5, color: colors.body, lineHeight: 19 }]}>{notice}</Text>
+              </View>
+              <Pressable onPress={onClose} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, alignItems: "center" }}>
+                <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>확인</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Input label="새 아이디" value={newId} onChangeText={(v) => { setNewId(v); setError(""); }} placeholder="새 아이디를 입력하세요" />
+              <Input label="비밀번호" value={password} onChangeText={(v) => { setPassword(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+              {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
+              <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+                <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
+                </Pressable>
+                <Pressable onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>변경</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 

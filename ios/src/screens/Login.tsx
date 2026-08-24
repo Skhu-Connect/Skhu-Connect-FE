@@ -8,7 +8,19 @@ import { Button, Input } from "../ui";
 import { colors, font, onVideo, radius } from "../theme";
 import { login } from "../api";
 
-export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: string; onLogin: () => void | Promise<void>; onSignup: () => void }) {
+export function LoginScreen({
+  deepTitle,
+  onLogin,
+  onSignup,
+  onFindId,
+  onFindPassword,
+}: {
+  deepTitle?: string;
+  onLogin: () => void | Promise<void>;
+  onSignup: () => void;
+  onFindId: () => void;
+  onFindPassword: () => void;
+}) {
   const [sid, setSid] = useState("");
   const [pw, setPw] = useState("");
   const [error, setError] = useState("");
@@ -52,6 +64,16 @@ export function LoginScreen({ deepTitle, onLogin, onSignup }: { deepTitle?: stri
         <Button variant="primary" size="lg" block disabled={loading} onPress={submit}>
           {loading ? "로그인 중…" : deepTitle ? "로그인하고 공감하기" : "로그인"}
         </Button>
+
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10 }}>
+          <Pressable onPress={onFindId} accessibilityRole="button">
+            <Text style={[{ fontFamily: font }, { fontSize: 12.5, fontWeight: "600", color: onVideo.muted }]}>아이디 찾기</Text>
+          </Pressable>
+          <Text style={{ color: onVideo.border }}>|</Text>
+          <Pressable onPress={onFindPassword} accessibilityRole="button">
+            <Text style={[{ fontFamily: font }, { fontSize: 12.5, fontWeight: "600", color: onVideo.muted }]}>비밀번호 찾기</Text>
+          </Pressable>
+        </View>
 
         <Pressable onPress={onSignup} accessibilityRole="button" style={{ alignItems: "center" }}>
           <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>
