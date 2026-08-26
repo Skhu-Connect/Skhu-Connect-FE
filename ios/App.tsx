@@ -471,7 +471,6 @@ export default function App() {
   );
 
   const resetAuthState = useCallback(() => {
-    push.unregisterFromPush();
     setAuthed(false);
     setAuthScreen("login");
     setScreen("feed");
@@ -486,13 +485,15 @@ export default function App() {
     setMyComments([]);
   }, []);
 
-  const onLogout = useCallback(() => {
+  const onLogout = useCallback(async () => {
+    await push.unregisterFromPush();
     api.logout();
     resetAuthState();
   }, [resetAuthState]);
 
   const onDeleteAccount = useCallback(
     async (password: string) => {
+      await push.unregisterFromPush();
       await api.deleteAccount(password);
       resetAuthState();
     },

@@ -45,21 +45,21 @@ export function openSystemNotificationSettings(): void {
 
 /** 로그인 성공 뒤 호출한다. 거부되면 조용히 넘어간다 — 알림은 부가 기능이지 필수 흐름이 아니다. */
 export async function registerForPush(): Promise<void> {
-  const messaging = getMessaging();
-  const status = await requestPermission(messaging);
-  const granted = status === AuthorizationStatus.AUTHORIZED || status === AuthorizationStatus.PROVISIONAL;
-  if (!granted) return;
-
   try {
+    const messaging = getMessaging();
+    const status = await requestPermission(messaging);
+    const granted = status === AuthorizationStatus.AUTHORIZED || status === AuthorizationStatus.PROVISIONAL;
+    if (!granted) return;
+
     await registerDeviceForRemoteMessages(messaging); // v18+ 는 getToken() 전에 이걸 명시적으로 불러야 한다 — 안 그러면 messaging/unregistered
     const token = await getToken(messaging);
     await registerFcmToken(token);
     unsubTokenRefresh?.();
     unsubTokenRefresh = onTokenRefresh(messaging, (t) => {
-      registerFcmToken(t).catch(() => {});
+      registerFcmToken(t).catch((e) => console.warn("[push] FCM token refresh registration failed", e));
     });
-  } catch {
-    /* 토큰 발급·등록 실패 — 다음 로그인 때 재시도 */
+  } catch (e) {
+    console.warn("[push] FCM token registration failed", e);
   }
 }
 
@@ -71,8 +71,8 @@ export async function unregisterFromPush(): Promise<void> {
     const messaging = getMessaging();
     const token = await getToken(messaging);
     await deleteFcmToken(token);
-  } catch {
-    /* 무시 */
+  } catch (e) {
+    console.warn("[push] FCM token unregistration failed", e);
   }
 }
 
