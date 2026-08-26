@@ -1,8 +1,7 @@
-/* 아이디 찾기. 백엔드에 loginId 조회/변경 엔드포인트가 없어(docs/api-spec.md) 화면만 먼저 만든다 —
-   ponytail: 학교 이메일 인증·비밀번호 확인 두 방식 모두 화면만 두고, 엔드포인트가 생기면 각 단계의
-   제출을 실제 API 호출로 바꾼다. 웹 FindIdScreen.jsx 와 단계·문구를 맞춘다. */
+/* 아이디 찾기. 학교 이메일 인증 또는 이메일+현재 비밀번호 확인 뒤 loginId를 보여준다. */
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { ApiError, confirmLoginIdFindCode, findLoginIdByEmail, findLoginIdByPassword, sendLoginIdFindCode } from "../api";
 import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
 import { Button, Input } from "../ui";
@@ -59,37 +58,55 @@ function MethodToggle({ method, onChange }: { method: Method; onChange: (m: Meth
 function EmailStep({ onSent }: { onSent: (email: string) => void }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const value = email.trim();
     if (!value || !value.includes("@")) {
       setError("가입한 학교 이메일을 입력해 주세요.");
       return;
     }
     setError("");
-    onSent(value);
+    setSending(true);
+    try {
+      await sendLoginIdFindCode(value);
+      onSent(value);
+    } catch {
+      setError("인증코드 발송에 실패했습니다. 가입한 이메일인지 확인해 주세요.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <>
       <Input dark label="학교 이메일" value={email} onChangeText={setEmail} placeholder="예: 20260000@office.skhu.ac.kr" keyboardType="email-address" />
       {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button variant="primary" size="lg" block onPress={submit}>인증코드 받기</Button>
+      <Button variant="primary" size="lg" block disabled={sending} onPress={submit}>{sending ? "발송 중…" : "인증코드 받기"}</Button>
     </>
   );
 }
 
-function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => void; onVerified: () => void }) {
+function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => void; onVerified: (loginId: string) => void }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const confirm = () => {
+  const confirm = async () => {
     if (!/^\d{6}$/.test(code.trim())) {
       setError("6자리 인증코드를 입력해 주세요.");
       return;
     }
     setError("");
-    onVerified();
+    setChecking(true);
+    try {
+      const token = await confirmLoginIdFindCode(email, code.trim());
+      onVerified(await findLoginIdByEmail(token));
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 409 ? "이미 사용한 인증입니다. 인증코드를 다시 받아 주세요." : e instanceof ApiError && e.status === 410 ? "인증이 만료되었습니다. 인증코드를 다시 받아 주세요." : "인증코드가 올바르지 않습니다.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -100,17 +117,18 @@ function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => 
 
       <Input dark label="인증코드" value={code} onChangeText={(t) => setCode(t.replace(/\D/g, "").slice(0, 6))} placeholder="123456" keyboardType="number-pad" />
       {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button variant="primary" size="lg" block onPress={confirm}>확인</Button>
+      <Button variant="primary" size="lg" block disabled={checking} onPress={confirm}>{checking ? "확인 중…" : "확인"}</Button>
     </>
   );
 }
 
-function PasswordStep({ onVerified }: { onVerified: () => void }) {
+function PasswordStep({ onVerified }: { onVerified: (loginId: string) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!email.trim() || !email.includes("@")) {
       setError("가입한 학교 이메일을 입력해 주세요.");
       return;
@@ -120,7 +138,14 @@ function PasswordStep({ onVerified }: { onVerified: () => void }) {
       return;
     }
     setError("");
-    onVerified();
+    setChecking(true);
+    try {
+      onVerified(await findLoginIdByPassword(email.trim(), password));
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 401 ? "이메일 또는 비밀번호가 올바르지 않습니다." : "아이디를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -128,17 +153,17 @@ function PasswordStep({ onVerified }: { onVerified: () => void }) {
       <Input dark label="학교 이메일" value={email} onChangeText={setEmail} placeholder="예: 20260000@office.skhu.ac.kr" keyboardType="email-address" />
       <Input dark label="비밀번호" value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry />
       {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button variant="primary" size="lg" block onPress={submit}>확인</Button>
+      <Button variant="primary" size="lg" block disabled={checking} onPress={submit}>{checking ? "확인 중…" : "확인"}</Button>
     </>
   );
 }
 
-function NoticeStep({ onBack }: { onBack: () => void }) {
+function NoticeStep({ loginId, onBack }: { loginId: string; onBack: () => void }) {
   return (
     <>
-      <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>확인해 드릴게요</Text>
+      <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>아이디를 찾았어요</Text>
       <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted, lineHeight: 20 }]}>
-        본인 확인이 완료됐어요. 아이디 안내 기능은 아직 준비 중입니다 — 빠른 시일 내 제공하겠습니다.
+        회원님의 아이디는 <Text style={{ color: onVideo.text, fontWeight: "800" }}>{loginId}</Text>입니다.
       </Text>
       <Button variant="primary" size="lg" block onPress={onBack}>로그인으로 돌아가기</Button>
     </>
@@ -149,6 +174,7 @@ export function FindIdScreen({ onBack }: { onBack: () => void }) {
   const [method, setMethod] = useState<Method>("email");
   const [step, setStep] = useState<"input" | "code" | "done">("input");
   const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
 
   return (
     <AuthShell>
@@ -165,7 +191,7 @@ export function FindIdScreen({ onBack }: { onBack: () => void }) {
             {method === "email" ? (
               <EmailStep onSent={(value) => { setEmail(value); setStep("code"); }} />
             ) : (
-              <PasswordStep onVerified={() => setStep("done")} />
+              <PasswordStep onVerified={(id) => { setLoginId(id); setStep("done"); }} />
             )}
 
             <Pressable onPress={onBack} accessibilityRole="button" style={{ alignItems: "center" }}>
@@ -174,9 +200,9 @@ export function FindIdScreen({ onBack }: { onBack: () => void }) {
           </>
         ) : null}
         {step === "code" ? (
-          <CodeStep email={email} onBack={() => setStep("input")} onVerified={() => setStep("done")} />
+          <CodeStep email={email} onBack={() => setStep("input")} onVerified={(id) => { setLoginId(id); setStep("done"); }} />
         ) : null}
-        {step === "done" ? <NoticeStep onBack={onBack} /> : null}
+        {step === "done" ? <NoticeStep loginId={loginId} onBack={onBack} /> : null}
       </View>
     </AuthShell>
   );

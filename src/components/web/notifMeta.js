@@ -5,10 +5,8 @@
 
    Header.jsx(알림 벨)·MyPageScreen.jsx(알림함)·NotificationSettingsScreen.jsx 가 공용으로 쓴다.
 
-   ponytail: 포인트별 on/off 토글은 만들지 않는다. 서버가 가진 스위치는 User.notificationEnabled
-   하나뿐이고 그것도 변경 엔드포인트가 없다(/v3/api-docs 확인, 2026-08-27). 푸시 페이로드에도
-   알림 종류가 안 실려(FcmPushService 는 notificationId·petitionId 만 보낸다) 클라이언트가
-   종류별로 거를 수도 없다. 포인트별 토글은 백엔드에 PATCH 가 생긴 뒤에 만든다. */
+   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의
+   5개 키다. */
 
 export const NOTIF_POINTS = [
   {

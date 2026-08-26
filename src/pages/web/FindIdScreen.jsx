@@ -1,9 +1,8 @@
-/* 아이디 찾기. 백엔드에 loginId 조회/변경 엔드포인트가 없어(docs/api-spec.md) 화면만 먼저 만든다 —
-   ponytail: 학교 이메일 인증·비밀번호 확인 두 방식 모두 화면만 두고, 엔드포인트가 생기면 각 단계의
-   제출을 실제 API 호출로 바꾼다. FindPasswordScreen.jsx 와 같은 단계형 뼈대를 재사용한다. */
+/* 아이디 찾기. 학교 이메일 인증 또는 이메일+현재 비밀번호 확인 뒤 loginId를 보여준다. */
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input } from "../../components/ui";
 
@@ -45,8 +44,9 @@ function MethodToggle({ method, onChange }) {
 function EmailStep({ onSent }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     const value = email.trim();
     if (!value || !value.includes("@")) {
@@ -54,7 +54,15 @@ function EmailStep({ onSent }) {
       return;
     }
     setError("");
-    onSent(value);
+    setSending(true);
+    try {
+      await api.sendLoginIdFindCode(value);
+      onSent(value);
+    } catch {
+      setError("인증코드 발송에 실패했습니다. 가입한 이메일인지 확인해 주세요.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -71,7 +79,7 @@ function EmailStep({ onSent }) {
       {error && (
         <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
       )}
-      <Button type="submit" variant="primary" size="lg" block>인증코드 받기</Button>
+      <Button type="submit" variant="primary" size="lg" block disabled={sending}>{sending ? "발송 중…" : "인증코드 받기"}</Button>
     </form>
   );
 }
@@ -79,15 +87,24 @@ function EmailStep({ onSent }) {
 function CodeStep({ email, onBack, onVerified }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(code.trim())) {
       setError("6자리 인증코드를 입력해 주세요.");
       return;
     }
     setError("");
-    onVerified();
+    setChecking(true);
+    try {
+      const token = await api.confirmLoginIdFindCode(email, code.trim());
+      onVerified(await api.findLoginIdByEmail(token));
+    } catch (e) {
+      setError(e?.status === 409 ? "이미 사용한 인증입니다. 인증코드를 다시 받아 주세요." : e?.status === 410 ? "인증이 만료되었습니다. 인증코드를 다시 받아 주세요." : "인증코드가 올바르지 않습니다.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -112,7 +129,7 @@ function CodeStep({ email, onBack, onVerified }) {
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
         )}
-        <Button type="submit" variant="primary" size="lg" block>확인</Button>
+        <Button type="submit" variant="primary" size="lg" block disabled={checking}>{checking ? "확인 중…" : "확인"}</Button>
       </form>
     </>
   );
@@ -122,8 +139,9 @@ function PasswordStep({ onVerified }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
       setError("가입한 학교 이메일을 입력해 주세요.");
@@ -134,7 +152,14 @@ function PasswordStep({ onVerified }) {
       return;
     }
     setError("");
-    onVerified();
+    setChecking(true);
+    try {
+      onVerified(await api.findLoginIdByPassword(email.trim(), password));
+    } catch (e) {
+      setError(e?.status === 401 ? "이메일 또는 비밀번호가 올바르지 않습니다." : "아이디를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -160,17 +185,17 @@ function PasswordStep({ onVerified }) {
       {error && (
         <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>
       )}
-      <Button type="submit" variant="primary" size="lg" block>확인</Button>
+      <Button type="submit" variant="primary" size="lg" block disabled={checking}>{checking ? "확인 중…" : "확인"}</Button>
     </form>
   );
 }
 
-function NoticeStep() {
+function NoticeStep({ loginId }) {
   return (
     <>
-      <h2 style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 800, color: "var(--text-strong)" }}>확인해 드릴게요</h2>
+      <h2 style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 800, color: "var(--text-strong)" }}>아이디를 찾았어요</h2>
       <p style={{ margin: "0 0 22px", fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
-        본인 확인이 완료됐어요. 아이디 안내 기능은 아직 준비 중입니다 — 빠른 시일 내 제공하겠습니다.
+        회원님의 아이디는 <strong style={{ color: "#fff" }}>{loginId}</strong>입니다.
       </p>
       <Link to="/login">
         <Button type="button" variant="primary" size="lg" block>로그인으로 돌아가기</Button>
@@ -183,11 +208,12 @@ export default function FindIdScreen() {
   const [method, setMethod] = useState("email");
   const [step, setStep] = useState("input"); // input → code(이메일 방식만) → done
   const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
 
   if (step === "done") {
     return (
       <AuthLayout>
-        <NoticeStep />
+        <NoticeStep loginId={loginId} />
       </AuthLayout>
     );
   }
@@ -206,7 +232,7 @@ export default function FindIdScreen() {
           {method === "email" ? (
             <EmailStep onSent={(value) => { setEmail(value); setStep("code"); }} />
           ) : (
-            <PasswordStep onVerified={() => setStep("done")} />
+            <PasswordStep onVerified={(id) => { setLoginId(id); setStep("done"); }} />
           )}
 
           <p style={{ textAlign: "center", fontSize: 13, marginTop: 20 }}>
@@ -215,7 +241,7 @@ export default function FindIdScreen() {
         </>
       )}
       {step === "code" && (
-        <CodeStep email={email} onBack={() => setStep("input")} onVerified={() => setStep("done")} />
+        <CodeStep email={email} onBack={() => setStep("input")} onVerified={(id) => { setLoginId(id); setStep("done"); }} />
       )}
     </AuthLayout>
   );

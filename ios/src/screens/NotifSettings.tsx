@@ -3,16 +3,14 @@
    백엔드 NotificationEventService 가 알림을 만드는 지점 5곳(data.ts NOTIF_POINTS)을 보여주고,
    각 포인트로 실제 받은 알림을 그 자리에서 걸러 볼 수 있게 한다.
 
-   종류별 on/off 토글은 docs/be-notification-settings-spec.md 의 계약
-   (PATCH /connect/users/me/notification-settings)에 맞춰 미리 붙여 뒀다. 그 엔드포인트가 아직
-   배포 전이라 GET /connect/users/me 에 notificationSettings 가 없으면 토글은 잠긴다 —
-   배포되는 순간 이 파일 수정 없이 풀린다.
+   종류별 on/off 토글은 PATCH /connect/users/me/notification-settings로 변경하고,
+   서버가 돌려준 5개 전체 설정으로 상태를 덮는다.
 
    기기 단위 on/off 는 iOS 알림 권한이 담당한다: 아직 안 물어봤으면 여기서 묻고(권한 허용 →
    FCM 토큰 등록까지), 이미 껐으면 설정 앱으로 보낸다. */
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { NOTIF_POINTS, pointOf, type NotifPoint, type Notification } from "../data";
+import { NOTIF_POINTS, pointOf, type NotifPoint, type Notification, type NotificationSettingKey } from "../data";
 import type { NotificationSettings } from "../api";
 import { Icon } from "../icons";
 import { openSystemNotificationSettings, pushPermissionStatus, registerForPush, type PushStatus } from "../push";
@@ -29,7 +27,7 @@ export type NotifSettingsProps = {
   onBack: () => void;
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
-  onToggleSetting: (key: string, next: boolean) => Promise<void>;
+  onToggleSetting: (key: NotificationSettingKey, next: boolean) => Promise<void>;
 };
 
 /* MY 에서 옮겨온 토글. 이제 여기서만 쓴다. */
@@ -131,14 +129,14 @@ function PointRow({
 
 export function NotifSettingsScreen(p: NotifSettingsProps) {
   const [status, setStatus] = useState<PushStatus>("granted");
-  const [selected, setSelected] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
+  const [selected, setSelected] = useState<NotificationSettingKey | null>(null);
+  const [saving, setSaving] = useState<NotificationSettingKey | null>(null);
 
-  /* 서버가 notificationSettings 를 아직 안 내려주면 전부 켜진 것으로 보이되 토글은 잠근다. */
+  /* 응답이 비정상적으로 빠졌다면 전부 켜진 것으로 보이되 토글은 잠근다. */
   const ready = p.settings !== null;
-  const isOn = (key: string) => (ready ? p.settings![key] !== false : true);
+  const isOn = (key: NotificationSettingKey) => (ready ? p.settings![key] !== false : true);
 
-  const toggle = async (key: string) => {
+  const toggle = async (key: NotificationSettingKey) => {
     setSaving(key);
     try {
       await p.onToggleSetting(key, !isOn(key));

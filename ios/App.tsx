@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
-import type { CategoryKey, Comment, MyComment, Notification, Petition } from "./src/data";
+import type { CategoryKey, Comment, MyComment, Notification, NotificationSettingKey, Petition } from "./src/data";
 import { visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
@@ -458,7 +458,7 @@ export default function App() {
   /* 서버가 돌려준 5개 전체로 me 를 덮는다(계약: 갱신 후 전체 반환). 실패하면 토스트만 —
      낙관적 갱신을 안 해서 되돌릴 상태가 없다. */
   const onToggleNotifSetting = useCallback(
-    async (key: string, next: boolean) => {
+    async (key: NotificationSettingKey, next: boolean) => {
       try {
         const settings = await api.updateNotificationSettings({ [key]: next });
         setMe((prev) => (prev ? { ...prev, notificationSettings: settings } : prev));
@@ -504,6 +504,15 @@ export default function App() {
     setMe(await api.updateDepartment(departmentId, departmentName));
     flash("학부 정보가 수정되었습니다");
   }, [flash]);
+
+  const onChangeLoginId = useCallback(async (newLoginId: string, password: string) => {
+    const loginId = await api.changeLoginId(newLoginId, password);
+    setMe((prev) => (prev ? { ...prev, loginId } : prev));
+  }, []);
+
+  const onChangePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await api.changePassword(currentPassword, newPassword);
+  }, []);
 
   const onTab = useCallback((next: Tab) => {
     setTab(next);
@@ -629,6 +638,8 @@ export default function App() {
               onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
               onDeleteAccount={onDeleteAccount}
+              onChangeLoginId={onChangeLoginId}
+              onChangePassword={onChangePassword}
               onUpdateDepartment={onUpdateDepartment}
             />
           ) : null}

@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, View } from "
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import { type MyComment, type Notification, type Petition } from "../data";
-import { listDepartments } from "../api";
+import { ApiError, listDepartments } from "../api";
 import { Icon, type IconName } from "../icons";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 import { Avatar, Button, Input, Select } from "../ui";
@@ -26,6 +26,8 @@ export type MyProps = {
   onMarkAllNotifRead: () => void;
   onLogout: () => void;
   onDeleteAccount: (password: string) => Promise<void>;
+  onChangeLoginId: (newLoginId: string, password: string) => Promise<void>;
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   onUpdateDepartment: (departmentId: number, departmentName: string) => Promise<void>;
 };
 
@@ -219,8 +221,8 @@ export function MyScreen(p: MyProps) {
           }}
         />
       ) : null}
-      {changePwOpen ? <ChangePasswordSheet onClose={() => setChangePwOpen(false)} /> : null}
-      {changeIdOpen ? <ChangeIdSheet onClose={() => setChangeIdOpen(false)} /> : null}
+      {changePwOpen ? <ChangePasswordSheet onClose={() => setChangePwOpen(false)} onSubmit={p.onChangePassword} /> : null}
+      {changeIdOpen ? <ChangeIdSheet onClose={() => setChangeIdOpen(false)} onSubmit={p.onChangeLoginId} /> : null}
     </View>
   );
 }
@@ -240,22 +242,27 @@ function AccountRow({ icon, label, onPress, first = false }: { icon: IconName; l
   );
 }
 
-/* 비밀번호 변경. ponytail: 백엔드에 로그인 상태 비밀번호 변경 API가 없다(POST
-   /connect/auth/password/reset 은 로그아웃 상태 이메일 인증 전용 — FindPassword.tsx 참고) —
-   화면만 먼저 만들고, API가 생기면 submit 을 연결한다. 안내는 시트 안에서 바로 보여준다
-   (App.tsx 의 전역 토스트는 이 화면에 연결돼 있지 않다). */
-function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
+function ChangePasswordSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (currentPassword: string, newPassword: string) => Promise<void> }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
     if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
     setError("");
-    setNotice("비밀번호 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+    setBusy(true);
+    try {
+      await onSubmit(current, next);
+      setNotice("비밀번호가 변경되었습니다.");
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 400 ? "현재 비밀번호와 다른 새 비밀번호를 입력해 주세요." : e instanceof ApiError && e.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e instanceof ApiError && e.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "비밀번호를 변경하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -291,8 +298,8 @@ function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
                 <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
                   <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
                 </Pressable>
-                <Pressable onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16 }}>
-                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>변경</Text>
+                <Pressable disabled={busy} onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, opacity: busy ? 0.55 : 1 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>{busy ? "변경 중…" : "변경"}</Text>
                 </Pressable>
               </View>
             </>
@@ -303,17 +310,26 @@ function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* 아이디 변경. 위와 같은 이유로 화면만 먼저 만든다 — 백엔드에 loginId 변경 엔드포인트가 없다. */
-function ChangeIdSheet({ onClose }: { onClose: () => void }) {
+function ChangeIdSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (newLoginId: string, password: string) => Promise<void> }) {
   const [newId, setNewId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
+    if (newId.trim().length > 50) return setError("아이디는 50자 이하로 입력해 주세요.");
     setError("");
-    setNotice("아이디 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
+    setBusy(true);
+    try {
+      await onSubmit(newId, password);
+      setNotice("아이디가 변경되었습니다.");
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 400 ? "현재 아이디와 다른 새 아이디를 입력해 주세요." : e instanceof ApiError && e.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e instanceof ApiError && e.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e instanceof ApiError && e.status === 409 ? "이미 사용 중인 아이디입니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "아이디를 변경하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -341,15 +357,15 @@ function ChangeIdSheet({ onClose }: { onClose: () => void }) {
             </>
           ) : (
             <>
-              <Input label="새 아이디" value={newId} onChangeText={(v) => { setNewId(v); setError(""); }} placeholder="새 아이디를 입력하세요" />
+              <Input label="새 아이디" value={newId} onChangeText={(v) => { setNewId(v); setError(""); }} placeholder="새 아이디를 입력하세요" maxLength={50} />
               <Input label="비밀번호" value={password} onChangeText={(v) => { setPassword(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
               <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
                 <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
                   <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
                 </Pressable>
-                <Pressable onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16 }}>
-                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>변경</Text>
+                <Pressable disabled={busy} onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, opacity: busy ? 0.55 : 1 }}>
+                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>{busy ? "변경 중…" : "변경"}</Text>
                 </Pressable>
               </View>
             </>
@@ -447,4 +463,3 @@ function HelpLinkRow({ label, url, first = false }: { label: string; url: string
 function SectionTitle({ children, style }: { children: string; style?: object }) {
   return <Text style={[t, { paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6, fontSize: 13, fontWeight: "800", color: colors.strong }, style]}>{children}</Text>;
 }
-

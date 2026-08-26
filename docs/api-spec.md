@@ -1,4 +1,4 @@
-# 실 백엔드 API 계약 (2026-08-07 조사)
+# 실 백엔드 API 계약 (2026-08-27 갱신)
 
 `https://skhu-connect-be-production.up.railway.app` — 스웨거 `/swagger-ui/index.html`, 스펙 `/v3/api-docs`.
 `src/api/index.js` 를 fetch 로 교체할 때 이 문서를 원본으로 삼는다. mock 계약(`README.md` "API 계약"
@@ -20,10 +20,21 @@
   2. `POST /connect/auth/email-verifications/confirm` `{email, code(6자리), purpose}` →
      `{verificationToken, expiresInSeconds}`
   3. `POST /connect/auth/signup` 에 그 `verificationToken` 을 실어 가입
-  같은 `purpose` enum(`SIGN_UP`/`PASSWORD_RESET`)을 `POST /connect/auth/password/reset` (`{verificationToken,
-  newPassword}`) 흐름도 공유한다 — 이번 라운드 범위 밖(사용자 지시).
-- `GET /connect/users/me` → `{email, loginId, departmentCode, departmentName, notificationEnabled}`.
-  **이름·프로필 이미지 없음.** 학부 변경 PATCH 엔드포인트 없음 — 마이페이지 학부 수정은 이번 라운드 범위 밖.
+  같은 `purpose` enum(`SIGN_UP`/`PASSWORD_RESET`/`LOGIN_ID_FIND`)을 비밀번호 재설정과 이메일 인증 아이디
+  찾기에서도 공유한다.
+- 아이디 찾기는 인증 토큰 없이 두 경로를 지원한다.
+  - 이메일 인증: `LOGIN_ID_FIND` 목적의 인증을 완료한 뒤 `POST /connect/auth/login-id/find/email`
+    `{verificationToken}` → `{loginId}`. 토큰은 1회용이며 잘못된 토큰 400, 재사용 409, 만료 410.
+  - 현재 비밀번호: `POST /connect/auth/login-id/find/password` `{email,password}` → `{loginId}`. 이메일 없음과
+    비밀번호 불일치는 모두 401로 동일하게 표시한다.
+- `POST /connect/auth/password/reset` `{verificationToken,newPassword}` → 204. `PASSWORD_RESET` 목적의 이메일
+  인증 토큰을 사용한다.
+- `GET /connect/users/me` → `{email, loginId, departmentCode, departmentName, notificationEnabled,
+  notificationSettings}`. **이름·프로필 이미지 없음.**
+- `PATCH /connect/users/me/login-id` `{newLoginId,password}` → `{loginId}`. 성공 후 현재 토큰과 FCM 토큰은
+  유지된다.
+- `PATCH /connect/users/me/password` `{currentPassword,newPassword}` → 204. 새 비밀번호 확인은 프론트에서만
+  검사하며 현재 세션과 Refresh/FCM 토큰은 유지된다.
 - `DELETE /connect/users/me` `{password}` → 204(성공)/400(비밀번호 누락)/401(토큰 무효 또는 비밀번호
   불일치)/404(사용자 없음). 동일 학교 이메일은 탈퇴 후 30일 재가입 제한(서버 처리, 프론트 확인 불필요).
   웹·iOS 모두 연동 완료(2026-08-11 확인).
@@ -105,17 +116,11 @@
 | 댓글 공감 | `onCommentLiked` | `COMMENT_LIKE`, `REPLY_LIKE` |
 | 공지사항 | `onNoticePublished` | `NOTICE` |
 
-- **포인트별 on/off 엔드포인트는 아직 없다.** 서버 스위치는 `User.notificationEnabled` 하나뿐이고
-  변경 엔드포인트가 없다(엔티티에 `changeNotificationEnabled` 는 있는데 컨트롤러가 안 뚫려 있다).
-  푸시 페이로드에도 알림 종류가 없어(`FcmPushService` 는 `notificationId`·`petitionId` 만 실어 보낸다)
-  클라이언트가 종류별로 거를 수도 없다.
-- → 저장 안 되던 토글 3종을 걷어내고, **`docs/be-notification-settings-spec.md` 의 계약에 맞춰
-  포인트별 토글을 미리 붙였다**(웹·iOS 동일):
-  - `GET /connect/users/me` 응답의 `notificationSettings`(5개 boolean)를 읽는다. **없으면 `null`**
-    → 토글이 잠기고 "준비 중" 안내가 뜬다.
+- 저장 안 되던 토글 3종을 걷어내고 백엔드 `e51014f`의 포인트별 설정 API를 웹·iOS에 연결했다.
+  - `GET /connect/users/me` 응답의 `notificationSettings` 5개 boolean을 읽는다.
   - 토글을 누르면 `PATCH /connect/users/me/notification-settings` 에 **바뀐 키 하나만** 보내고,
-    응답으로 온 5개 전체로 상태를 덮는다. 404/405 는 "아직 준비 중" 문구로 바꿔 보여준다.
-  - 엔드포인트가 배포되면 **프론트 수정 없이** 풀린다.
+    응답으로 온 5개 전체로 상태를 덮는다.
+  - `notificationEnabled=false`면 종류별 설정과 관계없이 모든 새 알림이 차단된다.
 - 기기 단위 on/off 는 iOS 알림 권한이 담당한다(NotifSettings.tsx).
 
 ## 차단 (2026-08-18 추가 확인)
@@ -148,8 +153,5 @@ DB 가 빈 상태이므로 브라우저로 실제 데이터 흐름(피드에 글
 ## 이번 라운드 범위 밖 (백엔드 미지원 또는 사용자 지시)
 
 1. 관리자 콘솔 전체(답변 등록·담당자 연락처·처리 로그) — 대응 엔드포인트 없음. mock 유지.
-2. 마이페이지 학부 수정 — `PATCH /users/me` 없음. mock 유지(또는 읽기 전용으로 축소).
-3. 알림 포인트별 on/off 저장 — 엔드포인트 대기 중(계약은 docs/be-notification-settings-spec.md, 프론트는 붙여 둠).
-4. 비밀번호 재설정 화면 — 엔드포인트는 있으나 현재 앱에 화면 자체가 없다. 신규 기능이라 범위 밖.
-5. 댓글 수정·삭제·대댓글 UI, 댓글 좋아요 — 엔드포인트는 있으나 mock 에 없던 신규 기능이라 필수 아님.
-6. 페이지네이션 UI(무한 스크롤 등) — 우선 큰 `size` 로 한 번에 받아 기존 화면 동작을 유지한다.
+2. 댓글 수정·삭제·대댓글 UI, 댓글 좋아요 — 엔드포인트는 있으나 mock 에 없던 신규 기능이라 필수 아님.
+3. 페이지네이션 UI(무한 스크롤 등) — 우선 큰 `size` 로 한 번에 받아 기존 화면 동작을 유지한다.
