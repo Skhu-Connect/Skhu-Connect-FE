@@ -12,8 +12,18 @@ import { font, onVideo } from "../theme";
 import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 
-const PORTAL_URL = "https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main";
+const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
+const OUTLOOK_APP_URL = "ms-outlook://emails/inbox";
 const TERMS_VERSION = "1.0";
+
+/* 아웃룩 앱이 깔려 있으면 앱의 받은편지함으로, 아니면 인앱 브라우저로 웹 메일함을 연다.
+   ponytail: canOpenURL 대신 openURL 실패로 판별한다 — Info.plist 의
+   LSApplicationQueriesSchemes 등록이 필요 없다.
+   emails/inbox 경로는 MS 공식 문서가 아닌 커뮤니티 확인값이다 — 아웃룩이 경로를
+   못 알아들어도 스킴은 등록돼 있어 앱은 열린다(받은편지함 대신 마지막 화면). */
+function openOutlook() {
+  Linking.openURL(OUTLOOK_APP_URL).catch(() => WebBrowser.openBrowserAsync(OUTLOOK_URL));
+}
 
 function ErrorText({ children }: { children: string }) {
   return <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{children}</Text>;
@@ -131,8 +141,8 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
           <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>로그인으로 돌아가기</Text>
         </Pressable>
         <Text style={{ color: onVideo.border }}>|</Text>
-        <Pressable onPress={() => Linking.openURL(PORTAL_URL)} accessibilityRole="link">
-          <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: onVideo.link }]}>학교 이메일을 모르시나요?</Text>
+        <Pressable onPress={openOutlook} accessibilityRole="link">
+          <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: onVideo.link }]}>인증번호 바로 확인하기</Text>
         </Pressable>
       </View>
     </>

@@ -13,6 +13,8 @@ import { sanitizeNextPath } from "../../utils/nextPath";
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 const TERMS_VERSION = "1.0";
+/* 인증코드가 도착하는 학교 메일함(office365). 받은편지함으로 바로 연다. */
+const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
 
 /* iOS Signup 의 ConsentRow 와 같은 줄 구성(체크박스 + 보기 링크)이다. */
 function ConsentRow({ checked, label, href, onToggle }) {
@@ -101,7 +103,7 @@ function EmailStep({ onSent, loginHref }) {
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, fontSize: 13 }}>
         <Link to={loginHref} style={{ color: "var(--text-muted)", fontWeight: 600 }}>로그인으로 돌아가기</Link>
         <span style={{ color: "var(--border-strong)" }}>|</span>
-        <a href="https://portal.skhu.ac.kr/html/main/index.html?portalPage=portal_main" target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>학교 이메일을 모르시나요?</a>
+        <a href={OUTLOOK_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>인증번호 바로 확인하기</a>
       </div>
     </>
   );
