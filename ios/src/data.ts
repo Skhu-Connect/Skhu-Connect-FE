@@ -1,6 +1,8 @@
 /* 타입·표시용 상수. SEED/SEED_COMMENTS 는 이제 앱 런타임이 아니라 selfcheck.ts(순수 로직
    유닛 테스트)의 픽스처로만 쓴다 — 실 데이터는 src/api.ts 가 백엔드에서 받아온다. */
 
+import type { IconName } from "./icons";
+
 export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department";
 export type StatusKey = "received" | "reviewing" | "answered";
 export type BasisLabel = "전체 학생" | "학과 정원" | "기숙사 정원";
@@ -30,7 +32,7 @@ export type Petition = {
 export type AdminAnswer = { body: string; dept: string; date: string };
 
 /** mine 은 서버 CommentResponse.myComment 다 — 내 댓글엔 신고·차단 버튼을 띄우지 않는다. */
-export type Comment = { id?: number; author: string; body: string; date: string; mine: boolean };
+export type Comment = { id?: number; author: string; body: string; date: string; mine: boolean; votes: number; liked: boolean };
 
 /** MY 화면 "내가 쓴 댓글" 전용 — 웹 src/api/index.js의 adaptMyComment와 동일하게 title은 없다. */
 export type MyComment = { id: number; petitionId: number; body: string; date: string };
@@ -160,30 +162,113 @@ export const SEED: Petition[] = [
 
 export const SEED_COMMENTS: Record<number, Comment[]> = {
   1: [
-    { author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리가 없어 고생했어요.", date: "2일 전", mine: false },
-    { author: "익명 2", body: "타 대학도 하는데 우리만 안 하는 게 아쉽습니다.", date: "1일 전", mine: false },
-    { author: "익명 3", body: "안전 문제는 최소 인력 배치로 충분할 것 같습니다.", date: "20시간 전", mine: false },
+    { author: "익명 1", body: "정말 필요합니다. 시험기간에 항상 자리가 없어 고생했어요.", date: "2일 전", mine: false, votes: 0, liked: false },
+    { author: "익명 2", body: "타 대학도 하는데 우리만 안 하는 게 아쉽습니다.", date: "1일 전", mine: false, votes: 0, liked: false },
+    { author: "익명 3", body: "안전 문제는 최소 인력 배치로 충분할 것 같습니다.", date: "20시간 전", mine: false, votes: 0, liked: false },
   ],
-  4: [{ author: "익명 1", body: "답변 감사합니다. 다음 학기부터 체감되면 좋겠습니다.", date: "1주 전", mine: false }],
+  4: [{ author: "익명 1", body: "답변 감사합니다. 다음 학기부터 체감되면 좋겠습니다.", date: "1주 전", mine: false, votes: 0, liked: false }],
 };
 
 /** id 는 markNotifRead 호출에 쓴다. */
 export type Notification = {
   id: number;
+  /** 서버 NotificationType 그대로. 화면이 NOTIF_POINTS 로 묶는다. */
+  type: string;
   petitionId: number;
   title: string;
   body: string;
   date: string;
   read: boolean;
+  icon: IconName;
   iconBg: string;
   iconFg: string;
 };
 
-/* PREF_ROWS(알림 설정)는 서버에 대응 API가 없어(GET /connect/users/me 의 notificationEnabled 는
-   읽기 전용, PATCH 없음 — 웹 src/api/index.js 와 동일한 결론) 로컬 전용 토글로 유지한다. */
-export const PREF_ROWS: { key: PrefKey; title: string; desc: string }[] = [
-  { key: "threshold", title: "도달률 알림", desc: "내 건의가 도달률 100%에 도달하면 알려드립니다." },
-  { key: "answer", title: "답변 등록 알림", desc: "공감한 건의에 공식 답변이 등록되면 알려드립니다." },
+/* 알림 발생 지점 5곳. 백엔드 NotificationEventService 의 공개 메서드를 그대로 옮겼다
+   (onAgreementAdded / onPetitionAnswered / onReplyCreated / onCommentLiked / onNoticePublished).
+   서버 NotificationType 8종이 여기로 빠짐없이 나뉜다 — 웹 src/components/web/notifMeta.js 와 같은 표다.
+
+   ponytail: 포인트별 on/off 토글은 만들지 않는다. 서버 스위치는 User.notificationEnabled 하나뿐이고
+   변경 엔드포인트가 없다(/v3/api-docs, 2026-08-27). 푸시 페이로드에도 알림 종류가 안 실려
+   (FcmPushService 는 notificationId·petitionId 만 보낸다) 앱이 종류별로 거를 수도 없다.
+   기기 단위 on/off 는 iOS 알림 권한이 담당한다 — NotifSettings.tsx 가 그 권한으로 안내한다. */
+export type NotifPoint = {
+  key: string;
+  title: string;
+  desc: string;
+  types: string[];
+  icon: IconName;
+  iconBg: string;
+  iconFg: string;
+};
+
+export const NOTIF_POINTS: NotifPoint[] = [
+  {
+    key: "agreement",
+    title: "공감 도달",
+    desc: "내 건의가 목표 공감의 60%·100%에 닿거나, 공감한 건의가 검토에 들어가면 알려드려요.",
+    types: ["PETITION_AGREEMENT_60_PERCENT", "PETITION_AGREEMENT_100_PERCENT", "PETITION_UNDER_REVIEW"],
+    icon: "trending",
+    iconBg: "#FCEFD6",
+    iconFg: "#B26A00",
+  },
+  {
+    key: "answer",
+    title: "답변 등록",
+    desc: "내가 쓰거나 공감한 건의에 학교의 공식 답변이 올라오면 알려드려요.",
+    types: ["PETITION_ANSWERED"],
+    icon: "checkCircle",
+    iconBg: "#DDF3E7",
+    iconFg: "#22A06B",
+  },
+  {
+    key: "reply",
+    title: "답글",
+    desc: "내가 쓴 댓글에 다른 학생이 답글을 달면 알려드려요.",
+    types: ["COMMENT_REPLY"],
+    icon: "message",
+    iconBg: "#E4E7FC",
+    iconFg: "#4F5BD5",
+  },
+  {
+    key: "like",
+    title: "댓글 공감",
+    desc: "내가 쓴 댓글이나 답글에 공감이 눌리면 알려드려요.",
+    types: ["COMMENT_LIKE", "REPLY_LIKE"],
+    icon: "heart",
+    iconBg: "#FCE7E9",
+    iconFg: "#F0808A",
+  },
+  {
+    key: "notice",
+    title: "공지사항",
+    desc: "학생회·관리자가 새 공지를 올리면 알려드려요.",
+    types: ["NOTICE"],
+    icon: "fileText",
+    iconBg: "#E9EAF1",
+    iconFg: "#4C4D5C",
+  },
 ];
 
-export type PrefKey = "threshold" | "answer" | "empathy";
+/** 알림 한 건의 제목. 본문은 서버가 완성된 문장으로 준다 — 여기서는 종류 이름만 짓는다. */
+export const NOTIF_TYPE_TITLE: Record<string, string> = {
+  PETITION_AGREEMENT_60_PERCENT: "도달률 60% 달성",
+  PETITION_AGREEMENT_100_PERCENT: "도달률 100% 달성",
+  PETITION_UNDER_REVIEW: "검토 시작",
+  PETITION_ANSWERED: "공식 답변 등록",
+  COMMENT_REPLY: "답글 등록",
+  COMMENT_LIKE: "댓글 공감",
+  REPLY_LIKE: "답글 공감",
+  NOTICE: "새 공지사항",
+};
+
+const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint> = Object.fromEntries(
+  NOTIF_POINTS.flatMap((point) => point.types.map((type) => [type, point])),
+);
+
+const UNKNOWN_POINT: NotifPoint = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", iconBg: "#E9EAF1", iconFg: "#4C4D5C" };
+
+/** 모르는 종류(백엔드가 enum 을 늘린 경우)는 회색 기본값으로 떨어뜨린다. */
+export function pointOf(type: string): NotifPoint {
+  return NOTIF_POINT_BY_TYPE[type] ?? UNKNOWN_POINT;
+}

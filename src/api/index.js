@@ -6,8 +6,8 @@
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
    임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listOwners/listNotifLogs(담당자 연락처·
    알림 로그)는 대응 엔드포인트가 없어 여전히 mockDb.js 의 CATEGORY_META/adminDb 로 동작한다.
-   getPrefs/savePrefs(알림 3종 개별 토글)는 대응 엔드포인트가 없어 로컬 상태로만 유지한다
-   (새로고침하면 초기화).
+   알림 설정(NotificationSettingsScreen)은 백엔드 NotificationEventService 의 발생 지점 5곳을
+   보여주기만 한다 — 포인트별 on/off 엔드포인트가 없다(src/components/web/notifMeta.js 주석 참고).
 
    청원 수정/삭제(PUT·DELETE /connect/petitions/{id})는 백엔드엔 있지만 화면에 진입점(수정 메뉴)이
    없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
@@ -22,6 +22,7 @@
    로 계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
 
 import { CATEGORY_META, adminDb } from "./mockDb.js";
+import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
 
@@ -29,16 +30,6 @@ const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY",
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
 const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
-/* 서버 알림 7종 → 기존 화면이 아는 3종 아이콘 계열로 근사 매핑(6-6 에서 7종 전용 아이콘으로 교체 예정). */
-const NOTIF_TYPE_TO_LEGACY = {
-  PETITION_AGREEMENT_60_PERCENT: "empathy",
-  PETITION_AGREEMENT_100_PERCENT: "threshold",
-  PETITION_UNDER_REVIEW: "threshold",
-  PETITION_ANSWERED: "answer",
-  COMMENT_REPLY: "answer",
-  COMMENT_LIKE: "empathy",
-  REPLY_LIKE: "empathy",
-};
 const NOTIF_MESSAGE_FALLBACK = {
   PETITION_AGREEMENT_60_PERCENT: "내 청원이 목표 공감의 60%에 도달했습니다.",
   PETITION_AGREEMENT_100_PERCENT: "내 청원이 목표 공감에 도달해 검토가 시작됩니다.",
@@ -47,6 +38,7 @@ const NOTIF_MESSAGE_FALLBACK = {
   COMMENT_REPLY: "내 댓글에 답글이 등록되었습니다.",
   COMMENT_LIKE: "내 댓글에 공감이 추가되었습니다.",
   REPLY_LIKE: "내 답글에 공감이 추가되었습니다.",
+  NOTICE: "새 공지사항이 등록되었습니다.",
 };
 
 /* ───────────────── fetch 기반 ───────────────── */
@@ -189,10 +181,36 @@ function resetSessionCaches() {
 let cachedMe = null;
 
 function toUser(me) {
-  return { loginId: me.loginId, email: me.email, dept: me.departmentName, departmentCode: me.departmentCode, notificationEnabled: me.notificationEnabled };
+  return {
+    loginId: me.loginId,
+    email: me.email,
+    dept: me.departmentName,
+    departmentCode: me.departmentCode,
+    notificationEnabled: me.notificationEnabled,
+    // 서버가 아직 안 내려주면 null — 화면이 알림 종류 토글을 "준비 중"으로 잠근다.
+    notificationSettings: me.notificationSettings ?? null,
+  };
 }
 
-let localPrefs = { threshold: true, answer: true, empathy: false };
+/* 알림 종류별 on/off. 계약은 docs/be-notification-settings-spec.md — 아직 배포 전이라
+   404/405 가 오면 NOT_DEPLOYED 로 표시해서 화면이 "준비 중" 안내를 띄우게 한다. */
+export const NOTIF_SETTINGS_NOT_DEPLOYED = "NOTIF_SETTINGS_NOT_DEPLOYED";
+
+export async function updateNotificationSettings(patch) {
+  let settings;
+  try {
+    settings = await apiFetch("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
+  } catch (e) {
+    if (e.status === 404 || e.status === 405) {
+      const err = new Error("알림 종류별 설정은 아직 준비 중이에요.");
+      err.code = NOTIF_SETTINGS_NOT_DEPLOYED;
+      throw err;
+    }
+    throw e;
+  }
+  if (cachedMe) cachedMe = { ...cachedMe, notificationSettings: settings };
+  return settings;
+}
 
 export async function getMe() {
   if (!accessToken) return null;
@@ -212,7 +230,7 @@ export async function restoreSession() {
   resetSessionCaches();
   const user = await getMe();
   if (!user) return null;
-  return { user, prefs: { ...localPrefs } };
+  return { user };
 }
 
 export async function login(sid, password) {
@@ -223,7 +241,7 @@ export async function login(sid, password) {
   accessToken = token;
   resetSessionCaches();
   const user = await getMe();
-  return { user, prefs: { ...localPrefs } };
+  return { user };
 }
 
 /** 이메일 인증 2단계 뒤 호출한다: sendSignupCode → confirmSignupCode(→verificationToken) → signup. */
@@ -289,15 +307,6 @@ export async function updateDepartment(departmentId, departmentName) {
   }
   cachedMe = { ...cachedMe, dept: departmentName };
   return { ...cachedMe };
-}
-
-export async function getPrefs() {
-  return { ...localPrefs };
-}
-
-export async function savePrefs(patch) {
-  localPrefs = { ...localPrefs, ...patch };
-  return { ...localPrefs };
 }
 
 export async function listDepartments() {
@@ -567,8 +576,19 @@ export function notificationMessage(n) {
   return message && !broken ? message : (NOTIF_MESSAGE_FALLBACK[n.type] ?? "새 알림이 도착했습니다.");
 }
 
+/* type 은 서버 enum 그대로 둔다 — 화면(notifMeta.js)이 5개 알림 포인트로 묶는다.
+   title 은 종류 이름, body 는 서버가 완성해 준 문장이다. */
 function adaptNotification(n) {
-  return { id: n.id, type: NOTIF_TYPE_TO_LEGACY[n.type] ?? "answer", title: "", body: notificationMessage(n), petitionId: n.petitionId, date: formatRelative(n.createdAt), read: n.read };
+  return {
+    id: n.id,
+    type: n.type,
+    title: NOTIF_TYPE_TITLE[n.type] ?? "알림",
+    body: notificationMessage(n),
+    petitionId: n.petitionId,
+    commentId: n.commentId,
+    date: formatRelative(n.createdAt),
+    read: n.read,
+  };
 }
 
 export async function listNotifications() {

@@ -1,6 +1,6 @@
 /* 임계치·필터·정렬 self-check. 실행: node src/selfcheck.ts */
 import assert from "node:assert/strict";
-import { SEED } from "./data.ts";
+import { NOTIF_POINTS, NOTIF_TYPE_TITLE, SEED, pointOf } from "./data.ts";
 import { basisFor, count, ddayLabel, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
 
 const none = {};
@@ -68,5 +68,26 @@ assert.equal(ymd("2026-08-06T12:00:00+09:00"), "2026.08.06");
 
 /* SEED 의 status 는 임계치 규칙과 어긋나지 않는다. */
 for (const p of SEED) assert.equal(p.status, statusOf(p, none), `SEED #${p.id} status`);
+
+/* 알림 포인트 5개가 서버 NotificationType 8종을 빠짐없이·겹치지 않게 덮는지.
+   백엔드가 enum 을 늘리면 여기가 먼저 터진다 — 그때 NOTIF_POINTS 에 그 종류를 넣는다
+   (Skhu-Connect-BE notification/entity/NotificationType.java). */
+const SERVER_NOTIF_TYPES = [
+  "PETITION_AGREEMENT_60_PERCENT",
+  "PETITION_AGREEMENT_100_PERCENT",
+  "PETITION_UNDER_REVIEW",
+  "PETITION_ANSWERED",
+  "COMMENT_REPLY",
+  "COMMENT_LIKE",
+  "REPLY_LIKE",
+  "NOTICE",
+];
+const mapped = NOTIF_POINTS.flatMap((point) => point.types);
+assert.equal(NOTIF_POINTS.length, 5, "알림 포인트는 백엔드 NotificationEventService 의 발생 지점 5곳");
+assert.equal(new Set(mapped).size, mapped.length, "한 알림 종류가 두 포인트에 걸치면 안 된다");
+assert.deepEqual([...mapped].sort(), [...SERVER_NOTIF_TYPES].sort(), "8종이 5개 포인트로 빠짐없이 나뉘어야 한다");
+assert.deepEqual(Object.keys(NOTIF_TYPE_TITLE).sort(), [...SERVER_NOTIF_TYPES].sort(), "제목도 8종 전부 있어야 한다");
+assert.equal(pointOf("PETITION_ANSWERED").key, "answer");
+assert.equal(pointOf("WHAT_IS_THIS").key, "etc", "모르는 종류는 회색 기본값으로 떨어진다");
 
 console.log("selfcheck ok");

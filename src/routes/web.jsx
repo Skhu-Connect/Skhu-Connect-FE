@@ -12,6 +12,7 @@ import DetailScreen from "../pages/web/DetailScreen";
 import SubmitScreen from "../pages/web/SubmitScreen";
 import BookmarkScreen from "../pages/web/BookmarkScreen";
 import MyPageScreen from "../pages/web/MyPageScreen";
+import NotificationSettingsScreen from "../pages/web/NotificationSettingsScreen";
 import SupportScreen from "../pages/web/SupportScreen";
 import PrivacyChoicesScreen from "../pages/web/PrivacyChoicesScreen";
 
@@ -30,6 +31,7 @@ export function webRoutes() {
         <Route path="/mine" element={<FeedScreen nav="mine" />} />
         <Route path="/bookmarks" element={<BookmarkScreen />} />
         <Route path="/mypage" element={<MyPageScreen />} />
+        <Route path="/mypage/notifications" element={<NotificationSettingsScreen />} />
         <Route path="/p/:id" element={<DetailScreen />} />
         <Route path="/submit" element={<SubmitScreen />} />
       </Route>

@@ -15,6 +15,7 @@
    deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
    PATCH /connect/users/me/department({departmentId})로 연동한다. */
 
+import { NOTIF_TYPE_TITLE, pointOf } from "./data";
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
 
@@ -180,15 +181,32 @@ function resetSessionCaches() {
 
 /* ───────────────── 세션 ───────────────── */
 
-export type Me = { loginId: string; email: string; departmentName: string };
+/** 알림 종류별 on/off. 키는 data.ts NOTIF_POINTS 의 key 와 같다. */
+export type NotificationSettings = Record<string, boolean>;
+export type Me = { loginId: string; email: string; departmentName: string; notificationSettings: NotificationSettings | null };
 let cachedMe: Me | null = null;
 
 export async function getMe(version = sessionVersion): Promise<Me | null> {
   if (!accessToken) return null;
   const me = await apiFetch<any>("/connect/users/me");
   if (version !== sessionVersion) return null;
-  cachedMe = { loginId: me.loginId, email: me.email, departmentName: me.departmentName };
+  // 서버가 아직 안 내려주면 null — 화면이 종류별 토글을 "준비 중"으로 잠근다.
+  cachedMe = { loginId: me.loginId, email: me.email, departmentName: me.departmentName, notificationSettings: me.notificationSettings ?? null };
   return cachedMe;
+}
+
+/* 계약은 docs/be-notification-settings-spec.md — 토글 하나만 보내고 서버가 5개 전체를 돌려준다.
+   아직 배포 전이라 404/405 면 "준비 중" 문구로 바꿔 던진다. */
+export async function updateNotificationSettings(patch: NotificationSettings): Promise<NotificationSettings> {
+  let settings: NotificationSettings;
+  try {
+    settings = await apiFetch<NotificationSettings>("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
+  } catch (e: any) {
+    if (e?.status === 404 || e?.status === 405) throw new Error("알림 종류별 설정은 아직 준비 중이에요.");
+    throw e;
+  }
+  if (cachedMe) cachedMe = { ...cachedMe, notificationSettings: settings };
+  return settings;
 }
 
 /** 콜드 스타트 부팅 시 호출한다: accessToken 은 메모리 전용이라 앱을 껐다 켜면 사라지지만
@@ -473,8 +491,23 @@ export async function toggleBookmark(petitionId: number, wasBookmarked: boolean)
    모바일 화면은 원댓글만 평평하게 보여준다(대댓글·공감 UI 없음 — 원본 설계). replies 는
    무시한다. */
 
+/* liked/myComment 는 서버가 로그인한 나를 기준으로 채워 준다 — auth 를 끄면 안 된다(웹과 같다). */
 function adaptComment(c: any): Comment {
-  return { id: c.id, author: `익명 ${c.anonymousNumber}`, body: c.content, date: formatRelative(c.createdAt), mine: !!c.myComment };
+  return {
+    id: c.id,
+    author: `익명 ${c.anonymousNumber}`,
+    body: c.content,
+    date: formatRelative(c.createdAt),
+    mine: !!c.myComment,
+    votes: c.likeCount ?? 0,
+    liked: !!c.liked,
+  };
+}
+
+/** 웹 src/api/index.js toggleCommentLike 과 같은 계약 — 켜져 있으면 DELETE, 아니면 POST. */
+export async function toggleCommentLike(petitionId: number, commentId: number, liked: boolean): Promise<{ votes: number; liked: boolean }> {
+  const res = await apiFetch<any>(`/connect/petitions/${petitionId}/comments/${commentId}/likes`, { method: liked ? "DELETE" : "POST" });
+  return { votes: res.likeCount, liked: res.liked };
 }
 
 export async function listComments(petitionId: number): Promise<Comment[]> {
@@ -500,19 +533,21 @@ export async function listMyComments(): Promise<MyComment[]> {
 
 /* ───────────────── 알림 ───────────────── */
 
-const NOTIF_META: Record<string, { title: string; iconBg: string; iconFg: string }> = {
-  PETITION_AGREEMENT_60_PERCENT: { title: "도달률 60% 달성", iconBg: "#FCE7E9", iconFg: "#F0808A" },
-  PETITION_AGREEMENT_100_PERCENT: { title: "도달률 100% 달성", iconBg: "#FCEFD6", iconFg: "#B26A00" },
-  PETITION_UNDER_REVIEW: { title: "검토 시작", iconBg: "#FCEFD6", iconFg: "#B26A00" },
-  PETITION_ANSWERED: { title: "공식 답변 등록", iconBg: "#DDF3E7", iconFg: "#22A06B" },
-  COMMENT_REPLY: { title: "답글 등록", iconBg: "#E4E7FC", iconFg: "#4F5BD5" },
-  COMMENT_LIKE: { title: "댓글 공감", iconBg: "#FCE7E9", iconFg: "#F0808A" },
-  REPLY_LIKE: { title: "답글 공감", iconBg: "#FCE7E9", iconFg: "#F0808A" },
-};
-
+/* 아이콘·색은 알림 포인트(data.ts NOTIF_POINTS)에서 가져온다 — 같은 포인트의 알림은 같은 모양이다. */
 function adaptNotification(n: any): Notification {
-  const meta = NOTIF_META[n.type] ?? { title: "알림", iconBg: "#EEE", iconFg: "#888" };
-  return { id: n.id, petitionId: n.petitionId, title: meta.title, body: n.message, date: formatRelative(n.createdAt), read: n.read, iconBg: meta.iconBg, iconFg: meta.iconFg };
+  const point = pointOf(n.type);
+  return {
+    id: n.id,
+    type: n.type,
+    petitionId: n.petitionId,
+    title: NOTIF_TYPE_TITLE[n.type] ?? "알림",
+    body: n.message,
+    date: formatRelative(n.createdAt),
+    read: n.read,
+    icon: point.icon,
+    iconBg: point.iconBg,
+    iconFg: point.iconFg,
+  };
 }
 
 export async function listNotifications(): Promise<Notification[]> {

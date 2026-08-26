@@ -85,13 +85,38 @@
   /connect/notifications/unread-count` → `{unreadCount}`.
 - `NotificationResponse`: `id type message petitionId commentId read createdAt`. **`message` 를 서버가 이미
   완성된 문장으로 준다** — mock 처럼 `title`+`body` 를 프론트가 조립하지 않는다. 그대로 렌더.
-- `type` enum: `PETITION_AGREEMENT_60_PERCENT PETITION_AGREEMENT_100_PERCENT PETITION_UNDER_REVIEW
-  PETITION_ANSWERED COMMENT_REPLY COMMENT_LIKE REPLY_LIKE` — mock 의 `threshold/answer/empathy` 3종보다
-  세분화. 아이콘 매핑만 다시 하면 됨(문구는 서버가 준다).
+- `type` enum **8종**: `PETITION_AGREEMENT_60_PERCENT PETITION_AGREEMENT_100_PERCENT PETITION_UNDER_REVIEW
+  PETITION_ANSWERED COMMENT_REPLY COMMENT_LIKE REPLY_LIKE NOTICE`.
 - `PATCH /connect/notifications/{id}/read`, `PATCH /connect/notifications/read-all`.
-- **알림 3종 개별 토글(`prefs.threshold/answer/empathy`) 을 저장하는 엔드포인트가 없다** —
-  `notificationEnabled` 하나만 있고 그것도 변경 엔드포인트가 없다. 환경설정 모달의 토글은 이번 라운드
-  범위 밖(사용자 지시) — UI 는 남기되 저장은 안 되거나, 토글 자체를 잠그는 건 이번 이슈에서 정한다.
+- `POST`/`DELETE /connect/notifications/fcm-tokens` `{token}` — 기기 푸시 토큰 등록·해제. iOS 만 쓴다
+  (웹은 firebase 의존성이 없다). 로그인 시 등록, 로그아웃 시 해제(ios/src/push.ts).
+
+### 알림 발생 지점 5곳 (이슈 #86, 2026-08-27 확인)
+
+백엔드 `NotificationEventService` 의 공개 메서드 5개가 알림을 만드는 전부다. 위 8종이 이 5곳으로
+빠짐없이 나뉜다 — 프론트는 이 표를 `src/components/web/notifMeta.js`(웹)·`ios/src/data.ts`(iOS)에
+같은 모양으로 두고, 양쪽 self-check 가 8종 전부 덮였는지 검사한다.
+
+| 포인트 | 백엔드 메서드 | type |
+| --- | --- | --- |
+| 공감 도달 | `onAgreementAdded` | `..._60_PERCENT`, `..._100_PERCENT`, `PETITION_UNDER_REVIEW` |
+| 답변 등록 | `onPetitionAnswered` | `PETITION_ANSWERED` |
+| 답글 | `onReplyCreated` | `COMMENT_REPLY` |
+| 댓글 공감 | `onCommentLiked` | `COMMENT_LIKE`, `REPLY_LIKE` |
+| 공지사항 | `onNoticePublished` | `NOTICE` |
+
+- **포인트별 on/off 엔드포인트는 아직 없다.** 서버 스위치는 `User.notificationEnabled` 하나뿐이고
+  변경 엔드포인트가 없다(엔티티에 `changeNotificationEnabled` 는 있는데 컨트롤러가 안 뚫려 있다).
+  푸시 페이로드에도 알림 종류가 없어(`FcmPushService` 는 `notificationId`·`petitionId` 만 실어 보낸다)
+  클라이언트가 종류별로 거를 수도 없다.
+- → 저장 안 되던 토글 3종을 걷어내고, **`docs/be-notification-settings-spec.md` 의 계약에 맞춰
+  포인트별 토글을 미리 붙였다**(웹·iOS 동일):
+  - `GET /connect/users/me` 응답의 `notificationSettings`(5개 boolean)를 읽는다. **없으면 `null`**
+    → 토글이 잠기고 "준비 중" 안내가 뜬다.
+  - 토글을 누르면 `PATCH /connect/users/me/notification-settings` 에 **바뀐 키 하나만** 보내고,
+    응답으로 온 5개 전체로 상태를 덮는다. 404/405 는 "아직 준비 중" 문구로 바꿔 보여준다.
+  - 엔드포인트가 배포되면 **프론트 수정 없이** 풀린다.
+- 기기 단위 on/off 는 iOS 알림 권한이 담당한다(NotifSettings.tsx).
 
 ## 차단 (2026-08-18 추가 확인)
 
@@ -124,7 +149,7 @@ DB 가 빈 상태이므로 브라우저로 실제 데이터 흐름(피드에 글
 
 1. 관리자 콘솔 전체(답변 등록·담당자 연락처·처리 로그) — 대응 엔드포인트 없음. mock 유지.
 2. 마이페이지 학부 수정 — `PATCH /users/me` 없음. mock 유지(또는 읽기 전용으로 축소).
-3. 알림 3종 개별 토글 저장 — 대응 엔드포인트 없음.
+3. 알림 포인트별 on/off 저장 — 엔드포인트 대기 중(계약은 docs/be-notification-settings-spec.md, 프론트는 붙여 둠).
 4. 비밀번호 재설정 화면 — 엔드포인트는 있으나 현재 앱에 화면 자체가 없다. 신규 기능이라 범위 밖.
 5. 댓글 수정·삭제·대댓글 UI, 댓글 좋아요 — 엔드포인트는 있으나 mock 에 없던 신규 기능이라 필수 아님.
 6. 페이지네이션 UI(무한 스크롤 등) — 우선 큰 `size` 로 한 번에 받아 기존 화면 동작을 유지한다.

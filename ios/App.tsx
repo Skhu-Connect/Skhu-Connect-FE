@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
-import type { CategoryKey, Comment, MyComment, Notification, Petition, PrefKey } from "./src/data";
+import type { CategoryKey, Comment, MyComment, Notification, Petition } from "./src/data";
 import { visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
@@ -14,6 +14,7 @@ import { SignupScreen } from "./src/screens/Signup";
 import { FindIdScreen } from "./src/screens/FindId";
 import { FindPasswordScreen } from "./src/screens/FindPassword";
 import { MyScreen } from "./src/screens/My";
+import { NotifSettingsScreen } from "./src/screens/NotifSettings";
 import { SubmitScreen, categoryOf } from "./src/screens/Submit";
 import { ShareSheet, TabBar, Toast } from "./src/shell";
 import { colors } from "./src/theme";
@@ -21,7 +22,7 @@ import * as api from "./src/api";
 import type { Me, ReportReasonType } from "./src/api";
 import * as push from "./src/push";
 
-type Screen = "feed" | "detail" | "submit" | "my";
+type Screen = "feed" | "detail" | "submit" | "my" | "notifSettings";
 
 /* 공유 링크는 학생이 에타에 붙여넣는 실제 웹 도메인 https 주소다. Universal Link(app.json 의
    associatedDomains + 웹 레포 public/apple-app-site-association)로 앱이 설치돼 있으면 이 주소를
@@ -66,7 +67,6 @@ export default function App() {
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
 
-  const [prefs, setPrefs] = useState<Record<PrefKey, boolean>>({ threshold: true, answer: true, empathy: false });
 
   /* 공유 링크로 들어왔는지. 들어왔고 아직 공감을 안 눌렀으면 상세 상단에 안내가 뜬다. */
   const [deepId, setDeepId] = useState<number | null>(null);
@@ -361,7 +361,8 @@ export default function App() {
         setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
         api.markNotifRead(n.id).catch(() => {});
       }
-      openPetition(n.petitionId);
+      // 공지(NOTICE) 알림엔 청원이 없다 — 읽음 처리만 하고 화면은 그대로 둔다.
+      if (n.petitionId) openPetition(n.petitionId);
     },
     [openPetition],
   );
@@ -428,6 +429,47 @@ export default function App() {
     }
   }, [bootstrap, deepId, flash]);
 
+  /* 공감은 즉시 반영하고 서버 응답으로 정확한 수치를 덮는다. 실패하면 원래대로 되돌린다
+     (onVote 와 같은 패턴). openId 는 열려 있는 청원 — 댓글은 그 아래에만 있다. */
+  const onToggleCommentLike = useCallback(
+    (commentId: number) => {
+      if (openId == null) return;
+      const petitionId = openId;
+      const before = (comments[petitionId] ?? []).find((c) => c.id === commentId);
+      if (!before) return;
+      const patch = (next: { votes: number; liked: boolean }) =>
+        setComments((all) => ({
+          ...all,
+          [petitionId]: (all[petitionId] ?? []).map((c) => (c.id === commentId ? { ...c, ...next } : c)),
+        }));
+
+      patch({ votes: before.votes + (before.liked ? -1 : 1), liked: !before.liked });
+      api
+        .toggleCommentLike(petitionId, commentId, before.liked)
+        .then(patch)
+        .catch(() => {
+          patch({ votes: before.votes, liked: before.liked });
+          flash("공감 처리에 실패했습니다");
+        });
+    },
+    [comments, openId, flash],
+  );
+
+  /* 서버가 돌려준 5개 전체로 me 를 덮는다(계약: 갱신 후 전체 반환). 실패하면 토스트만 —
+     낙관적 갱신을 안 해서 되돌릴 상태가 없다. */
+  const onToggleNotifSetting = useCallback(
+    async (key: string, next: boolean) => {
+      try {
+        const settings = await api.updateNotificationSettings({ [key]: next });
+        setMe((prev) => (prev ? { ...prev, notificationSettings: settings } : prev));
+        flash(next ? "알림을 켰습니다" : "알림을 껐습니다");
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "알림 설정을 저장하지 못했습니다.");
+      }
+    },
+    [flash],
+  );
+
   const resetAuthState = useCallback(() => {
     push.unregisterFromPush();
     setAuthed(false);
@@ -467,7 +509,7 @@ export default function App() {
     setScreen(next === "my" ? "my" : "feed");
   }, []);
 
-  const showTabs = authed && screen !== "detail" && screen !== "submit";
+  const showTabs = authed && screen !== "detail" && screen !== "submit" && screen !== "notifSettings";
 
   if (booting) {
     return (
@@ -538,6 +580,7 @@ export default function App() {
               petition={detail}
               votes={votes}
               comments={comments[detail.id] ?? []}
+              onToggleCommentLike={onToggleCommentLike}
               draft={draft}
               onDraft={setDraft}
               onAddComment={addComment}
@@ -579,14 +622,24 @@ export default function App() {
               notifications={notifications}
               bookmarks={bookmarkedList}
               myComments={myComments}
-              prefs={prefs}
-              onTogglePref={(k) => setPrefs((p) => ({ ...p, [k]: !p[k] }))}
+              onOpenNotifSettings={() => setScreen("notifSettings")}
               onOpenPetition={openPetition}
               onOpenNotification={onOpenNotification}
               onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
               onDeleteAccount={onDeleteAccount}
               onUpdateDepartment={onUpdateDepartment}
+            />
+          ) : null}
+
+          {screen === "notifSettings" ? (
+            <NotifSettingsScreen
+              notifications={notifications}
+              settings={me?.notificationSettings ?? null}
+              onBack={() => setScreen("my")}
+              onOpenNotification={onOpenNotification}
+              onMarkAllNotifRead={onMarkAllNotifRead}
+              onToggleSetting={onToggleNotifSetting}
             />
           ) : null}
 

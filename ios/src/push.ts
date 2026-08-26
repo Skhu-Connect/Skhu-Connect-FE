@@ -5,9 +5,11 @@
 
    네이티브 리빌드(GoogleService-Info.plist + expo-build-properties useFrameworks dynamic) 전에는
    이 파일을 어디서도 import 하지 않는다 — 아직 없는 네이티브 모듈을 불러오면 앱이 즉시 깨진다. */
+import { Linking } from "react-native";
 import {
   AuthorizationStatus,
   getInitialNotification,
+  hasPermission,
   getMessaging,
   getToken,
   onMessage,
@@ -21,6 +23,25 @@ import {
 import { deleteFcmToken, registerFcmToken } from "./api";
 
 let unsubTokenRefresh: (() => void) | null = null;
+
+/** 기기 단위 알림 on/off 는 iOS 알림 권한이 갖는다 — 서버엔 저장할 스위치가 없다(NotifSettings.tsx). */
+export type PushStatus = "granted" | "denied" | "undetermined";
+
+export async function pushPermissionStatus(): Promise<PushStatus> {
+  try {
+    const status = await hasPermission(getMessaging());
+    if (status === AuthorizationStatus.AUTHORIZED || status === AuthorizationStatus.PROVISIONAL) return "granted";
+    if (status === AuthorizationStatus.NOT_DETERMINED) return "undetermined";
+    return "denied";
+  } catch {
+    return "denied";
+  }
+}
+
+/** 한 번 거부하면 iOS 는 앱 안에서 다시 물을 수 없다 — 그때는 설정 앱으로 보낸다. */
+export function openSystemNotificationSettings(): void {
+  Linking.openSettings().catch(() => {});
+}
 
 /** 로그인 성공 뒤 호출한다. 거부되면 조용히 넘어간다 — 알림은 부가 기능이지 필수 흐름이 아니다. */
 export async function registerForPush(): Promise<void> {

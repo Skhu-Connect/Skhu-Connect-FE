@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
-import { PREF_ROWS, type MyComment, type Notification, type Petition, type PrefKey } from "../data";
+import { type MyComment, type Notification, type Petition } from "../data";
 import { listDepartments } from "../api";
 import { Icon, type IconName } from "../icons";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
@@ -20,8 +20,7 @@ export type MyProps = {
   notifications: Notification[];
   bookmarks: Petition[];
   myComments: MyComment[];
-  prefs: Record<PrefKey, boolean>;
-  onTogglePref: (k: PrefKey) => void;
+  onOpenNotifSettings: () => void;
   onOpenPetition: (id: number) => void;
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
@@ -168,17 +167,11 @@ export function MyScreen(p: MyProps) {
           )}
         </View>
 
+        {/* 저장할 곳이 없던 토글(도달률·답변)을 걷어내고, 백엔드가 실제로 알림을 보내는 5개 지점을
+            보여주는 화면으로 넘긴다 — NotifSettings.tsx. */}
         <SectionTitle style={{ paddingTop: 18 }}>알림 설정</SectionTitle>
-        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, paddingVertical: 6, paddingHorizontal: 15 }, shadow.sm]}>
-          {PREF_ROWS.map((r, i) => (
-            <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.subtle }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[t, { fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>{r.title}</Text>
-                <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 2, lineHeight: 17.3 }]}>{r.desc}</Text>
-              </View>
-              <Toggle on={p.prefs[r.key]} label={r.title} onPress={() => p.onTogglePref(r.key)} />
-            </View>
-          ))}
+        <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
+          <AccountRow icon="bell" label="알림 종류" onPress={p.onOpenNotifSettings} first />
         </View>
 
         <SectionTitle style={{ paddingTop: 18 }}>내가 쓴 댓글</SectionTitle>
@@ -455,16 +448,3 @@ function SectionTitle({ children, style }: { children: string; style?: object })
   return <Text style={[t, { paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6, fontSize: 13, fontWeight: "800", color: colors.strong }, style]}>{children}</Text>;
 }
 
-function Toggle({ on, label, onPress }: { on: boolean; label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="switch"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: on }}
-      style={{ width: 44, height: 26, borderRadius: radius.pill, backgroundColor: on ? colors.indigo[600] : colors.gray[150] }}
-    >
-      <View style={[{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" }, shadow.sm]} />
-    </Pressable>
-  );
-}

@@ -15,31 +15,8 @@ import { usePetitions } from "../../stores/petitions";
 import * as api from "../../api";
 import { Avatar, Button, Card, Icon, Input, Select } from "../../components/ui";
 import { toast } from "../../components/Toast";
-import { NOTIF_META } from "../../components/web/notifMeta";
+import { pointOf } from "../../components/web/notifMeta";
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
-
-// SettingsModal.jsx 의 ROWS 를 그대로 옮겼다.
-const PREF_ROWS = [
-  ["threshold", "도달률 알림", "내 건의가 도달률 100%에 도달하면 알려드립니다."],
-  ["answer", "답변 등록 알림", "공감한 건의에 공식 답변이 등록되면 알려드립니다."],
-  ["empathy", "공감 알림", "내 건의의 공감 수 변화를 알려드립니다."],
-];
-
-// SettingsModal.jsx 의 Toggle 을 그대로 옮겼다 — 여기서만 쓰여서 export 하지 않는다.
-function Toggle({ on, label, onClick }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={onClick}
-      style={{ width: 44, height: 26, borderRadius: 99, border: "none", cursor: "pointer", background: on ? "var(--indigo-600)" : "var(--gray-150)", position: "relative", flexShrink: 0, padding: 0 }}
-    >
-      <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", boxShadow: "var(--shadow-sm)", transition: "left .15s ease" }} />
-    </button>
-  );
-}
 
 /* FeedScreen 의 HeroBanner 와 같은 뼈대(그라데이션·radius-xl·shadow-md·장식 원)를 쓰되,
    기존엔 따로 떠 있던 회색 통계 카드 3장을 히어로 안에 통합했다 — WEB-02 피드 히어로가
@@ -245,8 +222,6 @@ function DeleteAccountDialog({ onClose }) {
 export default function MyPageScreen() {
   const user = useSession((s) => s.user);
   const updateDepartment = useSession((s) => s.updateDepartment);
-  const prefs = useSession((s) => s.prefs) ?? {};
-  const savePrefs = useSession((s) => s.savePrefs);
   const logout = useSession((s) => s.logout);
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -339,18 +314,12 @@ export default function MyPageScreen() {
             </Card>
           </div>
 
+          {/* 저장할 곳이 없던 토글 3개(도달률·답변·공감)를 걷어내고, 백엔드가 실제로 알림을 보내는
+              5개 지점을 보여주는 화면으로 넘긴다 — NotificationSettingsScreen.jsx. */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <SectionHeader icon="sliders" bg="var(--gray-150)" fg="var(--gray-700)" title="알림 설정" />
-            <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {PREF_ROWS.map(([key, title, desc]) => (
-                <div key={key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 2px" }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text-strong)" }}>{title}</div>
-                    <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>{desc}</div>
-                  </div>
-                  <Toggle on={!!prefs[key]} label={title} onClick={() => savePrefs({ [key]: !prefs[key] })} />
-                </div>
-              ))}
+            <SectionHeader icon="sliders" bg="var(--gray-150)" fg="var(--gray-700)" title="알림 설정" meta={unread > 0 ? `${unread}건 안 읽음` : undefined} />
+            <Card padding={0} style={{ overflow: "hidden" }}>
+              <AccountRow icon="bell" label="알림 종류" onClick={() => navigate("/mypage/notifications")} first />
             </Card>
           </div>
 
@@ -389,14 +358,15 @@ export default function MyPageScreen() {
                 <div style={{ padding: "18px", fontSize: 13.5, color: "var(--text-muted)", borderTop: "1px solid var(--border-subtle)" }}>알림이 없습니다.</div>
               ) : (
                 (notifExpanded ? notifications : notifications.slice(0, 5)).map((n) => {
-                  const m = NOTIF_META[n.type];
+                  const m = pointOf(n.type);
                   return (
                     <button
                       key={n.id}
                       type="button"
                       onClick={() => {
                         if (!n.read) markNotifRead(n.id);
-                        navigate(`/p/${n.petitionId}`);
+                        // 공지(NOTICE) 알림엔 청원이 없다 — /p/undefined 로 튀지 않게 막는다.
+                        if (n.petitionId) navigate(`/p/${n.petitionId}`);
                       }}
                       style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "13px 18px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
                     >

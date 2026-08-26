@@ -25,6 +25,7 @@ export type DetailProps = {
   onReport: (reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   onReportComment: (commentId: number, reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   onBlockComment: (commentId: number) => void;
+  onToggleCommentLike: (commentId: number) => void;
   onBlockPetition: (petitionId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
@@ -192,6 +193,20 @@ export function DetailScreen(p: DetailProps) {
                     </View>
                     <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
                   </View>
+                  {/* 웹 CommentRow 의 하트 버튼과 같은 자리(행 오른쪽)·같은 형태(아이콘 위, 숫자 아래). */}
+                  {cm.id != null ? (
+                    <Pressable
+                      onPress={() => p.onToggleCommentLike(cm.id!)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`댓글 공감 ${cm.votes}`}
+                      accessibilityState={{ selected: cm.liked }}
+                      hitSlop={8}
+                      style={{ alignItems: "center", gap: 2, paddingLeft: 4 }}
+                    >
+                      <Icon name={cm.liked ? "heartSolid" : "heart"} size={16} color={cm.liked ? colors.coral[500] : colors.muted} />
+                      <Text style={[t, { fontSize: 12, fontWeight: "700", color: cm.liked ? colors.coral[500] : colors.muted }]}>{cm.votes}</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               ))}
               <View style={{ flexDirection: "row", gap: 8, paddingTop: 12, alignItems: "center" }}>

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
+import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";

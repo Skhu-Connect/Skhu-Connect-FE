@@ -11,7 +11,7 @@ import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import { Avatar, Button, Icon, IconButton } from "../ui";
 import SettingsModal from "./SettingsModal";
-import { NOTIF_META } from "./notifMeta";
+import { pointOf } from "./notifMeta";
 
 export function WordMark() {
   return (
@@ -124,7 +124,7 @@ function NotifBell() {
           <div style={{ padding: 18, fontSize: 13.5, color: "var(--text-muted)" }}>알림이 없습니다.</div>
         ) : (
           items.map((n) => {
-            const m = NOTIF_META[n.type];
+            const m = pointOf(n.type);
             return (
               <button
                 key={n.id}
@@ -132,7 +132,8 @@ function NotifBell() {
                 onClick={() => {
                   setOpen(false);
                   if (!n.read) markNotifRead(n.id);
-                  navigate(`/p/${n.petitionId}`);
+                  // 공지(NOTICE) 알림엔 청원이 없다 — /p/undefined 로 튀지 않게 막는다.
+                  if (n.petitionId) navigate(`/p/${n.petitionId}`);
                 }}
                 style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "12px 16px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
               >

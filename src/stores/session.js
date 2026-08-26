@@ -7,40 +7,40 @@ import * as api from "../api";
 export const useSession = create((set) => ({
   authed: false,
   user: null,
-  prefs: null,
   restored: false, // 새로고침 후 refreshToken 쿠키로 세션 복구를 시도했는지
 
   restore: async () => {
     const session = await api.restoreSession();
-    set(session ? { authed: true, user: session.user, prefs: session.prefs, restored: true } : { restored: true });
+    set(session ? { authed: true, user: session.user, restored: true } : { restored: true });
   },
 
   login: async (sid, password) => {
-    const { user, prefs } = await api.login(sid, password);
-    set({ authed: true, user, prefs });
+    const { user } = await api.login(sid, password);
+    set({ authed: true, user });
     return user;
   },
 
   signup: async (form) => {
-    const { user, prefs } = await api.signup(form);
-    set({ authed: true, user, prefs });
+    const { user } = await api.signup(form);
+    set({ authed: true, user });
     return user;
   },
 
   logout: async () => {
     await api.logout();
-    set({ authed: false, user: null, prefs: null });
+    set({ authed: false, user: null });
   },
 
   deleteAccount: async (password) => {
     await api.deleteAccount(password);
-    set({ authed: false, user: null, prefs: null });
+    set({ authed: false, user: null });
   },
 
-  savePrefs: async (patch) => {
-    const prefs = await api.savePrefs(patch);
-    set({ prefs });
-    return prefs;
+  /** 토글 하나만 보내고 서버가 돌려준 5개 전체로 덮는다(계약: 갱신 후 전체 반환). */
+  updateNotificationSettings: async (patch) => {
+    const notificationSettings = await api.updateNotificationSettings(patch);
+    set((s) => ({ user: { ...s.user, notificationSettings } }));
+    return notificationSettings;
   },
 
   updateDepartment: async (departmentId, departmentName) => {
