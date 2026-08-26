@@ -3,10 +3,8 @@
    백엔드 NotificationEventService 가 알림을 만드는 지점 5곳(notifMeta.js NOTIF_POINTS)을
    보여주고, 각 포인트로 실제 받은 알림을 그 자리에서 걸러 볼 수 있게 한다.
 
-   종류별 on/off 토글은 docs/be-notification-settings-spec.md 의 계약
-   (PATCH /connect/users/me/notification-settings)에 맞춰 미리 붙여 뒀다. 그 엔드포인트가 아직
-   배포 전이라 GET /connect/users/me 에 notificationSettings 가 없으면 토글은 "준비 중"으로
-   잠긴다 — 배포되는 순간 이 파일 수정 없이 풀린다.
+   종류별 on/off 토글은 PATCH /connect/users/me/notification-settings로 변경하고,
+   서버가 돌려준 5개 전체 설정으로 상태를 덮는다.
 
    예전 마이페이지의 "도달률/답변/공감" 토글 3개는 아무 데도 저장되지 않는 가짜였고,
    이 화면이 그걸 진짜 계약으로 대체한다. */
@@ -91,7 +89,7 @@ export default function NotificationSettingsScreen() {
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(null);
 
-  /* 서버가 notificationSettings 를 아직 안 내려주면 전부 켜진 것으로 보이되 토글은 잠근다. */
+  /* 응답이 비정상적으로 빠졌다면 전부 켜진 것으로 보이되 토글은 잠근다. */
   const settings = user?.notificationSettings ?? null;
   const ready = settings !== null;
   const isOn = (key) => (ready ? settings[key] !== false : true);

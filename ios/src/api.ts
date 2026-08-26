@@ -7,16 +7,14 @@
    모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 전체 읽음)은 포팅하지
    않았다 — 진입점이 없는 코드는 만들지 않는다.
 
-   비밀번호 재설정은 로그인 화면의 "비밀번호 찾기" 링크(FindPasswordScreen)로 연동했다
-   (웹 FindPasswordScreen 과 동일한 흐름, 2026-08-22). 아이디 찾기(FindIdScreen)는 학교 이메일
-   인증·비밀번호 확인 두 방식 화면까지만 있다 — loginId 조회/변경 엔드포인트가 없어 마지막 단계는
-   API 호출 없이 "준비 중" 안내로 끝난다. MY 화면의 아이디·비밀번호 변경도 같은 이유로 화면만 있다.
+   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 아이디·비밀번호 변경까지
+   실 백엔드에 연동했다.
 
    deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
    PATCH /connect/users/me/department({departmentId})로 연동한다. */
 
 import { NOTIF_TYPE_TITLE, pointOf } from "./data";
-import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, Petition, StatusKey } from "./data";
+import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
@@ -63,7 +61,7 @@ async function refreshAccessToken() {
   return refreshing.request;
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);
@@ -182,29 +180,21 @@ function resetSessionCaches() {
 /* ───────────────── 세션 ───────────────── */
 
 /** 알림 종류별 on/off. 키는 data.ts NOTIF_POINTS 의 key 와 같다. */
-export type NotificationSettings = Record<string, boolean>;
-export type Me = { loginId: string; email: string; departmentName: string; notificationSettings: NotificationSettings | null };
+export type NotificationSettings = Record<NotificationSettingKey, boolean>;
+export type Me = { loginId: string; email: string; departmentName: string; notificationSettings: NotificationSettings };
 let cachedMe: Me | null = null;
 
 export async function getMe(version = sessionVersion): Promise<Me | null> {
   if (!accessToken) return null;
   const me = await apiFetch<any>("/connect/users/me");
   if (version !== sessionVersion) return null;
-  // 서버가 아직 안 내려주면 null — 화면이 종류별 토글을 "준비 중"으로 잠근다.
-  cachedMe = { loginId: me.loginId, email: me.email, departmentName: me.departmentName, notificationSettings: me.notificationSettings ?? null };
+  cachedMe = { loginId: me.loginId, email: me.email, departmentName: me.departmentName, notificationSettings: me.notificationSettings };
   return cachedMe;
 }
 
-/* 계약은 docs/be-notification-settings-spec.md — 토글 하나만 보내고 서버가 5개 전체를 돌려준다.
-   아직 배포 전이라 404/405 면 "준비 중" 문구로 바꿔 던진다. */
-export async function updateNotificationSettings(patch: NotificationSettings): Promise<NotificationSettings> {
-  let settings: NotificationSettings;
-  try {
-    settings = await apiFetch<NotificationSettings>("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
-  } catch (e: any) {
-    if (e?.status === 404 || e?.status === 405) throw new Error("알림 종류별 설정은 아직 준비 중이에요.");
-    throw e;
-  }
+/** 토글 하나만 보내고 서버가 돌려준 5개 전체로 덮는다. */
+export async function updateNotificationSettings(patch: Partial<NotificationSettings>): Promise<NotificationSettings> {
+  const settings = await apiFetch<NotificationSettings>("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
   if (cachedMe) cachedMe = { ...cachedMe, notificationSettings: settings };
   return settings;
 }
@@ -253,6 +243,29 @@ export async function signup(args: { loginId: string; password: string; departme
   return login(args.loginId, args.password);
 }
 
+export async function sendLoginIdFindCode(email: string): Promise<void> {
+  await apiFetch("/connect/auth/email-verifications", { method: "POST", auth: false, body: { email, purpose: "LOGIN_ID_FIND" } });
+}
+
+export async function confirmLoginIdFindCode(email: string, code: string): Promise<string> {
+  const { verificationToken } = await apiFetch<{ verificationToken: string }>("/connect/auth/email-verifications/confirm", {
+    method: "POST",
+    auth: false,
+    body: { email, code, purpose: "LOGIN_ID_FIND" },
+  });
+  return verificationToken;
+}
+
+export async function findLoginIdByEmail(verificationToken: string): Promise<string> {
+  const { loginId } = await apiFetch<{ loginId: string }>("/connect/auth/login-id/find/email", { method: "POST", auth: false, body: { verificationToken } });
+  return loginId;
+}
+
+export async function findLoginIdByPassword(email: string, password: string): Promise<string> {
+  const { loginId } = await apiFetch<{ loginId: string }>("/connect/auth/login-id/find/password", { method: "POST", auth: false, body: { email, password } });
+  return loginId;
+}
+
 /** 비밀번호 찾기 3단계 뒤 호출한다: sendPasswordResetCode → confirmPasswordResetCode(→verificationToken) → resetPassword.
     가입 이메일 인증(sendSignupCode/confirmSignupCode)과 같은 엔드포인트를 purpose 만 바꿔 쓴다. */
 export async function sendPasswordResetCode(email: string): Promise<void> {
@@ -293,6 +306,23 @@ export async function deleteAccount(password: string): Promise<void> {
   accessToken = null;
   cachedMe = null;
   resetSessionCaches();
+}
+
+export async function changeLoginId(newLoginId: string, password: string): Promise<string> {
+  const id = newLoginId.trim();
+  const pw = password;
+  if (!id || !pw) throw new Error("새 아이디와 비밀번호를 입력해 주세요.");
+  if (id.length > 50) throw new Error("아이디는 50자 이하로 입력해 주세요.");
+  const result = await apiFetch<{ loginId: string }>("/connect/users/me/login-id", { method: "PATCH", body: { newLoginId: id, password: pw } });
+  if (cachedMe) cachedMe = { ...cachedMe, loginId: result.loginId };
+  return result.loginId;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const current = currentPassword;
+  const next = newPassword;
+  if (!current || !next) throw new Error("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+  await apiFetch("/connect/users/me/password", { method: "PATCH", body: { currentPassword: current, newPassword: next } });
 }
 
 export async function updateDepartment(departmentId: number, departmentName: string): Promise<Me> {

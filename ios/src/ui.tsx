@@ -168,6 +168,7 @@ export function Input({
   placeholder,
   secureTextEntry,
   keyboardType,
+  maxLength,
   dark,
 }: {
   label?: string;
@@ -176,6 +177,7 @@ export function Input({
   placeholder?: string;
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
+  maxLength?: number;
   /** 영상 배경 위(인증 화면)에서 흰 글자·반투명 테두리로 그린다. */
   dark?: boolean;
 }) {
@@ -191,6 +193,7 @@ export function Input({
           placeholderTextColor={dark ? onVideo.muted : colors.muted}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
+          maxLength={maxLength}
           autoCapitalize="none"
           autoCorrect={false}
           onFocus={() => setFocused(true)}

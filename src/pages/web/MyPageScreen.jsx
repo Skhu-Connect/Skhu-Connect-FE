@@ -62,21 +62,29 @@ function AccountRow({ icon, label, onClick, first = false }) {
   );
 }
 
-/* 비밀번호 변경. ponytail: 백엔드에 로그인 상태 비밀번호 변경 API가 없다(POST
-   /connect/auth/password/reset 은 로그아웃 상태 이메일 인증 전용 — FindPasswordScreen.jsx 참고) —
-   화면만 먼저 만들고, API가 생기면 이 submit 을 연결한다. */
 function ChangePasswordDialog({ onClose }) {
+  const changePassword = useSession((s) => s.changePassword);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
     if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
-    toast("비밀번호 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
-    onClose();
+    setError("");
+    setBusy(true);
+    try {
+      await changePassword(current, next);
+      toast("비밀번호가 변경되었습니다");
+      onClose();
+    } catch (e) {
+      setError(e?.status === 400 ? "현재 비밀번호와 다른 새 비밀번호를 입력해 주세요." : e?.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e?.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "비밀번호를 변경하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -92,24 +100,35 @@ function ChangePasswordDialog({ onClose }) {
         {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
           <Button type="button" variant="outline" onClick={onClose}>취소</Button>
-          <Button type="submit" variant="primary">변경</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{busy ? "변경 중…" : "변경"}</Button>
         </div>
       </form>
     </div>
   );
 }
 
-/* 아이디 변경. 위와 같은 이유로 화면만 먼저 만든다 — 백엔드에 loginId 변경 엔드포인트가 없다. */
 function ChangeIdDialog({ onClose }) {
+  const changeLoginId = useSession((s) => s.changeLoginId);
   const [newId, setNewId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
-    toast("아이디 변경은 아직 준비 중인 기능입니다. 빠른 시일 내 제공하겠습니다.");
-    onClose();
+    if (newId.trim().length > 50) return setError("아이디는 50자 이하로 입력해 주세요.");
+    setError("");
+    setBusy(true);
+    try {
+      await changeLoginId(newId, password);
+      toast("아이디가 변경되었습니다");
+      onClose();
+    } catch (e) {
+      setError(e?.status === 400 ? "현재 아이디와 다른 새 아이디를 입력해 주세요." : e?.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e?.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e?.status === 409 ? "이미 사용 중인 아이디입니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "아이디를 변경하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -119,12 +138,12 @@ function ChangeIdDialog({ onClose }) {
           <h2 id="change-id-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>아이디 변경</h2>
           <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>본인 확인을 위해 비밀번호를 함께 입력해 주세요.</p>
         </div>
-        <Input label="새 아이디" placeholder="새 아이디를 입력하세요" value={newId} onChange={(e) => { setNewId(e.target.value); setError(""); }} />
+        <Input label="새 아이디" placeholder="새 아이디를 입력하세요" maxLength={50} value={newId} onChange={(e) => { setNewId(e.target.value); setError(""); }} />
         <Input type="password" label="비밀번호" placeholder="••••••••" autoComplete="current-password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />
         {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
           <Button type="button" variant="outline" onClick={onClose}>취소</Button>
-          <Button type="submit" variant="primary">변경</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{busy ? "변경 중…" : "변경"}</Button>
         </div>
       </form>
     </div>

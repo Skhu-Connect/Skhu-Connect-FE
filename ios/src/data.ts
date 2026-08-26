@@ -6,6 +6,7 @@ import type { IconName } from "./icons";
 export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department";
 export type StatusKey = "received" | "reviewing" | "answered";
 export type BasisLabel = "전체 학생" | "학과 정원" | "기숙사 정원";
+export type NotificationSettingKey = "agreement" | "answer" | "reply" | "like" | "notice";
 
 export type Petition = {
   id: number;
@@ -188,12 +189,10 @@ export type Notification = {
    (onAgreementAdded / onPetitionAnswered / onReplyCreated / onCommentLiked / onNoticePublished).
    서버 NotificationType 8종이 여기로 빠짐없이 나뉜다 — 웹 src/components/web/notifMeta.js 와 같은 표다.
 
-   ponytail: 포인트별 on/off 토글은 만들지 않는다. 서버 스위치는 User.notificationEnabled 하나뿐이고
-   변경 엔드포인트가 없다(/v3/api-docs, 2026-08-27). 푸시 페이로드에도 알림 종류가 안 실려
-   (FcmPushService 는 notificationId·petitionId 만 보낸다) 앱이 종류별로 거를 수도 없다.
+   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의 5개 키다.
    기기 단위 on/off 는 iOS 알림 권한이 담당한다 — NotifSettings.tsx 가 그 권한으로 안내한다. */
 export type NotifPoint = {
-  key: string;
+  key: NotificationSettingKey | "etc";
   title: string;
   desc: string;
   types: string[];
@@ -202,7 +201,7 @@ export type NotifPoint = {
   iconFg: string;
 };
 
-export const NOTIF_POINTS: NotifPoint[] = [
+export const NOTIF_POINTS = [
   {
     key: "agreement",
     title: "공감 도달",
@@ -248,7 +247,7 @@ export const NOTIF_POINTS: NotifPoint[] = [
     iconBg: "#E9EAF1",
     iconFg: "#4C4D5C",
   },
-];
+] satisfies NotifPoint[];
 
 /** 알림 한 건의 제목. 본문은 서버가 완성된 문장으로 준다 — 여기서는 종류 이름만 짓는다. */
 export const NOTIF_TYPE_TITLE: Record<string, string> = {

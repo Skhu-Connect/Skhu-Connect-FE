@@ -36,6 +36,14 @@ export const useSession = create((set) => ({
     set({ authed: false, user: null });
   },
 
+  changeLoginId: async (newLoginId, password) => {
+    const loginId = await api.changeLoginId(newLoginId, password);
+    set((s) => ({ user: { ...s.user, loginId } }));
+    return loginId;
+  },
+
+  changePassword: api.changePassword,
+
   /** 토글 하나만 보내고 서버가 돌려준 5개 전체로 덮는다(계약: 갱신 후 전체 반환). */
   updateNotificationSettings: async (patch) => {
     const notificationSettings = await api.updateNotificationSettings(patch);

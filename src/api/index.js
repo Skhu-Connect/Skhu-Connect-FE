@@ -6,17 +6,14 @@
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
    임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listOwners/listNotifLogs(담당자 연락처·
    알림 로그)는 대응 엔드포인트가 없어 여전히 mockDb.js 의 CATEGORY_META/adminDb 로 동작한다.
-   알림 설정(NotificationSettingsScreen)은 백엔드 NotificationEventService 의 발생 지점 5곳을
-   보여주기만 한다 — 포인트별 on/off 엔드포인트가 없다(src/components/web/notifMeta.js 주석 참고).
+   알림 설정(NotificationSettingsScreen)은 NotificationEventService의 발생 지점 5곳을 보여주고
+   PATCH /connect/users/me/notification-settings로 종류별 수신 설정을 저장한다.
 
    청원 수정/삭제(PUT·DELETE /connect/petitions/{id})는 백엔드엔 있지만 화면에 진입점(수정 메뉴)이
    없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
 
-   비밀번호 재설정은 로그인 화면의 "비밀번호 찾기" 링크(FindPasswordScreen)로 연동 완료했다
-   (2026-08-22). 아이디 찾기(FindIdScreen, 2026-08-24)는 학교 이메일 인증·비밀번호 확인 두 방식
-   화면까지만 만들었다 — loginId 조회/변경에 대응하는 백엔드 엔드포인트가 없어 마지막 단계는
-   API 호출 없이 "준비 중" 안내로 끝난다. 마이페이지의 아이디·비밀번호 변경(MyPageScreen)도 같은
-   이유로 화면만 있다. 엔드포인트가 생기면 이 두 화면의 마지막 단계 submit 을 실제 호출로 바꾼다.
+   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 아이디·비밀번호 변경까지
+   실 백엔드에 연동됐다.
 
    회원탈퇴(deleteAccount)는 /connect/users/me DELETE({password})로 연동 완료(2026-08-11, /v3/api-docs
    로 계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
@@ -187,27 +184,12 @@ function toUser(me) {
     dept: me.departmentName,
     departmentCode: me.departmentCode,
     notificationEnabled: me.notificationEnabled,
-    // 서버가 아직 안 내려주면 null — 화면이 알림 종류 토글을 "준비 중"으로 잠근다.
-    notificationSettings: me.notificationSettings ?? null,
+    notificationSettings: me.notificationSettings,
   };
 }
 
-/* 알림 종류별 on/off. 계약은 docs/be-notification-settings-spec.md — 아직 배포 전이라
-   404/405 가 오면 NOT_DEPLOYED 로 표시해서 화면이 "준비 중" 안내를 띄우게 한다. */
-export const NOTIF_SETTINGS_NOT_DEPLOYED = "NOTIF_SETTINGS_NOT_DEPLOYED";
-
 export async function updateNotificationSettings(patch) {
-  let settings;
-  try {
-    settings = await apiFetch("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
-  } catch (e) {
-    if (e.status === 404 || e.status === 405) {
-      const err = new Error("알림 종류별 설정은 아직 준비 중이에요.");
-      err.code = NOTIF_SETTINGS_NOT_DEPLOYED;
-      throw err;
-    }
-    throw e;
-  }
+  const settings = await apiFetch("/connect/users/me/notification-settings", { method: "PATCH", body: patch });
   if (cachedMe) cachedMe = { ...cachedMe, notificationSettings: settings };
   return settings;
 }
@@ -259,6 +241,25 @@ export async function signup({ loginId, password, departmentId, verificationToke
   return login(loginId, password);
 }
 
+export async function sendLoginIdFindCode(email) {
+  await apiFetch("/connect/auth/email-verifications", { method: "POST", auth: false, body: { email, purpose: "LOGIN_ID_FIND" } });
+}
+
+export async function confirmLoginIdFindCode(email, code) {
+  const { verificationToken } = await apiFetch("/connect/auth/email-verifications/confirm", { method: "POST", auth: false, body: { email, code, purpose: "LOGIN_ID_FIND" } });
+  return verificationToken;
+}
+
+export async function findLoginIdByEmail(verificationToken) {
+  const { loginId } = await apiFetch("/connect/auth/login-id/find/email", { method: "POST", auth: false, body: { verificationToken } });
+  return loginId;
+}
+
+export async function findLoginIdByPassword(email, password) {
+  const { loginId } = await apiFetch("/connect/auth/login-id/find/password", { method: "POST", auth: false, body: { email, password } });
+  return loginId;
+}
+
 /** 비밀번호 찾기 3단계 뒤 호출한다: sendPasswordResetCode → confirmPasswordResetCode(→verificationToken) → resetPassword.
     가입 이메일 인증(sendSignupCode/confirmSignupCode)과 같은 엔드포인트를 purpose 만 바꿔 쓴다. */
 export async function sendPasswordResetCode(email) {
@@ -294,6 +295,23 @@ export async function deleteAccount(password) {
   accessToken = null;
   cachedMe = null;
   resetSessionCaches();
+}
+
+export async function changeLoginId(newLoginId, password) {
+  const id = String(newLoginId ?? "").trim();
+  const pw = String(password ?? "");
+  if (!id || !pw) throw new Error("새 아이디와 비밀번호를 입력해 주세요.");
+  if (id.length > 50) throw new Error("아이디는 50자 이하로 입력해 주세요.");
+  const result = await apiFetch("/connect/users/me/login-id", { method: "PATCH", body: { newLoginId: id, password: pw } });
+  if (cachedMe) cachedMe = { ...cachedMe, loginId: result.loginId };
+  return result.loginId;
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  const current = String(currentPassword ?? "");
+  const next = String(newPassword ?? "");
+  if (!current || !next) throw new Error("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+  await apiFetch("/connect/users/me/password", { method: "PATCH", body: { currentPassword: current, newPassword: next } });
 }
 
 export async function updateDepartment(departmentId, departmentName) {
