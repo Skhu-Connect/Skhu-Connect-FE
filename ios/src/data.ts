@@ -33,7 +33,7 @@ export type Petition = {
 export type AdminAnswer = { body: string; dept: string; date: string };
 
 /** mine 은 서버 CommentResponse.myComment 다 — 내 댓글엔 신고·차단 버튼을 띄우지 않는다. */
-export type Comment = { id?: number; author: string; body: string; date: string; mine: boolean; votes: number; liked: boolean };
+export type Comment = { id?: number; author: string; body: string; date: string; mine: boolean; votes: number; liked: boolean; replies?: Comment[] };
 
 /** MY 화면 "내가 쓴 댓글" 전용 — 웹 src/api/index.js의 adaptMyComment와 동일하게 title은 없다. */
 export type MyComment = { id: number; petitionId: number; body: string; date: string };

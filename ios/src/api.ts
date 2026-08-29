@@ -518,8 +518,8 @@ export async function toggleBookmark(petitionId: number, wasBookmarked: boolean)
 }
 
 /* ───────────────── 댓글 ─────────────────
-   모바일 화면은 원댓글만 평평하게 보여준다(대댓글·공감 UI 없음 — 원본 설계). replies 는
-   무시한다. */
+   replies 는 root 댓글에만 온다(1단계 대댓글 — 서버가 대댓글의 대댓글을 지원하지 않는다).
+   웹 src/api/index.js adaptComment 와 같은 짝이다. */
 
 /* liked/myComment 는 서버가 로그인한 나를 기준으로 채워 준다 — auth 를 끄면 안 된다(웹과 같다). */
 function adaptComment(c: any): Comment {
@@ -531,6 +531,7 @@ function adaptComment(c: any): Comment {
     mine: !!c.myComment,
     votes: c.likeCount ?? 0,
     liked: !!c.liked,
+    replies: (c.replies ?? []).map(adaptComment),
   };
 }
 
@@ -545,10 +546,11 @@ export async function listComments(petitionId: number): Promise<Comment[]> {
   return (data?.content ?? []).map(adaptComment);
 }
 
-export async function addComment(petitionId: number, body: string): Promise<Comment> {
+/** parentCommentId 를 주면 그 root 댓글의 대댓글로 등록한다(웹과 같은 계약). */
+export async function addComment(petitionId: number, body: string, parentCommentId: number | null = null): Promise<Comment> {
   const content = body.trim();
   if (!content) throw new Error("댓글 내용을 입력해 주세요.");
-  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}/comments`, { method: "POST", body: { content, parentCommentId: null } });
+  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}/comments`, { method: "POST", body: { content, parentCommentId } });
   return adaptComment(raw);
 }
 

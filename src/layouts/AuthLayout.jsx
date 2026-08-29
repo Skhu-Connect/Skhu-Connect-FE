@@ -265,7 +265,7 @@ export default function AuthLayout({ children }) {
             폼은 글자 단위로 쪼개지 않는다 — 헤드라인이 다 앉기 전에 바로 입력할 수 있어야 하므로
             한 덩어리로 짧게 떠오르고 끝낸다.
             className 은 placeholder 하나 때문이다 — 가상 요소라 인라인 스타일로 못 준다. */}
-        <div style={{ display: "flex", justifyContent: isMobile ? "center" : "flex-end", padding: `0 ${edge}px` }}>
+        <div style={{ display: "flex", justifyContent: isMobile ? "center" : "flex-end", padding: `0 ${edge}px`, minWidth: 0 }}>
           <div className="auth-on-video" style={{ width: FORM_WIDTH, maxWidth: "100%", ...LIGHT_ON_VIDEO, ...rise(shown, 0.6, 16) }}>
             {children}
           </div>

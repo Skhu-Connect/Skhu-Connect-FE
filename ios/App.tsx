@@ -38,6 +38,26 @@ function petitionIdFromUrl(url: string | null): number | null {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+/* 댓글이 트리로 온다(root 아래 replies). 조작 대상이 원댓글일 수도 대댓글일 수도 있어
+   목록을 훑을 때 replies 까지 같이 본다. 서버가 1단계까지만 허용하지만 재귀로 두면
+   깊이를 신경 쓸 필요가 없다. */
+function mapComment(list: Comment[], id: number, fn: (c: Comment) => Comment): Comment[] {
+  return list.map((c) => (c.id === id ? fn(c) : c.replies?.length ? { ...c, replies: mapComment(c.replies, id, fn) } : c));
+}
+
+function findComment(list: Comment[], id: number): Comment | undefined {
+  for (const c of list) {
+    if (c.id === id) return c;
+    const found = c.replies?.length ? findComment(c.replies, id) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function removeComment(list: Comment[], id: number): Comment[] {
+  return list.filter((c) => c.id !== id).map((c) => (c.replies?.length ? { ...c, replies: removeComment(c.replies, id) } : c));
+}
+
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [authed, setAuthed] = useState(false);
@@ -386,6 +406,25 @@ export default function App() {
       .catch((e) => flash(e instanceof Error ? e.message : "댓글 등록에 실패했습니다"));
   }, [draft, openId, flash]);
 
+  const addReply = useCallback(
+    async (parentId: number, body: string) => {
+      if (openId == null) return;
+      const petitionId = openId;
+      try {
+        const created = await api.addComment(petitionId, body, parentId);
+        setComments((all) => ({
+          ...all,
+          [petitionId]: mapComment(all[petitionId] ?? [], parentId, (c) => ({ ...c, replies: [...(c.replies ?? []), created] })),
+        }));
+        setPetitions((prev) => prev.map((x) => (x.id === petitionId ? { ...x, comments: x.comments + 1 } : x)));
+        flash("답글을 익명으로 등록했습니다");
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "답글 등록에 실패했습니다");
+      }
+    },
+    [openId, flash],
+  );
+
   const submitPetition = useCallback(() => {
     const key = categoryOf(formCat);
     const title = formTitle.trim();
@@ -439,9 +478,10 @@ export default function App() {
       const petitionId = openId;
       try {
         const updated = await api.updateComment(petitionId, commentId, body);
+        // 수정 응답의 replies 는 비어 온다 — 그대로 갈아끼우면 달려 있던 대댓글이 화면에서 사라진다.
         setComments((all) => ({
           ...all,
-          [petitionId]: (all[petitionId] ?? []).map((c) => (c.id === commentId ? updated : c)),
+          [petitionId]: mapComment(all[petitionId] ?? [], commentId, (old) => ({ ...updated, replies: old.replies })),
         }));
       } catch (e) {
         flash(e instanceof Error ? e.message : "댓글 수정에 실패했습니다");
@@ -463,10 +503,7 @@ export default function App() {
             api
               .deleteComment(petitionId, commentId)
               .then(() => {
-                setComments((all) => ({
-                  ...all,
-                  [petitionId]: (all[petitionId] ?? []).filter((c) => c.id !== commentId),
-                }));
+                setComments((all) => ({ ...all, [petitionId]: removeComment(all[petitionId] ?? [], commentId) }));
                 setPetitions((prev) => prev.map((x) => (x.id === petitionId ? { ...x, comments: Math.max(0, x.comments - 1) } : x)));
                 flash("댓글을 삭제했습니다");
               })
@@ -482,12 +519,12 @@ export default function App() {
     (commentId: number) => {
       if (openId == null) return;
       const petitionId = openId;
-      const before = (comments[petitionId] ?? []).find((c) => c.id === commentId);
+      const before = findComment(comments[petitionId] ?? [], commentId);
       if (!before) return;
       const patch = (next: { votes: number; liked: boolean }) =>
         setComments((all) => ({
           ...all,
-          [petitionId]: (all[petitionId] ?? []).map((c) => (c.id === commentId ? { ...c, ...next } : c)),
+          [petitionId]: mapComment(all[petitionId] ?? [], commentId, (c) => ({ ...c, ...next })),
         }));
 
       patch({ votes: before.votes + (before.liked ? -1 : 1), liked: !before.liked });
@@ -639,6 +676,7 @@ export default function App() {
               comments={comments[detail.id] ?? []}
               onToggleCommentLike={onToggleCommentLike}
               onEditComment={editComment}
+              onAddReply={addReply}
               onDeleteComment={deleteCommentAt}
               draft={draft}
               onDraft={setDraft}

@@ -27,6 +27,7 @@ export type DetailProps = {
   onBlockComment: (commentId: number) => void;
   onToggleCommentLike: (commentId: number) => void;
   onEditComment: (commentId: number, body: string) => Promise<void>;
+  onAddReply: (parentId: number, body: string) => Promise<void>;
   onDeleteComment: (commentId: number) => void;
   onBlockPetition: (petitionId: number) => void;
   bookmarked: boolean;
@@ -40,6 +41,7 @@ export type DetailProps = {
    map 안에 인라인으로 두지 않고 컴포넌트로 뺀다. */
 function CommentRow({
   cm,
+  reply,
   onToggleLike,
   onEdit,
   onDelete,
@@ -47,6 +49,8 @@ function CommentRow({
   onBlock,
 }: {
   cm: Comment;
+  /** 대댓글이면 원댓글 본문 시작선(아바타 32 + gap 11)에 맞춰 들여쓴다 — 웹 CommentRow 와 같은 근거. */
+  reply?: boolean;
   onToggleLike: (id: number) => void;
   onEdit: (id: number, body: string) => Promise<void>;
   onDelete: (id: number) => void;
@@ -65,8 +69,8 @@ function CommentRow({
   };
 
   return (
-    <View style={{ flexDirection: "row", gap: 11, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
-      <Avatar name="익" size={32} />
+    <View style={{ flexDirection: "row", gap: 11, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle, marginLeft: reply ? 43 : 0 }}>
+      <Avatar name="익" size={reply ? 26 : 32} />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
           <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
@@ -138,6 +142,10 @@ export function DetailScreen(p: DetailProps) {
   const reached = c >= d.threshold;
   const answered = d.status === "answered";
   const [reportTarget, setReportTarget] = useState<{ type: "petition" } | { type: "comment"; id: number } | null>(null);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+  // 서버 목록 응답에 총계가 없어 트리를 직접 센다(웹 CommentsSection 과 같은 방식).
+  const commentTotal = p.comments.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
 
   const steps = [
     { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
@@ -247,17 +255,65 @@ export function DetailScreen(p: DetailProps) {
             ) : null}
 
             <Card>
-              <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, marginBottom: 6 }]}>댓글 {p.comments.length}</Text>
+              <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, marginBottom: 6 }]}>댓글 {commentTotal}</Text>
               {p.comments.map((cm, i) => (
-                <CommentRow
-                  key={cm.id ?? `${cm.author}-${i}`}
-                  cm={cm}
-                  onToggleLike={p.onToggleCommentLike}
-                  onEdit={p.onEditComment}
-                  onDelete={p.onDeleteComment}
-                  onReport={(id) => setReportTarget({ type: "comment", id })}
-                  onBlock={p.onBlockComment}
-                />
+                <View key={cm.id ?? `${cm.author}-${i}`}>
+                  <CommentRow
+                    cm={cm}
+                    onToggleLike={p.onToggleCommentLike}
+                    onEdit={p.onEditComment}
+                    onDelete={p.onDeleteComment}
+                    onReport={(id) => setReportTarget({ type: "comment", id })}
+                    onBlock={p.onBlockComment}
+                  />
+                  {cm.id != null ? (
+                    <Pressable
+                      onPress={() => { setReplyTo(replyTo === cm.id ? null : cm.id!); setReplyText(""); }}
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      style={{ marginLeft: 43, paddingVertical: 6 }}
+                    >
+                      <Text style={[t, { fontSize: 12, fontWeight: "600", color: colors.muted }]}>답글달기</Text>
+                    </Pressable>
+                  ) : null}
+                  {(cm.replies ?? []).map((r) => (
+                    <CommentRow
+                      key={r.id}
+                      cm={r}
+                      reply
+                      onToggleLike={p.onToggleCommentLike}
+                      onEdit={p.onEditComment}
+                      onDelete={p.onDeleteComment}
+                      onReport={(id) => setReportTarget({ type: "comment", id })}
+                      onBlock={p.onBlockComment}
+                    />
+                  ))}
+                  {replyTo === cm.id ? (
+                    <View style={{ flexDirection: "row", gap: 8, marginLeft: 43, paddingBottom: 10, alignItems: "center" }}>
+                      <TextInput
+                        autoFocus
+                        value={replyText}
+                        onChangeText={setReplyText}
+                        placeholder="답글을 입력하세요"
+                        placeholderTextColor={colors.muted}
+                        accessibilityLabel="답글 입력"
+                        style={[t, { flex: 1, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.pill, paddingVertical: 9, paddingHorizontal: 14, fontSize: 13.5, color: colors.strong }]}
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={!replyText.trim()}
+                        onPress={async () => {
+                          await p.onAddReply(cm.id!, replyText.trim());
+                          setReplyTo(null);
+                          setReplyText("");
+                        }}
+                      >
+                        등록
+                      </Button>
+                    </View>
+                  ) : null}
+                </View>
               ))}
               <View style={{ flexDirection: "row", gap: 8, paddingTop: 12, alignItems: "center" }}>
                 <TextInput
