@@ -515,6 +515,35 @@ export default function App() {
     [openId, flash],
   );
 
+  /* 내 건의 삭제. 목록에서 지우고 화면을 뒤로 보낸다 — 남겨두면 상세가 빈 채로 남고
+     피드에도 계속 보인다. 웹 DetailScreen 의 removePetition 과 같은 흐름이다. */
+  const deletePetitionAt = useCallback(
+    (id: number) => {
+      Alert.alert(
+        "이 건의를 삭제할까요?",
+        "삭제하면 되돌릴 수 없고, 목록과 공유 링크에서도 사라집니다. 삭제해도 다음 건의는 마지막 등록 후 10분이 지나야 올릴 수 있습니다.",
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "삭제하기",
+            style: "destructive",
+            onPress: () => {
+              api
+                .deletePetition(id)
+                .then(() => {
+                  setPetitions((prev) => prev.filter((x) => x.id !== id));
+                  setScreen(tab === "my" ? "my" : "feed");
+                  flash("건의를 삭제했습니다");
+                })
+                .catch((e) => flash(e instanceof Error ? e.message : "건의 삭제에 실패했습니다"));
+            },
+          },
+        ],
+      );
+    },
+    [tab, flash],
+  );
+
   const onToggleCommentLike = useCallback(
     (commentId: number) => {
       if (openId == null) return;
@@ -691,6 +720,7 @@ export default function App() {
               onReportComment={reportComment}
               onBlockComment={blockCommentAuthor}
               onBlockPetition={blockPetitionAuthor}
+              onDeletePetition={deletePetitionAt}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}
               deepPrompt={deepId === detail.id && !deepUsed}

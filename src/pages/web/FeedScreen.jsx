@@ -7,7 +7,7 @@
 import { useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
-import { Button, CATEGORIES, Icon } from "../../components/ui";
+import { Button, CATEGORIES, ConfirmDialog, Icon } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
@@ -274,7 +274,9 @@ export default function FeedScreen({ nav = "feed" }) {
   // 차단은 스토어(petitions)에서 바로 지워지므로 여기선 API 호출과 토스트만 맡는다.
   const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
   const reportPetition = usePetitions((s) => s.reportPetition);
+  const removePetition = usePetitions((s) => s.removePetition);
   const [reportId, setReportId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   /* 급상승 카드의 "더보기" — TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로 맞추고
      그 자리로 스크롤한다(사용자 지시). 스크롤 없이 정렬만 바꾸면 화면 밖에서 일어나 아무 반응이
@@ -284,6 +286,12 @@ export default function FeedScreen({ nav = "feed" }) {
     setCat("all");
     setSort("hot");
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleDelete = () => {
+    removePetition(deleteId)
+      .then(() => toast("건의를 삭제했습니다"))
+      .catch((e) => toast(e?.message || "삭제에 실패했습니다"));
   };
 
   const handleBlock = (id) => {
@@ -324,6 +332,15 @@ export default function FeedScreen({ nav = "feed" }) {
 
   return (
     <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 26 }}>
+      {deleteId !== null && (
+        <ConfirmDialog
+          title="이 건의를 삭제할까요?"
+          body="삭제하면 되돌릴 수 없고, 목록과 공유 링크에서도 사라집니다. 삭제해도 다음 건의는 마지막 등록 후 10분이 지나야 올릴 수 있습니다."
+          confirmLabel="삭제하기"
+          onConfirm={handleDelete}
+          onClose={() => setDeleteId(null)}
+        />
+      )}
       {reportId !== null && <ReportDialog target="게시글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)} />}
       {intro}
       {/* 웹은 데스크톱 폭이 넉넉해 두 카드를 2열로 두어도 건의 목록이 첫 화면에 들어온다 —
@@ -363,7 +380,7 @@ export default function FeedScreen({ nav = "feed" }) {
           {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>건의 등록</Button>}
         </EmptyState>
       ) : (
-        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onReport={setReportId} onBlock={handleBlock} />
+        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onReport={setReportId} onBlock={handleBlock} onDelete={setDeleteId} />
       )}
     </div>
   );

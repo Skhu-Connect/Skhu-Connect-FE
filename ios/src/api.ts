@@ -63,20 +63,23 @@ async function refreshAccessToken() {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** ProblemDetail 의 추가 속성(예: 429 의 retryAfterSeconds)을 호출부가 읽는다. */
+  body: any;
+  constructor(message: string, status: number, body?: any) {
     super(message);
     this.status = status;
+    this.body = body;
   }
 }
 
 async function parseError(res: Response) {
-  let title = "";
+  let body: any = null;
   try {
-    title = ((await res.json()) as { title?: string })?.title ?? "";
+    body = await res.json();
   } catch {
     /* 본문 없음 */
   }
-  return new ApiError(title || `요청을 처리할 수 없습니다. (${res.status})`, res.status);
+  return new ApiError(body?.title || `요청을 처리할 수 없습니다. (${res.status})`, res.status, body);
 }
 
 async function apiFetch<T = any>(path: string, opts: { method?: string; body?: unknown; auth?: boolean } = {}): Promise<T> {
@@ -423,12 +426,30 @@ export async function getPetition(petitionId: number): Promise<Petition> {
   return adaptPetition(raw);
 }
 
+/** 서버가 429 와 함께 주는 남은 초를 "3분 42초" 로 읽는다. 값이 없으면(구버전 서버) 시간 없이 안내만 한다.
+    웹 src/api/index.js 의 cooldownMessage 와 같은 문구다. */
+function cooldownMessage(retryAfterSeconds: unknown): string {
+  const total = Number(retryAfterSeconds);
+  const suffix = "마지막 등록 후 10분이 지나야 하며, 삭제한 건의도 이 시간에 포함됩니다.";
+  if (!Number.isFinite(total) || total <= 0) return `새 건의는 아직 올릴 수 없습니다. ${suffix}`;
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  return `${min ? `${min}분 ${sec}초` : `${sec}초`} 후에 새 건의를 올릴 수 있습니다. ${suffix}`;
+}
+
 export async function createPetition(args: { category: CategoryKey; title: string; body: string }): Promise<Petition> {
   const title = args.title.trim();
   const body = args.body.trim();
   if (!title) throw new Error("제목을 입력해 주세요.");
   if (!body) throw new Error("건의 내용을 입력해 주세요.");
-  const raw = await apiFetch<any>("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[args.category], title, content: body } });
+  let raw: any;
+  try {
+    raw = await apiFetch<any>("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[args.category], title, content: body } });
+  } catch (e) {
+    // 429 는 서버가 영문 title 로 준다 - 그대로 토스트에 뜨면 안 된다.
+    if (e instanceof ApiError && e.status === 429) throw new Error(cooldownMessage(e.body?.retryAfterSeconds));
+    throw e;
+  }
   myPetitionIds.add(raw.id);
   const p = adaptPetition(raw);
   p.comments = 0;
@@ -560,6 +581,19 @@ export async function updateComment(petitionId: number, commentId: number, body:
   if (!content) throw new Error("댓글 내용을 입력해 주세요.");
   const raw = await apiFetch<any>(`/connect/petitions/${petitionId}/comments/${commentId}`, { method: "PUT", body: { content } });
   return adaptComment(raw);
+}
+
+/** 작성자 본인의 청원 삭제(논리 삭제). 서버는 공감 0건인 OPEN 청원만 허용한다(아니면 409).
+    두 번 눌러 404 가 와도 "이미 지워진 것"이므로 성공으로 본다. 웹 deletePetition 과 같은 계약이다. */
+export async function deletePetition(petitionId: number): Promise<void> {
+  try {
+    await apiFetch(`/connect/petitions/${petitionId}`, { method: "DELETE" });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) throw new Error("공감이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
+    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+  }
+  myPetitionIds.delete(petitionId);
+  bookmarkedIds.delete(petitionId);
 }
 
 export async function deleteComment(petitionId: number, commentId: number): Promise<void> {

@@ -526,12 +526,14 @@ function MenuItem({ icon, label, color, onPress }: { icon: IconName; label: stri
 export function ActionMenu({
   onReport,
   onBlock,
+  onDelete,
   label = "메뉴",
   size = 17,
   style,
 }: {
-  onReport: () => void;
-  onBlock: () => void;
+  onReport?: () => void;
+  onBlock?: () => void;
+  onDelete?: () => void;
   label?: string;
   size?: number;
   style?: StyleProp<ViewStyle>;
@@ -580,8 +582,9 @@ export function ActionMenu({
                 shadow.lg,
               ]}
             >
-              <MenuItem icon="flag" label="신고" color={colors.body} onPress={() => pick(onReport)} />
-              <MenuItem icon="userX" label="차단" color={colors.danger} onPress={() => pick(onBlock)} />
+              {onReport ? <MenuItem icon="flag" label="신고" color={colors.body} onPress={() => pick(onReport)} /> : null}
+              {onBlock ? <MenuItem icon="userX" label="차단" color={colors.danger} onPress={() => pick(onBlock)} /> : null}
+              {onDelete ? <MenuItem icon="trash" label="삭제" color={colors.danger} onPress={() => pick(onDelete)} /> : null}
             </View>
           ) : null}
         </Pressable>

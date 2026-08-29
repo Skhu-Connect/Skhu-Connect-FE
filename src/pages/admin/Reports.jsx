@@ -1,4 +1,6 @@
-/* 신고 관리. 서버가 신고 시각·대상 본문을 주지 않아, 연결 가능한 청원 제목과 신고 사유를 중심으로 보여준다. */
+/* 신고 관리. 신고 응답이 대상 원문(targetTitle·targetContent)과 삭제·숨김 상태를 같이 주므로
+   청원 목록에 조인하지 않는다 - 작성자가 지운 글은 그 목록에서 빠져서 원문을 볼 수 없었다.
+   서버가 신고 시각은 주지 않아 여전히 표시하지 않는다. */
 
 import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
@@ -20,7 +22,6 @@ function Pill({ active, children, onClick }) {
 
 export default function Reports() {
   const reports = usePetitions((s) => s.reports);
-  const petitions = usePetitions((s) => s.petitions);
   const loading = usePetitions((s) => s.loading);
   const processReport = usePetitions((s) => s.processReport);
   const [status, setStatus] = useState("all");
@@ -29,8 +30,7 @@ export default function Reports() {
   const [busy, setBusy] = useState(null);
 
   const list = reports.filter((r) => {
-    const petition = petitions.find((p) => p.id === r.petitionId);
-    const searchable = `${petition?.title ?? ""} ${r.reasonDetail} ${r.id}`.toLowerCase();
+    const searchable = `${r.targetTitle ?? ""} ${r.targetContent ?? ""} ${r.reasonDetail} ${r.id}`.toLowerCase();
     return (status === "all" || r.status === status) && (target === "all" || r.targetType === target) && (!q.trim() || searchable.includes(q.trim().toLowerCase()));
   });
 
@@ -61,7 +61,7 @@ export default function Reports() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderTop: "1px solid var(--border-subtle)", background: "var(--surface-sunken)" }}>
           <label htmlFor="report-search" style={{ width: 62, flexShrink: 0, fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>검색</label>
-          <input id="report-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="글 제목 또는 신고 사유로 검색" style={{ width: 320, maxWidth: "100%", border: "1.5px solid var(--border-strong)", borderRadius: "var(--radius-pill)", padding: "9px 16px", font: "13.5px var(--font-sans)", outline: "none" }} />
+          <input id="report-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="글 제목, 원문 또는 신고 사유로 검색" style={{ width: 320, maxWidth: "100%", border: "1.5px solid var(--border-strong)", borderRadius: "var(--radius-pill)", padding: "9px 16px", font: "13.5px var(--font-sans)", outline: "none" }} />
         </div>
       </div>
       <div style={{ background: "#fff", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)", overflowX: "auto" }}>
@@ -70,10 +70,18 @@ export default function Reports() {
           <table style={{ width: "100%", minWidth: 860, borderCollapse: "collapse" }}>
             <thead><tr style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "left" }}><th style={{ padding: "10px 16px" }}>대상</th><th style={{ padding: "10px 12px" }}>신고 사유</th><th style={{ padding: "10px 12px" }}>상태</th><th style={{ padding: "10px 16px", textAlign: "right" }}>처리</th></tr></thead>
             <tbody>{list.map((r) => {
-              const p = petitions.find((item) => item.id === r.petitionId);
               const meta = STATUS_META[r.status];
+              const heading = r.targetTitle ?? (r.targetType === "comment" ? `댓글 #${r.commentId}` : `청원 #${r.petitionId}`);
               return <tr key={r.id} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                <td style={{ padding: "14px 16px", maxWidth: 300 }}><div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, color: "var(--text-strong)" }}><Icon name={r.targetType === "petition" ? "fileText" : "message"} size={16} />{p?.title ?? `청원 #${r.petitionId}`}</div><div style={{ marginTop: 3, fontSize: 12, color: "var(--text-muted)" }}>{r.targetType === "petition" ? "글 신고" : `댓글 #${r.commentId} 신고`}</div></td>
+                <td style={{ padding: "14px 16px", maxWidth: 300 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, color: "var(--text-strong)" }}><Icon name={r.targetType === "petition" ? "fileText" : "message"} size={16} />{heading}</div>
+                  <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12, color: "var(--text-muted)" }}>
+                    {r.targetType === "petition" ? "글 신고" : `댓글 #${r.commentId} 신고 · 청원 #${r.petitionId}`}
+                    {r.targetDeleted && <Badge tone="danger" size="sm">작성자 삭제</Badge>}
+                    {r.targetHidden && <Badge tone="warning" size="sm">숨김</Badge>}
+                  </div>
+                  {r.targetContent && <div title={r.targetContent} style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-body)", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "7px 10px", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.targetContent}</div>}
+                </td>
                 <td style={{ padding: "14px 12px", maxWidth: 350 }}><div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 3 }}>{REASONS[r.reasonType] ?? "기타"}</div><div style={{ fontSize: 13.5, color: "var(--text-body)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.reasonDetail}</div>{r.processingReason && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>처리: {r.processingReason}</div>}</td>
                 <td style={{ padding: "14px 12px" }}><Badge tone={meta.tone} size="sm">{meta.label}</Badge></td>
                 <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>{r.status === "pending" ? <><Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken")}>조치 완료</Button><Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => process(r, "dismissed")} style={{ marginLeft: 6 }}>기각</Button></> : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>처리됨</span>}</td>

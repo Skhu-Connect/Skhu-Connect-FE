@@ -228,6 +228,25 @@ export const usePetitions = create((set, get) => ({
     }));
   },
 
+  /** 내 청원 삭제. 목록·댓글 캐시와 플래그에서도 지운다 — 남겨두면 피드에 계속 보이고
+      눌러 들어가면 404 가 뜬다. */
+  removePetition: async (id) => {
+    const pid = Number(id);
+    await api.deletePetition(pid);
+    set((s) => {
+      const { [pid]: _comments, ...commentsById } = s.commentsById;
+      const { [pid]: _voted, ...voted } = s.voted;
+      const { [pid]: _bookmarked, ...bookmarked } = s.bookmarked;
+      return {
+        petitions: s.petitions.filter((p) => p.id !== pid),
+        commentsById,
+        voted,
+        bookmarked,
+        myTotals: api.getMyTotals(),
+      };
+    });
+  },
+
   loadMyComments: async () => {
     const myComments = await api.listMyComments();
     set({ myComments });

@@ -33,8 +33,10 @@ export function EmptyState({ title, desc, children }) {
   );
 }
 
-/** 카드 그리드. p.current 에는 내 공감이 이미 반영돼 있다(api view) — 여기서 +1 하지 않는다. */
-export function PetitionGrid({ list, authorOf, onReport, onBlock }) {
+/** 카드 그리드. p.current 에는 내 공감이 이미 반영돼 있다(api view) — 여기서 +1 하지 않는다.
+    삭제는 내 글이면서 공감 0건인 진행중 청원에만 띄운다. 서버가 그때만 허용하므로(아니면 409)
+    실패할 버튼을 보여주지 않는다 — 상세 화면과 같은 조건이다. */
+export function PetitionGrid({ list, authorOf, onReport, onBlock, onDelete }) {
   const voted = usePetitions((s) => s.voted);
   const vote = usePetitions((s) => s.vote);
   const navigate = useNavigate();
@@ -56,6 +58,7 @@ export function PetitionGrid({ list, authorOf, onReport, onBlock }) {
           onToggleVote={() => toggleVoteWithConfirm(vote, p.id, voted[p.id])}
           onReport={onReport && !p.mine ? () => onReport(p.id) : undefined}
           onBlock={onBlock && !p.mine ? () => onBlock(p.id) : undefined}
+          onDelete={onDelete && p.mine && p.current === 0 && p.status === "received" ? () => onDelete(p.id) : undefined}
           onClick={() => navigate(`/p/${p.id}`)}
         />
       ))}

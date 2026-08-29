@@ -30,6 +30,7 @@ export type DetailProps = {
   onAddReply: (parentId: number, body: string) => Promise<void>;
   onDeleteComment: (commentId: number) => void;
   onBlockPetition: (petitionId: number) => void;
+  onDeletePetition: (petitionId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
   /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
@@ -140,6 +141,8 @@ export function DetailScreen(p: DetailProps) {
   const d = p.petition;
   const c = count(d, p.votes);
   const reached = c >= d.threshold;
+  // 공감이 1건이라도 붙거나 검토·답변 단계로 넘어간 청원은 서버가 삭제를 막는다.
+  const canDelete = d.mine && c === 0 && d.status === "received";
   const answered = d.status === "answered";
   const [reportTarget, setReportTarget] = useState<{ type: "petition" } | { type: "comment"; id: number } | null>(null);
   const [replyTo, setReplyTo] = useState<number | null>(null);
@@ -174,6 +177,15 @@ export function DetailScreen(p: DetailProps) {
             style={{ width: 36, height: 36 }}
             onReport={() => setReportTarget({ type: "petition" })}
             onBlock={() => p.onBlockPetition(d.id)}
+          />
+        ) : canDelete ? (
+          /* 서버는 공감 0건인 진행중 청원만 삭제를 허용한다(아니면 409) — 지울 수 있을 때만
+             메뉴를 띄워 실패하는 버튼을 보여주지 않는다. 웹 DetailScreen 과 같은 조건이다. */
+          <ActionMenu
+            label="게시글 메뉴"
+            size={19}
+            style={{ width: 36, height: 36 }}
+            onDelete={() => p.onDeletePetition(d.id)}
           />
         ) : (
           <View className="ml-auto" />

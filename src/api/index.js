@@ -9,8 +9,9 @@
    알림 설정(NotificationSettingsScreen)은 NotificationEventService의 발생 지점 5곳을 보여주고
    PATCH /connect/users/me/notification-settings로 종류별 수신 설정을 저장한다.
 
-   청원 수정/삭제(PUT·DELETE /connect/petitions/{id})는 백엔드엔 있지만 화면에 진입점(수정 메뉴)이
-   없어 아직 연동하지 않았다 — 필요해지면 그 화면부터 만들 것.
+   청원 삭제(DELETE /connect/petitions/{id})는 상세 화면 ⋮ 메뉴로 연동했다. 서버가 공감 0건인
+   진행중 청원만 허용하므로(아니면 409) 그 조건일 때만 메뉴를 띄운다. 청원 수정(PUT)은 화면에
+   진입점을 두지 않기로 했다 — 필요해지면 그 화면부터 만들 것.
 
    비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 아이디·비밀번호 변경까지
    실 백엔드에 연동됐다.
@@ -70,14 +71,15 @@ async function refreshAccessToken() {
 }
 
 async function parseError(res) {
-  let title = "";
+  let body = null;
   try {
-    title = (await res.json())?.title ?? "";
+    body = await res.json();
   } catch {
     /* 본문 없음 */
   }
-  const err = new Error(title || `요청을 처리할 수 없습니다. (${res.status})`);
+  const err = new Error(body?.title || `요청을 처리할 수 없습니다. (${res.status})`);
   err.status = res.status;
+  err.body = body; // ProblemDetail 의 추가 속성(예: 429 의 retryAfterSeconds)을 호출부가 읽는다
   return err;
 }
 
@@ -412,6 +414,16 @@ export async function getPetition(id) {
   }
 }
 
+/** 서버가 429 와 함께 주는 남은 초를 "3분 42초" 로 읽는다. 값이 없으면(구버전 서버) 시간 없이 안내만 한다. */
+function cooldownMessage(retryAfterSeconds) {
+  const total = Number(retryAfterSeconds);
+  const suffix = "마지막 등록 후 10분이 지나야 하며, 삭제한 건의도 이 시간에 포함됩니다.";
+  if (!Number.isFinite(total) || total <= 0) return `새 건의는 아직 올릴 수 없습니다. ${suffix}`;
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  return `${min ? `${min}분 ${sec}초` : `${sec}초`} 후에 새 건의를 올릴 수 있습니다. ${suffix}`;
+}
+
 export async function createPetition({ category: categoryKey, title, body }) {
   const t = String(title ?? "").trim();
   const b = String(body ?? "").trim();
@@ -424,12 +436,30 @@ export async function createPetition({ category: categoryKey, title, body }) {
   try {
     raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
   } catch (e) {
-    if (e.status === 429) throw new Error("마지막 등록 후 10분이 지나야 새 건의를 올릴 수 있습니다. 삭제한 건의도 이 시간에 포함됩니다.");
+    if (e.status === 429) throw new Error(cooldownMessage(e.body?.retryAfterSeconds));
     throw e;
   }
   myPetitionIds.add(raw.id);
   myTotals = { ...myTotals, mine: myTotals.mine + 1 };
   return adaptPetition(raw);
+}
+
+/** 작성자 본인의 청원 삭제(논리 삭제). 서버는 공감 0건인 OPEN 청원만 허용한다(아니면 409).
+    두 번 눌러 404 가 와도 "이미 지워진 것"이므로 성공으로 본다. */
+export async function deletePetition(petitionId) {
+  const id = Number(petitionId);
+  try {
+    await apiFetch(`/connect/petitions/${id}`, { method: "DELETE" });
+  } catch (e) {
+    if (e.status === 409) throw new Error("공감이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
+    if (e.status !== 404) throw e;
+  }
+  myPetitionIds.delete(id);
+  myTotals = { ...myTotals, mine: Math.max(0, myTotals.mine - 1) };
+  // 공감은 0건이어야 삭제되므로 voted 는 줄지 않는다. 내 글을 내가 북마크한 경우만 반영한다.
+  if (bookmarkedIds.delete(id)) {
+    myTotals = { ...myTotals, bookmarked: Math.max(0, myTotals.bookmarked - 1) };
+  }
 }
 
 const REPORT_REASON_TYPES = new Set(["SPAM", "ABUSE", "INAPPROPRIATE", "FALSE_INFORMATION", "OTHER"]);
@@ -770,6 +800,11 @@ function adaptAdminReport(raw) {
     reasonType: raw.reasonType,
     reasonDetail: raw.reasonDetail,
     processingReason: raw.processingReason ?? null,
+    // 신고 대상 원문. 작성자가 지운 글도 신고 화면에서는 원문이 보여야 한다(관리자 정책 3절).
+    targetTitle: raw.targetTitle ?? null,
+    targetContent: raw.targetContent ?? null,
+    targetDeleted: raw.targetDeleted ?? false,
+    targetHidden: raw.targetHidden ?? false,
   };
 }
 

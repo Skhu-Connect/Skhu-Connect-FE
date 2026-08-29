@@ -590,12 +590,12 @@ export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학�
 const BLOCK_BODY = "차단하면 이 사용자가 쓴 모든 글과 댓글이 앞으로 보이지 않습니다. 지금은 해제할 수 없습니다.";
 
 /** 차단 확인 창. 피드 카드와 상세의 댓글이 같은 창을 쓴다 — 따로 만들면 경고 문구가 갈린다. */
-export function BlockConfirmDialog({ title, onConfirm, onClose }) {
+export function ConfirmDialog({ title, body = BLOCK_BODY, confirmLabel = "차단하기", onConfirm, onClose }) {
   return (
     <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(24,24,54,.45)", padding: 20 }} onClick={onClose}>
       <div style={{ width: "100%", maxWidth: 360, background: "var(--surface-card)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 22 }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ margin: "0 0 8px", fontSize: 16.5, fontWeight: 800, color: "var(--text-strong)" }}>{title}</h3>
-        <p style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>{BLOCK_BODY}</p>
+        <p style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>{body}</p>
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" block onClick={onClose}>취소</Button>
           <Button
@@ -606,7 +606,7 @@ export function BlockConfirmDialog({ title, onConfirm, onClose }) {
               onClose();
             }}
           >
-            차단하기
+            {confirmLabel}
           </Button>
         </div>
       </div>
@@ -638,7 +638,7 @@ export function LoginPromptDialog({ onConfirm, onClose }) {
 /** 신고·차단 오버플로 메뉴. 피드 카드·청원 상세·댓글이 모두 이걸 쓴다 — 같은 두 동작이
     화면마다 다른 모양이면 어디서 뭘 할 수 있는지 매번 다시 찾아야 한다.
     카드 위에서도 쓰이므로 클릭이 카드 이동으로 새지 않게 막는다. */
-export function ActionMenu({ onReport, onBlock, label = "메뉴" }) {
+export function ActionMenu({ onReport, onBlock, onDelete, label = "메뉴" }) {
   const [open, setOpen] = useState(false);
   const item = (danger) => ({
     display: "flex",
@@ -685,6 +685,12 @@ export function ActionMenu({ onReport, onBlock, label = "메뉴" }) {
                 차단
               </button>
             )}
+            {onDelete && (
+              <button type="button" role="menuitem" onClick={() => { setOpen(false); onDelete(); }} style={item(true)}>
+                <Icon name="trash" size={15} />
+                삭제
+              </button>
+            )}
           </div>
         </>
       )}
@@ -708,6 +714,7 @@ export function PetitionCard({
   onToggleVote,
   onReport,
   onBlock,
+  onDelete,
   onClick,
   style,
   ...rest
@@ -747,16 +754,17 @@ export function PetitionCard({
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <CategoryTag category={category} size="sm" />
         <StatusBadge status={status} size="sm" />
-        {(onReport || onBlock) && (
+        {(onReport || onBlock || onDelete) && (
           <ActionMenu
             label="게시글 메뉴"
             onReport={onReport}
             onBlock={onBlock && (() => setBlocking(true))}
+            onDelete={onDelete}
           />
         )}
       </div>
       {blocking && (
-        <BlockConfirmDialog
+        <ConfirmDialog
           title="이 글을 쓴 사용자를 차단할까요?"
           onConfirm={() => onBlock()}
           onClose={() => setBlocking(false)}

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, LoginPromptDialog, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
+import { ActionMenu, Avatar, ConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, LoginPromptDialog, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
@@ -165,7 +165,7 @@ function CommentsSection({ petitionId, authed, requireAuth }) {
   return (
     <>
       {reportId !== null && <ReportDialog target="댓글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportComment(reportId, reasonType, reasonDetail)} />}
-      {blockId !== null && <BlockConfirmDialog title="이 댓글을 쓴 사용자를 차단할까요?" onConfirm={confirmBlock} onClose={() => setBlockId(null)} />}
+      {blockId !== null && <ConfirmDialog title="이 댓글을 쓴 사용자를 차단할까요?" onConfirm={confirmBlock} onClose={() => setBlockId(null)} />}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", margin: "0 0 4px" }}>댓글 {total}</h2>
       <Card>
         {list.map((c) => (
@@ -225,6 +225,7 @@ export default function DetailScreen() {
   const bookmark = usePetitions((s) => s.bookmark);
   const reportPetition = usePetitions((s) => s.reportPetition);
   const blockPetitionAuthor = usePetitions((s) => s.blockPetitionAuthor);
+  const removePetition = usePetitions((s) => s.removePetition);
   const authed = useSession((s) => s.authed);
   const navigate = useNavigate();
   const location = useLocation();
@@ -232,6 +233,7 @@ export default function DetailScreen() {
   const [missing, setMissing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
 
   // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 먼저 안내창을 띄우고,
@@ -265,12 +267,31 @@ export default function DetailScreen() {
     );
   }
 
+  // 공감이 1건이라도 붙거나 검토·답변 단계로 넘어간 청원은 서버가 삭제를 막는다.
+  const canDelete = p.mine && p.current === 0 && p.status === "received";
+
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "22px var(--page-gutter) 90px" }}>
+      {deleteOpen && (
+        <ConfirmDialog
+          title="이 건의를 삭제할까요?"
+          body="삭제하면 되돌릴 수 없고, 목록과 공유 링크에서도 사라집니다. 삭제해도 다음 건의는 마지막 등록 후 10분이 지나야 올릴 수 있습니다."
+          confirmLabel="삭제하기"
+          onConfirm={() =>
+            removePetition(p.id)
+              .then(() => {
+                toast("건의를 삭제했습니다");
+                navigate("/");
+              })
+              .catch((e) => toast(e?.message || "삭제에 실패했습니다"))
+          }
+          onClose={() => setDeleteOpen(false)}
+        />
+      )}
       {reportOpen && <ReportDialog target="게시글" onClose={() => setReportOpen(false)} onSubmit={(reasonType, reasonDetail) => reportPetition(p.id, reasonType, reasonDetail)} />}
       {/* 차단하면 이 청원 자체가 안 보이게 되므로 목록으로 돌려보낸다 — 그대로 두면 빈 상세에 남는다. */}
       {blockOpen && (
-        <BlockConfirmDialog
+        <ConfirmDialog
           title="이 글을 쓴 사용자를 차단할까요?"
           onConfirm={() =>
             blockPetitionAuthor(p.id)
@@ -294,7 +315,11 @@ export default function DetailScreen() {
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
             {/* 원래 신고 버튼과 핸들러 없는 장식용 "더보기" 가 나란히 있었다 — 댓글·피드 카드와 같은
                 ⋮ 메뉴 하나로 합친다. 내 글엔 안 띄운다(자기 신고·본인 차단은 서버가 막는다). */}
-            {!p.mine && (
+            {p.mine ? (
+              /* 서버는 공감 0건인 진행중 청원만 삭제를 허용한다(아니면 409) — 지울 수 있을 때만
+                 메뉴를 띄워 실패하는 버튼을 보여주지 않는다. */
+              canDelete && <ActionMenu label="게시글 메뉴" onDelete={() => setDeleteOpen(true)} />
+            ) : (
               <ActionMenu
                 label="게시글 메뉴"
                 onReport={() => (authed ? setReportOpen(true) : requireAuth())}
