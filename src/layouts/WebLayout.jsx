@@ -10,6 +10,7 @@ import { usePetitions } from "../stores/petitions";
 import { Toaster } from "../components/Toast";
 import Header from "../components/web/Header";
 import MobileShareHeader from "../components/web/MobileShareHeader";
+import AppInstallBanner from "../components/web/AppInstallBanner";
 import { useIsMobile } from "../utils/useIsMobile";
 
 const FEED_PATHS = ["/", "/answered", "/mine"];
@@ -62,6 +63,7 @@ export default function WebLayout() {
   return (
     <>
       {mobileShare ? <MobileShareHeader /> : <Header search={query} onSearch={onSearch} />}
+      {mobileShare ? <AppInstallBanner /> : null}
       <Outlet context={{ query }} />
       <Toaster />
     </>
