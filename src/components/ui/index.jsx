@@ -614,6 +614,27 @@ export function BlockConfirmDialog({ title, onConfirm, onClose }) {
   );
 }
 
+/** 로그인 유도 창. 에타 등에서 공유 링크로 들어온 비로그인 방문자가 공감·댓글·북마크를 누르면 뜬다.
+    바로 로그인 화면으로 보내면 왜 넘어왔는지 모른 채 처음 보는 폼을 마주하게 된다 — 무엇을 하려다
+    막혔는지 알려주고 나서 보낸다. 문구에 동작 이름을 넣지 않는 건 "공감은/북마크는" 처럼 조사가
+    갈리기 때문이다. */
+export function LoginPromptDialog({ onConfirm, onClose }) {
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="login-prompt-title" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(24,24,54,.45)", padding: 20 }} onClick={onClose}>
+      <div style={{ width: "100%", maxWidth: 360, background: "var(--surface-card)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 22 }} onClick={(e) => e.stopPropagation()}>
+        <h3 id="login-prompt-title" style={{ margin: "0 0 8px", fontSize: 16.5, fontWeight: 800, color: "var(--text-strong)" }}>로그인이 필요해요</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>
+          공감·댓글·북마크는 로그인한 학생만 사용할 수 있습니다. 학교 이메일로 가입하면 바로 참여할 수 있어요.
+        </p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Button variant="ghost" block onClick={onClose}>취소</Button>
+          <Button variant="primary" block onClick={onConfirm}>로그인하기</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 신고·차단 오버플로 메뉴. 피드 카드·청원 상세·댓글이 모두 이걸 쓴다 — 같은 두 동작이
     화면마다 다른 모양이면 어디서 뭘 할 수 있는지 매번 다시 찾아야 한다.
     카드 위에서도 쓰이므로 클릭이 카드 이동으로 새지 않게 막는다. */

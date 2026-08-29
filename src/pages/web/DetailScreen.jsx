@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
+import { ActionMenu, Avatar, BlockConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, LoginPromptDialog, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
@@ -232,9 +232,12 @@ export default function DetailScreen() {
   const [missing, setMissing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [loginPrompt, setLoginPrompt] = useState(false);
 
-  // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 로그인 후 이 청원으로 복귀한다.
-  const requireAuth = () => navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+  // 동의(공감)를 포함한 로그인 필요 동작 — 게스트가 시도하면 먼저 안내창을 띄우고,
+  // 확인했을 때만 로그인으로 보낸다. 로그인 후에는 이 청원으로 복귀한다.
+  const requireAuth = () => setLoginPrompt(true);
+  const goLogin = () => navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -345,6 +348,8 @@ export default function DetailScreen() {
       {answer && <div style={{ marginTop: 18 }}><AdminAnswer a={answer} /></div>}
 
       <div style={{ marginTop: 26 }}><CommentsSection petitionId={pid} authed={authed} requireAuth={requireAuth} /></div>
+
+      {loginPrompt && <LoginPromptDialog onConfirm={goLogin} onClose={() => setLoginPrompt(false)} />}
     </div>
   );
 }

@@ -1,13 +1,17 @@
 /* 로그인·회원가입 공용 셸. 400px 카드가 그라디언트 위에 떠 있던 이전 모습은 모바일 앱
    로그인 화면을 그대로 옮긴 것처럼 보인다는 지적을 받았다 — 데스크톱 웹에 맞게
-   좌(브랜드 문구) · 우(폼) 스플릿 스크린으로 바꾼다. 프로젝트에
-   반응형 분기가 없으므로(exec-plans/roadmap-web.md 참고) 고정 스플릿만 짠다.
+   좌(브랜드 문구) · 우(폼) 스플릿 스크린으로 바꾼다.
+
+   모바일은 스플릿을 접고 폼만 한 칸으로 세운다 — 에타에 공유된 링크를 폰에서 열면
+   42% 를 브랜드 문구가 가져가 폼이 100px 대로 찌그러졌다. 문구는 숨기고(영상과 좌상단
+   로고가 이미 브랜드를 보여준다) 가장자리 여백도 좁힌다.
 
    배경은 캠퍼스 영상(이슈 #24). 폼을 담던 흰 패널은 뺐다 — 스크림이 오른쪽까지
    충분히 어두워서 패널 없이도 글자가 읽힌다. */
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useIsMobile } from "../utils/useIsMobile";
 
 // 화면 가장자리 여백. 왼쪽 문구와 오른쪽 폼이 같은 값을 써야 좌우가 대칭으로 앉는다.
 const EDGE = 56;
@@ -110,6 +114,9 @@ function Chars({ text, shown, start }) {
 }
 
 export default function AuthLayout({ children }) {
+  const isMobile = useIsMobile();
+  // 좌우 여백. 모바일에서 56px 을 그대로 쓰면 390px 화면에서 폼 폭이 절반 넘게 깎인다.
+  const edge = isMobile ? 20 : EDGE;
   const video = useRef(null);
   // 상태는 엘리먼트에서 파생시킨다(onPlay·onPause). 여기서 "autoplay 는 성공했겠지" 하고
   // 넘겨짚으면 자동재생이 막히는 환경(iOS 저전력 모드 등)에서 멈춘 영상 위에 "멈추기" 가 뜬다.
@@ -178,7 +185,7 @@ export default function AuthLayout({ children }) {
       />
       <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: -1, background: SCRIM }} />
 
-      <Link to="/" style={{ position: "absolute", top: 40, left: EDGE, display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", ...rise(shown, 0.1, 8) }}>
+      <Link to="/" style={{ position: "absolute", top: 40, left: edge, display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", ...rise(shown, 0.1, 8) }}>
         <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
         <span style={{ fontWeight: 800, fontSize: 17 }}>{SERVICE_NAME}</span>
       </Link>
@@ -188,8 +195,8 @@ export default function AuthLayout({ children }) {
           알 수 없어 안 된다. */}
       {/* 세로 여백 100px 은 좌상단 로고(top 40 + 34px) 를 피하려는 값이다. 화면이 넉넉하면 행이
           가운데 정렬돼 이 여백이 화면에 안 나타나고, 회원가입 2단계처럼 넘칠 때만 벌어진다. */}
-      <div style={{ width: "100%", display: "grid", gridTemplateColumns: "42% 1fr", padding: "100px 0" }}>
-        <div style={{ display: "flex", padding: `0 ${EDGE}px`, color: "#fff" }}>
+      <div style={{ width: "100%", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "42% 1fr", padding: isMobile ? "92px 0 40px" : "100px 0" }}>
+        <div style={{ display: isMobile ? "none" : "flex", padding: `0 ${edge}px`, color: "#fff" }}>
           {/* fit-content 라 이 블록의 폭이 가장 긴 줄(슬로건 1행 "…곳,")에 딱 맞춰진다.
               밑줄이 width:100% 로 그 폭을 그대로 쓰므로 문구를 고쳐도 길이를 다시 재지 않는다.
               (flex 아이템이라 display:inline-block 은 block 으로 뭉개진다 — width 로 잡아야 한다.)
@@ -258,7 +265,7 @@ export default function AuthLayout({ children }) {
             폼은 글자 단위로 쪼개지 않는다 — 헤드라인이 다 앉기 전에 바로 입력할 수 있어야 하므로
             한 덩어리로 짧게 떠오르고 끝낸다.
             className 은 placeholder 하나 때문이다 — 가상 요소라 인라인 스타일로 못 준다. */}
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: `0 ${EDGE}px` }}>
+        <div style={{ display: "flex", justifyContent: isMobile ? "center" : "flex-end", padding: `0 ${edge}px` }}>
           <div className="auth-on-video" style={{ width: FORM_WIDTH, maxWidth: "100%", ...LIGHT_ON_VIDEO, ...rise(shown, 0.6, 16) }}>
             {children}
           </div>

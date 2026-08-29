@@ -10,6 +10,7 @@ import { usePetitions } from "../stores/petitions";
 import { Toaster } from "../components/Toast";
 import Header from "../components/web/Header";
 import MobileShareHeader from "../components/web/MobileShareHeader";
+import { useIsMobile } from "../utils/useIsMobile";
 
 const FEED_PATHS = ["/", "/answered", "/mine"];
 // 공유받은 청원 상세는 비로그인도 볼 수 있다(의존 G) — 동의·댓글·신고 같은 개별 동작은
@@ -17,19 +18,6 @@ const FEED_PATHS = ["/", "/answered", "/mine"];
 // 숫자 id로 한정하지 않는다 — 오타난 id(/p/abc)도 DetailScreen이 기존 404("찾을 수 없음") 처리로
 // 이미 다루므로, 여기서 걸러 로그인으로 보내면 정상 not-found와 처리가 갈린다.
 const GUEST_PATH = /^\/p\/[^/]+$/;
-const MOBILE_QUERY = "(max-width: 767px)";
-
-/** 모바일 웹은 전체 서비스를 제공하지 않는다 — 공유받은 청원(GUEST_PATH)에 한해 축소 헤더로 바꾼다. */
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
-  useEffect(() => {
-    const mql = window.matchMedia(MOBILE_QUERY);
-    const onChange = () => setIsMobile(mql.matches);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-  return isMobile;
-}
 
 export default function WebLayout() {
   const authed = useSession((s) => s.authed);
