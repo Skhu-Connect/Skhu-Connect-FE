@@ -418,7 +418,15 @@ export async function createPetition({ category: categoryKey, title, body }) {
   if (!CATEGORY_META[categoryKey]) throw new Error("카테고리를 선택해 주세요.");
   if (!t) throw new Error("제목을 입력해 주세요.");
   if (!b) throw new Error("건의 내용을 입력해 주세요.");
-  const raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
+  // 429 는 서버가 영문 title("Petition creation cooldown is active")로 준다 — 그대로 토스트에 뜨면 안 된다.
+  // 쿨다운은 created_at 기준이라 등록 후 삭제해도 풀리지 않는다(PetitionRepository.findLatestCreatedAtByWriterId).
+  let raw;
+  try {
+    raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
+  } catch (e) {
+    if (e.status === 429) throw new Error("마지막 등록 후 10분이 지나야 새 건의를 올릴 수 있습니다. 삭제한 건의도 이 시간에 포함됩니다.");
+    throw e;
+  }
   myPetitionIds.add(raw.id);
   myTotals = { ...myTotals, mine: myTotals.mine + 1 };
   return adaptPetition(raw);
