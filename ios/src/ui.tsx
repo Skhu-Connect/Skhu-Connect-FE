@@ -1,9 +1,10 @@
 /* 디자인 시스템 프리미티브 RN 이식.
    스펙 원본: design-handoff 의 _ds_bundle.js (웹 이식본은 ../../src/components/ui/index.jsx).
    원본이 픽셀을 인라인으로 정의하므로 수치를 그대로 옮긴다 — 유틸리티 클래스로 반올림하면 값이 드리프트한다. */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
+  Dimensions,
   Easing,
   Image,
   Modal,
@@ -503,6 +504,92 @@ export function ThresholdBar({
 }
 
 /* 화면들이 공통으로 쓰는 카드 셸. */
+function MenuItem({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="menuitem"
+      /* style 을 함수로 주면 안 된다 — NativeWind v4 가 Pressable 을 감싸면서 그 형태를 흘려버려
+         스타일이 통째로 무시되고 아이콘 아래로 글자가 떨어진다. 이 레포의 다른 Pressable 도
+         전부 객체로만 준다. 눌림 표시는 누르는 즉시 메뉴가 닫혀 보이지도 않아 빼둔다. */
+      style={{ flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 8 }}
+    >
+      <Icon name={icon} size={15} color={color} />
+      <Text style={{ fontFamily: font, fontSize: 13, fontWeight: "600", color }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/* 신고·차단 오버플로 메뉴. 피드 카드·청원 상세·댓글이 모두 이걸 쓴다 — 웹 components/ui 의 ActionMenu 와 같은 짝이다.
+   전에는 Alert.alert(액션시트)로 띄웠는데, 화면 아래에서 올라오는 큰 모달이라 웹의 작은 드롭다운과 모양이 갈렸다.
+   ⋮ 버튼 위치를 measureInWindow 로 재서 그 바로 아래에 붙인다 — 앵커가 없으면 어느 항목의 메뉴인지 알 수 없다. */
+export function ActionMenu({
+  onReport,
+  onBlock,
+  label = "메뉴",
+  size = 17,
+  style,
+}: {
+  onReport: () => void;
+  onBlock: () => void;
+  label?: string;
+  size?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+  const button = useRef<View>(null);
+
+  const open = () => {
+    button.current?.measureInWindow((x, y, width, height) => {
+      setAnchor({ top: y + height + 4, right: Dimensions.get("window").width - (x + width) });
+    });
+  };
+  const pick = (run: () => void) => {
+    setAnchor(null);
+    run();
+  };
+
+  return (
+    <>
+      <Pressable
+        ref={button}
+        onPress={open}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        hitSlop={8}
+        style={[{ marginLeft: "auto", width: 26, height: 26, alignItems: "center", justifyContent: "center" }, style]}
+      >
+        <Icon name="moreVertical" size={size} color={colors.muted} />
+      </Pressable>
+      <Modal visible={anchor != null} transparent animationType="fade" onRequestClose={() => setAnchor(null)}>
+        <Pressable style={{ flex: 1 }} accessibilityLabel="메뉴 닫기" onPress={() => setAnchor(null)}>
+          {anchor ? (
+            <View
+              style={[
+                {
+                  position: "absolute",
+                  top: anchor.top,
+                  right: anchor.right,
+                  minWidth: 128,
+                  backgroundColor: colors.card,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.subtle,
+                  padding: 6,
+                },
+                shadow.lg,
+              ]}
+            >
+              <MenuItem icon="flag" label="신고" color={colors.body} onPress={() => pick(onReport)} />
+              <MenuItem icon="userX" label="차단" color={colors.danger} onPress={() => pick(onBlock)} />
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 export function Card({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.subtle, padding: 16 }, shadow.sm, style]}>{children}</View>

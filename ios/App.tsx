@@ -431,6 +431,53 @@ export default function App() {
 
   /* 공감은 즉시 반영하고 서버 응답으로 정확한 수치를 덮는다. 실패하면 원래대로 되돌린다
      (onVote 와 같은 패턴). openId 는 열려 있는 청원 — 댓글은 그 아래에만 있다. */
+  /* 웹 DetailScreen 의 editComment·removeComment 와 같은 짝이다. 서버가 작성자 본인인지
+     검사하므로 여기서 따로 소유권을 확인하지 않는다. */
+  const editComment = useCallback(
+    async (commentId: number, body: string) => {
+      if (openId == null) return;
+      const petitionId = openId;
+      try {
+        const updated = await api.updateComment(petitionId, commentId, body);
+        setComments((all) => ({
+          ...all,
+          [petitionId]: (all[petitionId] ?? []).map((c) => (c.id === commentId ? updated : c)),
+        }));
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "댓글 수정에 실패했습니다");
+      }
+    },
+    [openId, flash],
+  );
+
+  const deleteCommentAt = useCallback(
+    (commentId: number) => {
+      if (openId == null) return;
+      const petitionId = openId;
+      Alert.alert("댓글을 삭제할까요?", undefined, [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: () => {
+            api
+              .deleteComment(petitionId, commentId)
+              .then(() => {
+                setComments((all) => ({
+                  ...all,
+                  [petitionId]: (all[petitionId] ?? []).filter((c) => c.id !== commentId),
+                }));
+                setPetitions((prev) => prev.map((x) => (x.id === petitionId ? { ...x, comments: Math.max(0, x.comments - 1) } : x)));
+                flash("댓글을 삭제했습니다");
+              })
+              .catch((e) => flash(e instanceof Error ? e.message : "댓글 삭제에 실패했습니다"));
+          },
+        },
+      ]);
+    },
+    [openId, flash],
+  );
+
   const onToggleCommentLike = useCallback(
     (commentId: number) => {
       if (openId == null) return;
@@ -591,6 +638,8 @@ export default function App() {
               votes={votes}
               comments={comments[detail.id] ?? []}
               onToggleCommentLike={onToggleCommentLike}
+              onEditComment={editComment}
+              onDeleteComment={deleteCommentAt}
               draft={draft}
               onDraft={setDraft}
               onAddComment={addComment}

@@ -552,6 +552,18 @@ export async function addComment(petitionId: number, body: string): Promise<Comm
   return adaptComment(raw);
 }
 
+/** 웹 src/api/index.js updateComment 과 같은 계약 — 서버가 작성자 본인인지 검사한다. */
+export async function updateComment(petitionId: number, commentId: number, body: string): Promise<Comment> {
+  const content = body.trim();
+  if (!content) throw new Error("댓글 내용을 입력해 주세요.");
+  const raw = await apiFetch<any>(`/connect/petitions/${petitionId}/comments/${commentId}`, { method: "PUT", body: { content } });
+  return adaptComment(raw);
+}
+
+export async function deleteComment(petitionId: number, commentId: number): Promise<void> {
+  await apiFetch(`/connect/petitions/${petitionId}/comments/${commentId}`, { method: "DELETE" });
+}
+
 function adaptMyComment(uc: any): MyComment {
   return { id: uc.comment.id, petitionId: uc.petitionId, body: uc.comment.content, date: formatRelative(uc.comment.createdAt) };
 }

@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
 import { CAT_CHIPS, type CategoryKey, type Petition } from "../data";
 import { count, daysLeft, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
-import { CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
+import { ActionMenu, CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { ReportSheet } from "../reportSheet";
 import type { ReportReasonType } from "../api";
 import { colors, font, gradient, radius } from "../theme";
@@ -418,15 +418,6 @@ function askSort(current: Sort, onSort: (s: Sort) => void) {
   ]);
 }
 
-/* askSort 와 같은 이유로 Alert.alert 를 쓴다 — 상세 화면의 askPetitionAction 과 같은 구성이다. */
-function askPetitionAction(onReport: () => void, onBlock: () => void) {
-  Alert.alert("게시글", undefined, [
-    { text: "신고", onPress: onReport },
-    { text: "차단", style: "destructive", onPress: onBlock },
-    { text: "취소", style: "cancel" },
-  ]);
-}
-
 function ChipRow({ children }: { children: React.ReactNode }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 14 }}>
@@ -459,19 +450,8 @@ function PetitionCard({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} size="sm" />
           <StatusBadge status={p.status} size="sm" />
-          {/* 내 글엔 안 보인다 — 서버가 본인 차단을 400 으로 막는다(자기 자신 차단 방지). */}
-          {!p.mine ? (
-            <Pressable
-              onPress={() => askPetitionAction(() => onReport(p.id), () => onBlock(p.id))}
-              accessibilityRole="button"
-              accessibilityLabel="게시글 메뉴"
-              hitSlop={8}
-              style={{ marginLeft: "auto", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}
-            >
-              {/* 상세·댓글과 같은 ⋮ 다 — 신고·차단은 메뉴 안으로 들어갔다. */}
-              <Icon name="moreVertical" size={17} color={colors.muted} />
-            </Pressable>
-          ) : null}
+          {/* 상세·댓글과 같은 ⋮ 다. 내 글엔 안 보인다 — 서버가 본인 차단을 400 으로 막는다(자기 자신 차단 방지). */}
+          {!p.mine ? <ActionMenu label="게시글 메뉴" onReport={() => onReport(p.id)} onBlock={() => onBlock(p.id)} /> : null}
         </View>
 
         <Text style={[t, { fontWeight: "700", fontSize: 15.5, color: colors.strong, lineHeight: 21.7, letterSpacing: -0.155 }]}>{p.title}</Text>

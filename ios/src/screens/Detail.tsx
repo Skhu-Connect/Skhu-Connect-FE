@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
 import { BASIS_NOTE, CAT_LABEL, type Comment, type Petition } from "../data";
 import { count, ddayLabel, ymd } from "../logic";
 import type { Votes } from "../logic";
-import { Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
+import { ActionMenu, Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
 import { colors, font, gradient, radius } from "../theme";
 import type { ReportReasonType } from "../api";
 import { ReportSheet } from "../reportSheet";
@@ -26,6 +26,8 @@ export type DetailProps = {
   onReportComment: (commentId: number, reasonType: ReportReasonType, reasonDetail: string) => Promise<void>;
   onBlockComment: (commentId: number) => void;
   onToggleCommentLike: (commentId: number) => void;
+  onEditComment: (commentId: number, body: string) => Promise<void>;
+  onDeleteComment: (commentId: number) => void;
   onBlockPetition: (petitionId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
@@ -33,22 +35,100 @@ export type DetailProps = {
   deepPrompt: boolean;
 };
 
-/* Feed.tsx 의 askSort 와 같은 이유로 Alert.alert 를 쓴다 — iOS 에서 버튼 목록이 액션시트처럼 뜬다.
-   항목 2개짜리 메뉴에 커스텀 드롭다운을 새로 만들지 않는다. 실제 차단 확인창은 App.tsx 가 띄운다. */
-function askCommentAction(commentId: number, onReport: (id: number) => void, onBlock: (id: number) => void) {
-  Alert.alert("댓글", undefined, [
-    { text: "신고", onPress: () => onReport(commentId) },
-    { text: "차단", style: "destructive", onPress: () => onBlock(commentId) },
-    { text: "취소", style: "cancel" },
-  ]);
-}
 
-function askPetitionAction(onReport: () => void, onBlock: () => void) {
-  Alert.alert("게시글", undefined, [
-    { text: "신고", onPress: onReport },
-    { text: "차단", style: "destructive", onPress: onBlock },
-    { text: "취소", style: "cancel" },
-  ]);
+/* 웹 DetailScreen 의 CommentRow 와 같은 짝이다. 수정 상태를 행마다 따로 들어야 해서
+   map 안에 인라인으로 두지 않고 컴포넌트로 뺀다. */
+function CommentRow({
+  cm,
+  onToggleLike,
+  onEdit,
+  onDelete,
+  onReport,
+  onBlock,
+}: {
+  cm: Comment;
+  onToggleLike: (id: number) => void;
+  onEdit: (id: number, body: string) => Promise<void>;
+  onDelete: (id: number) => void;
+  onReport: (id: number) => void;
+  onBlock: (id: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(cm.body);
+
+  const save = async () => {
+    const next = text.trim();
+    // 안 바뀌었으면 요청을 보내지 않는다 — 서버 왕복도, 실패 토스트 가능성도 없앤다.
+    if (!next || next === cm.body) return setEditing(false);
+    await onEdit(cm.id!, next);
+    setEditing(false);
+  };
+
+  return (
+    <View style={{ flexDirection: "row", gap: 11, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
+      <Avatar name="익" size={32} />
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+          <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
+          <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{cm.date}</Text>
+          {/* 내 댓글은 수정·삭제, 남의 댓글은 신고·차단. 웹 CommentRow 와 같은 갈림이다. */}
+          {cm.id != null && cm.mine && !editing ? (
+            <View style={{ marginLeft: "auto", flexDirection: "row", gap: 12 }}>
+              <Pressable onPress={() => { setText(cm.body); setEditing(true); }} accessibilityRole="button" hitSlop={8}>
+                <Text style={[t, { fontSize: 12, fontWeight: "600", color: colors.muted }]}>수정</Text>
+              </Pressable>
+              <Pressable onPress={() => onDelete(cm.id!)} accessibilityRole="button" hitSlop={8}>
+                <Text style={[t, { fontSize: 12, fontWeight: "600", color: colors.muted }]}>삭제</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {/* 자기 신고는 무의미하고, 본인 차단은 서버가 400 으로 막는다. 신고·차단을 줄에 펼치지 않고
+              ⋮ 뒤에 넣는다 — 공감까지 셋이 나란히 붙으면 줄이 복잡하다. */}
+          {cm.id != null && !cm.mine && !editing ? (
+            <ActionMenu
+              label="댓글 메뉴"
+              size={16}
+              style={{ width: 24, height: 24 }}
+              onReport={() => onReport(cm.id!)}
+              onBlock={() => onBlock(cm.id!)}
+            />
+          ) : null}
+        </View>
+        {editing ? (
+          <View style={{ gap: 8, marginTop: 6 }}>
+            <TextInput
+              autoFocus
+              value={text}
+              onChangeText={setText}
+              multiline
+              accessibilityLabel="댓글 수정"
+              style={[t, { borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.md, paddingVertical: 9, paddingHorizontal: 13, fontSize: 13.5, color: colors.strong }]}
+            />
+            <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
+              <Button variant="outline" size="sm" onPress={() => setEditing(false)}>취소</Button>
+              <Button variant="primary" size="sm" disabled={!text.trim()} onPress={save}>저장</Button>
+            </View>
+          </View>
+        ) : (
+          <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
+        )}
+      </View>
+      {/* 웹 CommentRow 의 하트 버튼과 같은 자리(행 오른쪽)·같은 형태(아이콘 위, 숫자 아래). */}
+      {cm.id != null && !editing ? (
+        <Pressable
+          onPress={() => onToggleLike(cm.id!)}
+          accessibilityRole="button"
+          accessibilityLabel={`댓글 공감 ${cm.votes}`}
+          accessibilityState={{ selected: cm.liked }}
+          hitSlop={8}
+          style={{ alignItems: "center", gap: 2, paddingLeft: 4 }}
+        >
+          <Icon name={cm.liked ? "heartSolid" : "heart"} size={16} color={cm.liked ? colors.coral[500] : colors.muted} />
+          <Text style={[t, { fontSize: 12, fontWeight: "700", color: cm.liked ? colors.coral[500] : colors.muted }]}>{cm.votes}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
 }
 
 export function DetailScreen(p: DetailProps) {
@@ -80,14 +160,13 @@ export function DetailScreen(p: DetailProps) {
         <Text style={[t, { fontWeight: "800", fontSize: 16.5, color: colors.strong, marginLeft: 4 }]}>건의 상세</Text>
         {/* 신고·차단을 ⋮ 하나로 모은다 — 피드 카드·댓글과 같은 형태다. 내 글엔 안 띄운다. */}
         {!d.mine ? (
-          <Pressable
-            onPress={() => askPetitionAction(() => setReportTarget({ type: "petition" }), () => p.onBlockPetition(d.id))}
-            accessibilityRole="button"
-            accessibilityLabel="게시글 메뉴"
-            className="ml-auto w-9 h-9 items-center justify-center rounded-full"
-          >
-            <Icon name="moreVertical" size={19} color={colors.body} />
-          </Pressable>
+          <ActionMenu
+            label="게시글 메뉴"
+            size={19}
+            style={{ width: 36, height: 36 }}
+            onReport={() => setReportTarget({ type: "petition" })}
+            onBlock={() => p.onBlockPetition(d.id)}
+          />
         ) : (
           <View className="ml-auto" />
         )}
@@ -170,44 +249,15 @@ export function DetailScreen(p: DetailProps) {
             <Card>
               <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, marginBottom: 6 }]}>댓글 {p.comments.length}</Text>
               {p.comments.map((cm, i) => (
-                <View key={`${cm.author}-${i}`} style={{ flexDirection: "row", gap: 11, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
-                  <Avatar name="익" size={32} />
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                      <Text style={[t, { fontWeight: "700", fontSize: 12.5, color: colors.strong }]}>{cm.author}</Text>
-                      <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{cm.date}</Text>
-                      {/* 내 댓글엔 안 띄운다 — 자기 신고는 무의미하고, 본인 차단은 서버가 400 으로 막는다(웹 CommentRow 와 같은 조건).
-                          신고·차단을 줄에 펼치지 않고 ⋮ 뒤에 넣는다 — 공감까지 셋이 나란히 붙으면 줄이 복잡하고,
-                          에타처럼 목록 행의 부가 동작을 오버플로 메뉴에 두는 게 학생들에게 익숙한 형태다. */}
-                      {cm.id != null && !cm.mine ? (
-                        <Pressable
-                          onPress={() => askCommentAction(cm.id!, (id) => setReportTarget({ type: "comment", id }), p.onBlockComment)}
-                          accessibilityRole="button"
-                          accessibilityLabel="댓글 메뉴"
-                          hitSlop={8}
-                          style={{ marginLeft: "auto", width: 24, height: 24, alignItems: "center", justifyContent: "center" }}
-                        >
-                          <Icon name="moreVertical" size={16} color={colors.muted} />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                    <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 22.3, marginTop: 4 }]}>{cm.body}</Text>
-                  </View>
-                  {/* 웹 CommentRow 의 하트 버튼과 같은 자리(행 오른쪽)·같은 형태(아이콘 위, 숫자 아래). */}
-                  {cm.id != null ? (
-                    <Pressable
-                      onPress={() => p.onToggleCommentLike(cm.id!)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`댓글 공감 ${cm.votes}`}
-                      accessibilityState={{ selected: cm.liked }}
-                      hitSlop={8}
-                      style={{ alignItems: "center", gap: 2, paddingLeft: 4 }}
-                    >
-                      <Icon name={cm.liked ? "heartSolid" : "heart"} size={16} color={cm.liked ? colors.coral[500] : colors.muted} />
-                      <Text style={[t, { fontSize: 12, fontWeight: "700", color: cm.liked ? colors.coral[500] : colors.muted }]}>{cm.votes}</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+                <CommentRow
+                  key={cm.id ?? `${cm.author}-${i}`}
+                  cm={cm}
+                  onToggleLike={p.onToggleCommentLike}
+                  onEdit={p.onEditComment}
+                  onDelete={p.onDeleteComment}
+                  onReport={(id) => setReportTarget({ type: "comment", id })}
+                  onBlock={p.onBlockComment}
+                />
               ))}
               <View style={{ flexDirection: "row", gap: 8, paddingTop: 12, alignItems: "center" }}>
                 <TextInput
