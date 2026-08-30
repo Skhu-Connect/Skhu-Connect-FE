@@ -351,7 +351,7 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
-            onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted) : requireAuth())}
+            onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted, p.mine) : requireAuth())}
           />
           <IconButton
             variant={bookmarked ? "solid" : "outline"}

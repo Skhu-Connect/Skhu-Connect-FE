@@ -513,6 +513,12 @@ export async function toggleEmpathy(petitionId: number, wasVoted: boolean): Prom
   try {
     await apiFetch(`/connect/petitions/${petitionId}/agreements`, { method: wasVoted ? "DELETE" : "POST" });
   } catch (e) {
+    // 본인 청원 공감 거부는 "서버가 이미 의도한 상태"가 아니라 진짜 실패다 — 삼키면 votedIds 에
+    // 좋아요를 기록해 실제로는 공감 안 된 글을 공감한 것처럼 보이게 된다. 화면 쪽 사전 차단
+    // (App.tsx 의 vote())을 우회한 stale 상태에 대비한 마지막 방어선이다.
+    if (e instanceof ApiError && e.status === 409 && e.body?.title === "Cannot agree to own petition") {
+      throw new Error("본인 청원에는 공감할 수 없습니다");
+    }
     if (e instanceof ApiError && (e.status === 409 || e.status === 404)) {
       // 서버 상태가 이미 원하는 쪽이다 — 로컬 캐시만 맞추고 성공 취급.
     } else {

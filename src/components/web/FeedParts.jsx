@@ -55,7 +55,7 @@ export function PetitionGrid({ list, authorOf, onReport, onBlock, onDelete }) {
           date={p.date}
           comments={p.comments}
           voted={!!voted[p.id]}
-          onToggleVote={() => toggleVoteWithConfirm(vote, p.id, voted[p.id])}
+          onToggleVote={() => toggleVoteWithConfirm(vote, p.id, voted[p.id], p.mine)}
           onReport={onReport && !p.mine ? () => onReport(p.id) : undefined}
           onBlock={onBlock && !p.mine ? () => onBlock(p.id) : undefined}
           onDelete={onDelete && p.mine && p.current === 0 && p.status === "received" ? () => onDelete(p.id) : undefined}

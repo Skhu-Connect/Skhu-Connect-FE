@@ -248,18 +248,26 @@ export default function App() {
       setVotes((v) => ({ ...v, [id]: !wasVoted }));
       if (!wasVoted) setDeepUsed(true);
       flash(!wasVoted ? "공감했습니다" : "공감을 취소했습니다");
-      api.toggleEmpathy(id, wasVoted).catch(() => {
+      api.toggleEmpathy(id, wasVoted).catch((e) => {
         setVotes((v) => ({ ...v, [id]: wasVoted }));
-        flash("공감 처리에 실패했습니다");
+        // e.message 가 있으면 그걸 보여준다(예: 본인 청원 공감 거부) - 없으면 기존 문구.
+        flash(e instanceof Error && e.message ? e.message : "공감 처리에 실패했습니다");
       });
     },
     [flash],
   );
 
-  /* 취소(voted=true → false)만 확인을 받는다 — 공감을 누르는 쪽은 확인 없이 바로 처리한다. */
+  /* 취소(voted=true → false)만 확인을 받는다 — 공감을 누르는 쪽은 확인 없이 바로 처리한다.
+     본인 청원에는 아직 공감 전이면 서버가 409 로 막는다 - 웹 toggleVoteWithConfirm 과 같은 이유로
+     네트워크 왕복 없이 여기서 먼저 막는다. 이미 공감된 상태(정책을 넣기 전 자기 공감)는 취소만
+     그대로 허용한다 - 그게 0건으로 되돌려 삭제로 가는 유일한 경로다. */
   const vote = useCallback(
     (id: number) => {
       const wasVoted = !!votes[id];
+      if (!wasVoted && petitions.find((p) => p.id === id)?.mine) {
+        flash("본인 청원에는 공감할 수 없습니다");
+        return;
+      }
       if (!wasVoted) {
         doVote(id, wasVoted);
         return;
@@ -269,7 +277,7 @@ export default function App() {
         { text: "확인", onPress: () => doVote(id, wasVoted) },
       ]);
     },
-    [votes, doVote],
+    [votes, petitions, doVote, flash],
   );
 
   /* 실 백엔드 POST /connect/users/me/blocks 를 쓴다: 서버가 영구 차단을 기억하고 이후
