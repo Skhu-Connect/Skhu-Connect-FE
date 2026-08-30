@@ -10,6 +10,7 @@ import { Badge, Button, Icon } from "../../components/ui";
 const STATUS = [["all", "전체"], ["pending", "대기"], ["actionTaken", "조치 완료"], ["dismissed", "기각"]];
 const TARGET = [["all", "전체"], ["petition", "글"], ["comment", "댓글"]];
 const REASONS = { SPAM: "광고·도배", ABUSE: "욕설·괴롭힘", INAPPROPRIATE: "부적절한 콘텐츠", FALSE_INFORMATION: "허위 정보", OTHER: "기타" };
+const ACTION_LABEL = { HIDE: "글 숨김", USER_LOGIN_BAN: "로그인 금지" };
 const STATUS_META = {
   pending: { label: "대기", tone: "warning" },
   actionTaken: { label: "조치 완료", tone: "danger" },
@@ -34,12 +35,13 @@ export default function Reports() {
     return (status === "all" || r.status === status) && (target === "all" || r.targetType === target) && (!q.trim() || searchable.includes(q.trim().toLowerCase()));
   });
 
-  const process = async (report, nextStatus) => {
-    const reason = window.prompt(nextStatus === "actionTaken" ? "조치 내용을 입력하세요." : "기각 사유를 입력하세요.");
+  // actionType 은 status="actionTaken" 일 때만 넘긴다 - 기각은 그대로 undefined.
+  const process = async (report, nextStatus, actionType) => {
+    const reason = window.prompt(actionType ? `${ACTION_LABEL[actionType]} 처리 사유를 입력하세요.` : "기각 사유를 입력하세요.");
     if (!reason) return;
     setBusy(report.id);
     try {
-      await processReport(report.id, nextStatus, reason);
+      await processReport(report.id, nextStatus, reason, actionType);
     } catch (e) {
       window.alert(e.message);
     } finally {
@@ -82,9 +84,15 @@ export default function Reports() {
                   </div>
                   {r.targetContent && <div title={r.targetContent} style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-body)", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "7px 10px", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.targetContent}</div>}
                 </td>
-                <td style={{ padding: "14px 12px", maxWidth: 350 }}><div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 3 }}>{REASONS[r.reasonType] ?? "기타"}</div><div style={{ fontSize: 13.5, color: "var(--text-body)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.reasonDetail}</div>{r.processingReason && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>처리: {r.processingReason}</div>}</td>
+                <td style={{ padding: "14px 12px", maxWidth: 350 }}><div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 3 }}>{REASONS[r.reasonType] ?? "기타"}</div><div style={{ fontSize: 13.5, color: "var(--text-body)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.reasonDetail}</div>{r.processingReason && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>처리{r.actionType ? `(${ACTION_LABEL[r.actionType] ?? r.actionType})` : ""}: {r.processingReason}</div>}</td>
                 <td style={{ padding: "14px 12px" }}><Badge tone={meta.tone} size="sm">{meta.label}</Badge></td>
-                <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>{r.status === "pending" ? <><Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken")}>조치 완료</Button><Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => process(r, "dismissed")} style={{ marginLeft: 6 }}>기각</Button></> : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>처리됨</span>}</td>
+                <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>{r.status === "pending" ? (
+                  <>
+                    <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken", "HIDE")}>글 숨김</Button>
+                    <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken", "USER_LOGIN_BAN")} style={{ marginLeft: 6 }}>로그인 금지</Button>
+                    <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => process(r, "dismissed")} style={{ marginLeft: 6 }}>기각</Button>
+                  </>
+                ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>처리됨</span>}</td>
               </tr>;
             })}</tbody>
           </table>

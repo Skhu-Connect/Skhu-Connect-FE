@@ -194,8 +194,8 @@ export const usePetitions = create((set, get) => ({
     set((s) => ({ petitions: s.petitions.map((p) => (p.id === Number(id) ? { ...p, hidden, hiddenReason } : p)) }));
   },
 
-  processReport: async (id, status, reason) => {
-    const report = await api.processAdminReport(id, status, reason);
+  processReport: async (id, status, reason, actionType) => {
+    const report = await api.processAdminReport(id, status, reason, actionType);
     set((s) => ({ reports: s.reports.map((r) => (r.id === report.id ? report : r)) }));
   },
 

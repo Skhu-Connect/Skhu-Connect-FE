@@ -811,6 +811,8 @@ function adaptAdminReport(raw) {
     targetContent: raw.targetContent ?? null,
     targetDeleted: raw.targetDeleted ?? false,
     targetHidden: raw.targetHidden ?? false,
+    // 조치 완료일 때만 값이 있다("HIDE" | "USER_LOGIN_BAN"). 기각은 null.
+    actionType: raw.actionType ?? null,
   };
 }
 
@@ -820,11 +822,16 @@ export async function listAdminReports() {
   return (data?.content ?? []).map(adaptAdminReport);
 }
 
-export async function processAdminReport(reportId, status, processingReason) {
+/** actionType 은 status="actionTaken" 일 때만 쓴다("HIDE" | "USER_LOGIN_BAN") — 서버 문자열
+    그대로 통과시킨다. 기각(dismissed)엔 없으니 body 객체에 아예 키를 안 넣는다(null 을 보내지
+    않는다 — 계약이 "생략"이지 "null"이 아니다). */
+export async function processAdminReport(reportId, status, processingReason, actionType) {
   const reason = String(processingReason ?? "").trim();
   const apiStatus = { dismissed: "DISMISSED", actionTaken: "ACTION_TAKEN" }[status];
   if (!apiStatus || !reason) throw new Error("처리 사유를 입력해 주세요.");
-  return adaptAdminReport(await adminApiFetch(`/connect/admin/reports/${Number(reportId)}`, { method: "PATCH", body: { status: apiStatus, processingReason: reason } }));
+  const body = { status: apiStatus, processingReason: reason };
+  if (actionType) body.actionType = actionType;
+  return adaptAdminReport(await adminApiFetch(`/connect/admin/reports/${Number(reportId)}`, { method: "PATCH", body }));
 }
 
 function adaptAdminComment(raw) {
