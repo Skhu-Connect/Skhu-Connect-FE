@@ -6,7 +6,7 @@ import type { IconName } from "./icons";
 export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department";
 export type StatusKey = "received" | "reviewing" | "answered";
 export type BasisLabel = "전체 학생" | "학과 정원" | "기숙사 정원";
-export type NotificationSettingKey = "agreement" | "answer" | "reply" | "like" | "notice";
+export type NotificationSettingKey = "agreement" | "answer" | "reply" | "like" | "notice" | "report";
 
 export type Petition = {
   id: number;
@@ -185,29 +185,19 @@ export type Notification = {
   iconFg: string;
 };
 
-/* 알림 발생 지점 5곳. 백엔드 NotificationEventService 의 공개 메서드를 그대로 옮겼다
-   (onAgreementAdded / onPetitionAnswered / onReplyCreated / onCommentLiked / onNoticePublished).
-   서버 NotificationType 8종이 여기로 빠짐없이 나뉜다 — 웹 src/components/web/notifMeta.js 와 같은 표다.
+/* 알림 발생 지점. 백엔드 NotificationEventService 의 발생 지점을 그대로 옮겼다
+   (onAgreementAdded / onPetitionAnswered / onReplyCreated / onCommentLiked / onNoticePublished /
+   onReportProcessed). 서버 NotificationType 12종이 여기로 빠짐없이 나뉜다 — 웹
+   src/components/web/notifMeta.js 와 같은 표다.
 
-   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의 5개 키다
-   — NotifSettings.tsx 가 이 key 로 토글을 그리고 그대로 PATCH 바디에 싣는다. 그래서 새 알림
-   종류가 생겨도 여기엔 넣지 않는다: 존재하지 않는 설정 필드로 가짜 토글이 그려진다. 신고 처리
-   결과·운영 조치 알림(끌 수 없는 필수 알림)은 아래 NOTIF_ALWAYS_ON_POINTS 로 따로 둔다.
+   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의 6개
+   키다(agreement/answer/reply/like/notice/report) — NotifSettings.tsx 가 이 key 로 토글을
+   그리고 그대로 PATCH 바디에 싣는다. "report" 는 신고 처리 결과(신고자 대상)와 운영 조치
+   안내(피신고자 대상)를 한 토글로 묶는다 - 백엔드가 NotificationPoint.REPORT 하나로 둘 다
+   게이트한다(User.notifyReport 하나, 둘로 안 나뉜다).
    기기 단위 on/off 는 iOS 알림 권한이 담당한다 — NotifSettings.tsx 가 그 권한으로 안내한다. */
 export type NotifPoint = {
   key: NotificationSettingKey | "etc";
-  title: string;
-  desc: string;
-  types: string[];
-  icon: IconName;
-  iconBg: string;
-  iconFg: string;
-};
-
-/* NOTIF_POINTS 와 필드는 같지만 key 가 설정 토글 키 집합 밖이다 - 타입으로 강제해서
-   NotifSettings.tsx 의 토글 렌더링에 실수로 섞여 들어갈 수 없게 한다. */
-export type AlwaysOnNotifPoint = {
-  key: "reportResult" | "moderation";
   title: string;
   desc: string;
   types: string[];
@@ -262,30 +252,16 @@ export const NOTIF_POINTS = [
     iconBg: "#E9EAF1",
     iconFg: "#4C4D5C",
   },
-] satisfies NotifPoint[];
-
-/* 신고 처리 결과·운영 조치 알림. 웹 notifMeta.js 의 NOTIF_ALWAYS_ON_POINTS 와 같은 표다 -
-   알림 목록의 아이콘·색 표시(pointOf)에만 쓰고, NotifSettings.tsx 는 이 배열을 모른다. */
-export const NOTIF_ALWAYS_ON_POINTS = [
   {
-    key: "reportResult",
-    title: "신고 처리 결과",
-    desc: "내가 신고한 글·댓글이 기각되거나 조치되면 알려드려요.",
-    types: ["REPORT_DISMISSED", "REPORT_ACTION_TAKEN"],
+    key: "report",
+    title: "신고 알림",
+    desc: "내가 신고한 글·댓글의 처리 결과나, 내가 쓴 글·댓글이 숨김·계정 정지된 사실을 알려드려요.",
+    types: ["REPORT_DISMISSED", "REPORT_ACTION_TAKEN", "CONTENT_HIDDEN", "ACCOUNT_LOGIN_BANNED"],
     icon: "flag",
     iconBg: "#DFF5F1",
     iconFg: "#128377",
   },
-  {
-    key: "moderation",
-    title: "운영 조치 안내",
-    desc: "내가 쓴 글·댓글이 숨김 처리되거나 계정이 정지되면 알려드려요.",
-    types: ["CONTENT_HIDDEN", "ACCOUNT_LOGIN_BANNED"],
-    icon: "lock",
-    iconBg: "#FBE2E5",
-    iconFg: "#E5354A",
-  },
-] satisfies AlwaysOnNotifPoint[];
+] satisfies NotifPoint[];
 
 /** 알림 한 건의 제목. 본문은 서버가 완성된 문장으로 준다 — 여기서는 종류 이름만 짓는다. */
 export const NOTIF_TYPE_TITLE: Record<string, string> = {
@@ -303,13 +279,13 @@ export const NOTIF_TYPE_TITLE: Record<string, string> = {
   ACCOUNT_LOGIN_BANNED: "로그인 제한",
 };
 
-const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint | AlwaysOnNotifPoint> = Object.fromEntries(
-  [...NOTIF_POINTS, ...NOTIF_ALWAYS_ON_POINTS].flatMap((point) => point.types.map((type) => [type, point])),
+const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint> = Object.fromEntries(
+  NOTIF_POINTS.flatMap((point) => point.types.map((type) => [type, point])),
 );
 
 const UNKNOWN_POINT: NotifPoint = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", iconBg: "#E9EAF1", iconFg: "#4C4D5C" };
 
 /** 모르는 종류(백엔드가 enum 을 늘린 경우)는 회색 기본값으로 떨어뜨린다. */
-export function pointOf(type: string): NotifPoint | AlwaysOnNotifPoint {
+export function pointOf(type: string): NotifPoint {
   return NOTIF_POINT_BY_TYPE[type] ?? UNKNOWN_POINT;
 }
