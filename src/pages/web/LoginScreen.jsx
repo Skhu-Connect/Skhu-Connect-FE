@@ -33,10 +33,17 @@ export default function LoginScreen() {
     }
     try {
       await login(sid, password);
-    } catch {
+    } catch (err) {
       // 서버 문구(err.message)를 그대로 띄우지 않는다. 백엔드가 "등록되지 않은 학번" 과
       // "비밀번호 불일치" 를 구분해 던지면 학번 순차 대입으로 재학생 명단을 만들 수 있고,
       // 500 응답 본문이 로그인 카드에 렌더될 수도 있다. 화면이 문구를 소유한다.
+      //
+      // 정지(403)는 예외다 - 아이디·비밀번호가 둘 다 맞아야 나오는 응답이라, 보여줘도
+      // "이 아이디가 존재한다"는 정보가 새지 않는다(이미 비밀번호로 그걸 증명했다).
+      if (err?.status === 403 && err.body?.detail) {
+        setError(`계정이 정지되었습니다: ${err.body.detail}`);
+        return;
+      }
       setError("아이디 또는 비밀번호가 올바르지 않습니다.");
     }
   };

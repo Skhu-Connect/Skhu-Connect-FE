@@ -6,7 +6,7 @@ import { Pressable, Text, View } from "react-native";
 import { AuthShell } from "../authShell";
 import { Button, Input } from "../ui";
 import { colors, font, onVideo, radius } from "../theme";
-import { login } from "../api";
+import { ApiError, login } from "../api";
 
 export function LoginScreen({
   deepTitle,
@@ -37,7 +37,13 @@ export function LoginScreen({
       await login(sid, pw);
       await onLogin();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "로그인에 실패했습니다.");
+      // 정지(403)는 아이디·비밀번호가 둘 다 맞아야 나오는 응답이라 사유를 보여줘도
+      // 계정 존재 여부가 새지 않는다 - 웹 LoginScreen.jsx 와 같은 예외.
+      if (e instanceof ApiError && e.status === 403 && e.body?.detail) {
+        setError(`계정이 정지되었습니다: ${e.body.detail}`);
+      } else {
+        setError(e instanceof Error ? e.message : "로그인에 실패했습니다.");
+      }
     } finally {
       setLoading(false);
     }

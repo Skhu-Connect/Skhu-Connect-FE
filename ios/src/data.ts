@@ -189,10 +189,25 @@ export type Notification = {
    (onAgreementAdded / onPetitionAnswered / onReplyCreated / onCommentLiked / onNoticePublished).
    서버 NotificationType 8종이 여기로 빠짐없이 나뉜다 — 웹 src/components/web/notifMeta.js 와 같은 표다.
 
-   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의 5개 키다.
+   key 는 백엔드 notificationSettings와 PATCH /connect/users/me/notification-settings의 5개 키다
+   — NotifSettings.tsx 가 이 key 로 토글을 그리고 그대로 PATCH 바디에 싣는다. 그래서 새 알림
+   종류가 생겨도 여기엔 넣지 않는다: 존재하지 않는 설정 필드로 가짜 토글이 그려진다. 신고 처리
+   결과·운영 조치 알림(끌 수 없는 필수 알림)은 아래 NOTIF_ALWAYS_ON_POINTS 로 따로 둔다.
    기기 단위 on/off 는 iOS 알림 권한이 담당한다 — NotifSettings.tsx 가 그 권한으로 안내한다. */
 export type NotifPoint = {
   key: NotificationSettingKey | "etc";
+  title: string;
+  desc: string;
+  types: string[];
+  icon: IconName;
+  iconBg: string;
+  iconFg: string;
+};
+
+/* NOTIF_POINTS 와 필드는 같지만 key 가 설정 토글 키 집합 밖이다 - 타입으로 강제해서
+   NotifSettings.tsx 의 토글 렌더링에 실수로 섞여 들어갈 수 없게 한다. */
+export type AlwaysOnNotifPoint = {
+  key: "reportResult" | "moderation";
   title: string;
   desc: string;
   types: string[];
@@ -249,6 +264,29 @@ export const NOTIF_POINTS = [
   },
 ] satisfies NotifPoint[];
 
+/* 신고 처리 결과·운영 조치 알림. 웹 notifMeta.js 의 NOTIF_ALWAYS_ON_POINTS 와 같은 표다 -
+   알림 목록의 아이콘·색 표시(pointOf)에만 쓰고, NotifSettings.tsx 는 이 배열을 모른다. */
+export const NOTIF_ALWAYS_ON_POINTS = [
+  {
+    key: "reportResult",
+    title: "신고 처리 결과",
+    desc: "내가 신고한 글·댓글이 기각되거나 조치되면 알려드려요.",
+    types: ["REPORT_DISMISSED", "REPORT_ACTION_TAKEN"],
+    icon: "flag",
+    iconBg: "#DFF5F1",
+    iconFg: "#128377",
+  },
+  {
+    key: "moderation",
+    title: "운영 조치 안내",
+    desc: "내가 쓴 글·댓글이 숨김 처리되거나 계정이 정지되면 알려드려요.",
+    types: ["CONTENT_HIDDEN", "ACCOUNT_LOGIN_BANNED"],
+    icon: "lock",
+    iconBg: "#FBE2E5",
+    iconFg: "#E5354A",
+  },
+] satisfies AlwaysOnNotifPoint[];
+
 /** 알림 한 건의 제목. 본문은 서버가 완성된 문장으로 준다 — 여기서는 종류 이름만 짓는다. */
 export const NOTIF_TYPE_TITLE: Record<string, string> = {
   PETITION_AGREEMENT_60_PERCENT: "도달률 60% 달성",
@@ -259,15 +297,19 @@ export const NOTIF_TYPE_TITLE: Record<string, string> = {
   COMMENT_LIKE: "댓글 공감",
   REPLY_LIKE: "답글 공감",
   NOTICE: "새 공지사항",
+  REPORT_DISMISSED: "신고 기각",
+  REPORT_ACTION_TAKEN: "신고 조치 완료",
+  CONTENT_HIDDEN: "글 숨김 처리",
+  ACCOUNT_LOGIN_BANNED: "로그인 제한",
 };
 
-const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint> = Object.fromEntries(
-  NOTIF_POINTS.flatMap((point) => point.types.map((type) => [type, point])),
+const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint | AlwaysOnNotifPoint> = Object.fromEntries(
+  [...NOTIF_POINTS, ...NOTIF_ALWAYS_ON_POINTS].flatMap((point) => point.types.map((type) => [type, point])),
 );
 
 const UNKNOWN_POINT: NotifPoint = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", iconBg: "#E9EAF1", iconFg: "#4C4D5C" };
 
 /** 모르는 종류(백엔드가 enum 을 늘린 경우)는 회색 기본값으로 떨어뜨린다. */
-export function pointOf(type: string): NotifPoint {
+export function pointOf(type: string): NotifPoint | AlwaysOnNotifPoint {
   return NOTIF_POINT_BY_TYPE[type] ?? UNKNOWN_POINT;
 }
