@@ -240,6 +240,10 @@ export default function App() {
   const list = useMemo(() => visibleList(petitions, { tab, category, query, sort }, votes), [petitions, tab, category, query, sort, votes]);
   const mineCount = useMemo(() => petitions.filter((p) => p.mine).length, [petitions]);
   const bookmarkedList = useMemo(() => petitions.filter((p) => p.bookmarked), [petitions]);
+  /* MY 통계 타일이 띄우는 두 시트의 목록. 타일 숫자를 이 배열의 length 로 내보내 숫자와 목록이
+     어긋나지 않게 한다(voted 는 voteCount 와 같은 votes 오버레이가 출처다). */
+  const votedList = useMemo(() => petitions.filter((p) => votes[p.id]), [petitions, votes]);
+  const myAnsweredList = useMemo(() => petitions.filter((p) => p.mine && p.status === "answered"), [petitions]);
   const hasUnread = useMemo(() => notifications.some((n) => !n.read), [notifications]);
   /* MyScreen 의 answeredCount(내 건의 중 답변받은 것)와 다르다 — 이건 전체 답변 완료 건수다. */
   const totalAnsweredCount = useMemo(() => petitions.filter((p) => p.status === "answered").length, [petitions]);
@@ -683,6 +687,9 @@ export default function App() {
               mineCount={mineCount}
               answeredCount={totalAnsweredCount}
               hasUnread={hasUnread}
+              notifications={notifications}
+              onOpenNotification={onOpenNotification}
+              onMarkAllNotifRead={onMarkAllNotifRead}
               searchOpen={searchOpen}
               onToggleSearch={() => {
                 setSearchOpen((s) => !s);
@@ -748,12 +755,15 @@ export default function App() {
             <MyScreen
               me={me}
               mineCount={mineCount}
-              voteCount={Object.values(votes).filter(Boolean).length}
-              answeredCount={petitions.filter((p) => p.mine && p.status === "answered").length}
+              voteCount={votedList.length}
+              answeredCount={myAnsweredList.length}
               notifications={notifications}
               bookmarks={bookmarkedList}
               myComments={myComments}
               onOpenNotifSettings={() => setScreen("notifSettings")}
+              onOpenTab={onTab}
+              votedPetitions={votedList}
+              answeredPetitions={myAnsweredList}
               onOpenPetition={openPetition}
               onOpenNotification={onOpenNotification}
               onMarkAllNotifRead={onMarkAllNotifRead}

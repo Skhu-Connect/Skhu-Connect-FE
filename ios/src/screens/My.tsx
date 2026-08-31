@@ -6,7 +6,8 @@ import { type MyComment, type Notification, type Petition } from "../data";
 import { ApiError, listDepartments } from "../api";
 import { Icon, type IconName } from "../icons";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
-import { Avatar, Button, Input, Select } from "../ui";
+import { Avatar, Button, Input, Select, Sheet } from "../ui";
+import { type Tab, ymd } from "../logic";
 import { colors, font, gradient, radius, shadow } from "../theme";
 import { PASSWORD_HINT, validatePassword } from "../credentials";
 
@@ -22,6 +23,11 @@ export type MyProps = {
   bookmarks: Petition[];
   myComments: MyComment[];
   onOpenNotifSettings: () => void;
+  /** 통계 타일 → 하단 탭바의 같은 목록(내 건의·답변 완료). App.tsx 의 onTab 과 같은 것이다. */
+  onOpenTab: (t: Tab) => void;
+  /** "누른 요청"·"받은 답변" 타일이 띄우는 목록. 탭바에 자리가 없어 시트로 뺐다(웹은 각각 /voted, /my-answered 화면). */
+  votedPetitions: Petition[];
+  answeredPetitions: Petition[];
   onOpenPetition: (id: number) => void;
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
@@ -36,6 +42,7 @@ export function MyScreen(p: MyProps) {
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
+  const [sheet, setSheet] = useState<"voted" | "answered" | null>(null);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [department, setDepartment] = useState(p.me?.departmentName ?? "");
   const [departmentError, setDepartmentError] = useState("");
@@ -64,10 +71,14 @@ export function MyScreen(p: MyProps) {
     }
   };
 
-  const stats = [
-    { value: p.mineCount, label: "등록한 건의" },
-    { value: p.voteCount, label: "누른 요청" },
-    { value: p.answeredCount, label: "받은 답변" },
+  /* 통계 타일은 그 숫자를 만든 목록으로 가는 지름길이다. "등록한 건의"만 하단 탭바에 같은 목록이
+     있어 그리로 보내고, 나머지 둘은 탭바에 자리가 없어 시트로 띄운다(사용자 지시).
+     "받은 답변"을 탭바의 "답변 완료"로 보내지 않는 이유: 그 탭은 전체 답변 완료 건의라 내 건의만
+     세는 이 숫자와 목록이 어긋난다. */
+  const stats: { value: number; label: string; tab?: Tab; sheet?: "voted" | "answered" }[] = [
+    { value: p.mineCount, label: "등록한 건의", tab: "mine" },
+    { value: p.voteCount, label: "누른 요청", sheet: "voted" },
+    { value: p.answeredCount, label: "받은 답변", sheet: "answered" },
   ];
 
   return (
@@ -87,12 +98,24 @@ export function MyScreen(p: MyProps) {
         </LinearGradient>
 
         <View style={{ flexDirection: "row", gap: 10, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 4 }}>
-          {stats.map((s) => (
-            <View key={s.label} style={[{ flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 12, alignItems: "center" }, shadow.sm]}>
-              <Text style={[t, { fontSize: 19, fontWeight: "800", color: colors.indigo[600] }]}>{s.value}</Text>
-              <Text style={[t, { fontSize: 11, color: colors.muted, fontWeight: "600", marginTop: 3 }]}>{s.label}</Text>
-            </View>
-          ))}
+          {stats.map((s) => {
+            const box = [{ flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 12, alignItems: "center" as const }, shadow.sm];
+            const face = (
+              <>
+                <Text style={[t, { fontSize: 19, fontWeight: "800", color: colors.indigo[600] }]}>{s.value}</Text>
+                <Text style={[t, { fontSize: 11, color: colors.muted, fontWeight: "600", marginTop: 3 }]}>{s.label}</Text>
+              </>
+            );
+            const tab = s.tab;
+            const sheet = s.sheet;
+            const go = tab ? () => p.onOpenTab(tab) : sheet ? () => setSheet(sheet) : null;
+            if (!go) return <View key={s.label} style={box}>{face}</View>;
+            return (
+              <Pressable key={s.label} onPress={go} accessibilityRole="button" accessibilityLabel={`${s.label} ${s.value}건 보기`} style={box}>
+                {face}
+              </Pressable>
+            );
+          })}
         </View>
 
         <SectionTitle style={{ paddingTop: 18 }}>소속 학부 수정</SectionTitle>
@@ -220,6 +243,25 @@ export function MyScreen(p: MyProps) {
         />
       ) : null}
       {changePwOpen ? <ChangePasswordSheet onClose={() => setChangePwOpen(false)} onSubmit={p.onChangePassword} /> : null}
+
+      <PetitionSheet
+        open={sheet === "voted"}
+        onClose={() => setSheet(null)}
+        badge="누른 요청"
+        icon="heart"
+        empty="요청을 누른 건의가 없습니다."
+        list={p.votedPetitions}
+        onOpenPetition={p.onOpenPetition}
+      />
+      <PetitionSheet
+        open={sheet === "answered"}
+        onClose={() => setSheet(null)}
+        badge="받은 답변"
+        icon="checkCircle"
+        empty="답변을 받은 건의가 없습니다."
+        list={p.answeredPetitions}
+        onOpenPetition={p.onOpenPetition}
+      />
     </View>
   );
 }
@@ -236,6 +278,73 @@ function AccountRow({ icon, label, onPress, first = false }: { icon: IconName; l
       <Icon name={icon} size={16} color={colors.muted} />
       <Text style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+/* 통계 타일이 띄우는 건의 목록. "누른 요청"·"받은 답변" 두 시트가 배지·아이콘·목록만 다르고
+   나머지가 같아 한 컴포넌트로 둔다.
+   3건까지만 펼치고 나머지는 더보기로 넘긴다 — 시트는 화면 80% 까지 자라서 몇 건만 쌓여도
+   화면을 덮는다(피드 벨 알림 시트와 같은 이유). */
+const PETITION_PREVIEW = 3;
+
+function PetitionSheet({
+  open,
+  onClose,
+  badge,
+  icon,
+  empty,
+  list,
+  onOpenPetition,
+}: {
+  open: boolean;
+  onClose: () => void;
+  badge: string;
+  icon: IconName;
+  empty: string;
+  list: Petition[];
+  onOpenPetition: (id: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? list : list.slice(0, PETITION_PREVIEW);
+  /* 닫으면 다시 3건으로. 시트는 계속 마운트돼 있어서 펼친 상태가 남으면 다음에 열자마자 또 덮는다. */
+  useEffect(() => {
+    if (!open) setExpanded(false);
+  }, [open]);
+
+  return (
+    <Sheet open={open} onClose={onClose} title={`${badge} ${list.length}건`}>
+      {list.length === 0 ? (
+        <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18 }]}>{empty}</Text>
+      ) : (
+        shown.map((item, i) => (
+          <Pressable
+            key={item.id}
+            onPress={() => {
+              onClose();
+              onOpenPetition(item.id);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${badge} · ${item.title}`}
+            style={{ paddingVertical: 16, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.subtle }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.indigo[50], alignItems: "center", justifyContent: "center" }}>
+                <Icon name={icon} size={20} color={colors.indigo[600]} />
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <View style={{ alignSelf: "flex-start", borderWidth: 1, borderColor: colors.indigo[200], borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 10 }}>
+                  <Text style={[t, { fontSize: 11, fontWeight: "700", color: colors.indigo[600] }]}>{badge}</Text>
+                </View>
+                <Text numberOfLines={2} style={[t, { fontSize: 15, fontWeight: "800", color: colors.strong, lineHeight: 21 }]}>{item.title}</Text>
+              </View>
+            </View>
+            <Text numberOfLines={2} style={[t, { fontSize: 13, color: colors.body, lineHeight: 20, marginTop: 10 }]}>{item.excerpt}</Text>
+            <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 8 }]}>{ymd(item.createdAt)}</Text>
+          </Pressable>
+        ))
+      )}
+      {!expanded && list.length > PETITION_PREVIEW ? <MoreButton onPress={() => setExpanded(true)} /> : null}
+    </Sheet>
   );
 }
 

@@ -1,16 +1,21 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, type LayoutChangeEvent, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
-import { CAT_CHIPS, type CategoryKey, type Petition } from "../data";
+import { CAT_CHIPS, type CategoryKey, type Notification, type Petition } from "../data";
 import { count, daysLeft, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
-import { ActionMenu, CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, StatusBadge, ThresholdBar, fmt } from "../ui";
+import { ActionMenu, CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, Sheet, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { ReportSheet } from "../reportSheet";
 import type { ReportReasonType } from "../api";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
 const t = { fontFamily: font };
+
+/* 벨 시트에 한 번에 보여줄 알림 수. 시트는 화면 80% 까지 자라므로 그냥 다 그리면 알림이 몇 건만
+   쌓여도 피드를 통째로 덮는다 — 3건만 펼치고 나머지는 "더보기"로 넘긴다(MY 화면의 PAGE_SIZE 와
+   같은 패턴, 시트는 더 좁으니 5 대신 3). */
+const NOTIF_PREVIEW = 3;
 
 export type FeedProps = {
   petitions: Petition[];
@@ -20,6 +25,12 @@ export type FeedProps = {
   mineCount: number;
   answeredCount: number;
   hasUnread: boolean;
+  /* 벨을 누르면 MY 로 넘어가는 대신 그 자리에서 목록을 펼친다(웹 헤더 NotifBell 드롭다운과 같은
+     기능). 웹의 앵커 드롭다운 대신 iOS 는 공용 Sheet 를 쓴다 — 폰에서 52pt 헤더 밑에 340px
+     패널을 띄우는 것보다 하단 시트가 맞고, 공유 시트·Select 가 이미 쓰는 표면이다. */
+  notifications: Notification[];
+  onOpenNotification: (n: Notification) => void;
+  onMarkAllNotifRead: () => void;
   searchOpen: boolean;
   onToggleSearch: () => void;
   onQuery: (q: string) => void;
@@ -36,6 +47,7 @@ export function FeedScreen(p: FeedProps) {
   const { tab } = p.filter;
   /* 상세까지 안 들어가고도 신고할 수 있게 카드 메뉴에 신고를 넣었다 — 시트는 상세와 같은 것을 쓴다. */
   const [reportId, setReportId] = useState<number | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   /* 급상승 카드의 "더보기" 는 TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로
      맞춰 준다(사용자 지시). 스크롤까지 옮기지 않으면 화면 밖에서 정렬만 바뀌어 아무 일도 안 일어난
@@ -51,7 +63,15 @@ export function FeedScreen(p: FeedProps) {
   return (
     <View className="flex-1 bg-page">
       {/* 제목은 탭과 무관하게 서비스 이름으로 고정한다 — 무슨 목록인지는 아래 머리말이 말한다. */}
-      <Header title="성공잇다" hasUnread={p.hasUnread} onToggleSearch={p.onToggleSearch} onOpenMy={p.onOpenMy} />
+      <Header title="성공잇다" hasUnread={p.hasUnread} onToggleSearch={p.onToggleSearch} onOpenNotifs={() => setNotifOpen(true)} />
+      <NotifSheet
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        notifications={p.notifications}
+        onOpenNotification={p.onOpenNotification}
+        onMarkAllNotifRead={p.onMarkAllNotifRead}
+        onOpenMy={p.onOpenMy}
+      />
       {/* 본문(건의 목록)이 먼저, 급상승·기간요약은 그 아래 보조 위젯으로 둔다 — 에브리타임 홈처럼
           목록에 바로 닿게 하려는 것(사용자 지시). 대시보드를 위에 두면 건의를 보려고 매번 그만큼
           스크롤해야 한다. */}
@@ -78,7 +98,7 @@ export function FeedScreen(p: FeedProps) {
   );
 }
 
-function Header({ title, hasUnread, onToggleSearch, onOpenMy }: { title: string; hasUnread: boolean; onToggleSearch: () => void; onOpenMy: () => void }) {
+function Header({ title, hasUnread, onToggleSearch, onOpenNotifs }: { title: string; hasUnread: boolean; onToggleSearch: () => void; onOpenNotifs: () => void }) {
   return (
     <View className="flex-row items-center gap-[10px] px-[14px] bg-card border-b border-subtle" style={{ height: 52 }}>
       <LogoMark size={32} />
@@ -88,12 +108,111 @@ function Header({ title, hasUnread, onToggleSearch, onOpenMy }: { title: string;
         <Pressable onPress={onToggleSearch} accessibilityRole="button" accessibilityLabel="건의 검색" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="search" size={19} color={colors.body} />
         </Pressable>
-        <Pressable onPress={onOpenMy} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
+        <Pressable onPress={onOpenNotifs} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="bell" size={19} color={colors.body} />
           {hasUnread ? <View style={{ position: "absolute", top: 5, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral[500], borderWidth: 1.5, borderColor: "#fff" }} /> : null}
         </Pressable>
       </View>
     </View>
+  );
+}
+
+/** 헤더 벨의 알림 목록. 웹 Header.jsx 의 NotifBell 드롭다운과 같은 구성이다 —
+    "N건 안 읽음 + 전체 읽음" 머리줄, 목록, 맨 아래 "전체 알림 보기"(MY 진입).
+    행 생김새는 MY 화면(My.tsx)의 알림 목록과 맞춘다 — 같은 알림을 두 곳에서 다르게 그리지 않는다.
+    ponytail: 목록 개수를 안 자른다. Sheet 가 화면 80% 에서 스크롤로 넘기므로 MY 의 5건 더보기
+    같은 페이지네이션이 여기서는 필요 없다. */
+function NotifSheet({
+  open,
+  onClose,
+  notifications,
+  onOpenNotification,
+  onMarkAllNotifRead,
+  onOpenMy,
+}: {
+  open: boolean;
+  onClose: () => void;
+  notifications: Notification[];
+  onOpenNotification: (n: Notification) => void;
+  onMarkAllNotifRead: () => void;
+  onOpenMy: () => void;
+}) {
+  const unread = notifications.filter((n) => !n.read).length;
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? notifications : notifications.slice(0, NOTIF_PREVIEW);
+  /* 닫으면 다시 3건으로 되돌린다 — 시트는 계속 마운트돼 있어서, 지난번에 펼쳐 둔 상태가 남아
+     있으면 다음에 열자마자 또 화면을 덮는다. */
+  useEffect(() => {
+    if (!open) setExpanded(false);
+  }, [open]);
+
+  return (
+    <Sheet open={open} onClose={onClose}>
+      <View style={{ flexDirection: "row", alignItems: "center", paddingBottom: 12 }}>
+        <Text style={[t, { fontSize: 16.5, fontWeight: "800", color: colors.strong }]}>{unread > 0 ? `${unread}건 안 읽음` : "알림"}</Text>
+        {notifications.length > 0 ? (
+          <Pressable onPress={onMarkAllNotifRead} accessibilityRole="button" style={{ marginLeft: "auto" }} hitSlop={8}>
+            <Text style={[t, { fontSize: 12.5, fontWeight: "600", color: colors.indigo[600] }]}>전체 읽음</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {notifications.length === 0 ? (
+        <Text style={[t, { fontSize: 12.5, color: colors.muted, paddingVertical: 18 }]}>받은 알림이 없습니다.</Text>
+      ) : (
+        shown.map((n, i) => (
+          <Pressable
+            key={n.id}
+            onPress={() => {
+              onClose();
+              onOpenNotification(n);
+            }}
+            accessibilityRole="button"
+            style={{
+              flexDirection: "row",
+              gap: 11,
+              paddingVertical: 13,
+              paddingHorizontal: 12,
+              marginHorizontal: -12,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: colors.subtle,
+              backgroundColor: n.read ? "transparent" : colors.indigo[50],
+            }}
+          >
+            <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: n.iconBg, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: n.iconFg }} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[t, { fontSize: 13, color: colors.body, lineHeight: 20.2 }]}>
+                <Text style={{ fontWeight: "700", color: colors.strong }}>{n.title}</Text> · {n.body}
+              </Text>
+              <Text style={[t, { fontSize: 11, color: colors.muted, marginTop: 3 }]}>{n.date}</Text>
+            </View>
+          </Pressable>
+        ))
+      )}
+
+      {!expanded && notifications.length > NOTIF_PREVIEW ? (
+        <Pressable
+          onPress={() => setExpanded(true)}
+          accessibilityRole="button"
+          style={{ paddingVertical: 12, alignItems: "center", borderTopWidth: 1, borderTopColor: colors.subtle }}
+        >
+          <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>더보기 {notifications.length - NOTIF_PREVIEW}건</Text>
+        </Pressable>
+      ) : null}
+
+      <Pressable
+        onPress={() => {
+          onClose();
+          onOpenMy();
+        }}
+        accessibilityRole="button"
+        style={{ paddingVertical: 13, alignItems: "center", borderTopWidth: 1, borderTopColor: colors.subtle }}
+      >
+        <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>전체 알림 보기</Text>
+      </Pressable>
+    </Sheet>
   );
 }
 
@@ -333,6 +452,15 @@ function Dashboard({ tab, petitions, query, onOpen, onMore }: { tab: Tab; petiti
 function FilterBar(p: FeedProps & { onLayout?: (e: LayoutChangeEvent) => void }) {
   const { category, sort, query } = p.filter;
   const resultLabel = `${p.list.length}건`;
+  /* autoFocus 는 입력칸이 마운트될 때마다 뛴다. searchOpen 은 App.tsx 가 들고 있는데 FeedScreen
+     자체는 MY·상세로 갈 때 언마운트되므로(App.tsx 의 screen === "feed" ? ... : null), 검색바를
+     열어둔 채 다녀오면 사용자가 아무것도 안 눌렀는데 키보드가 올라온다. 화면의 첫 렌더에서만
+     autoFocus 를 끄면 "검색 버튼을 눌러서 연" 경우에만 키보드가 올라온다 — 검색바 자체는
+     그대로 열려 있고 검색어도 남는다(사용자 지시: 바가 떠 있는 건 문제 없음). */
+  const firstRender = useRef(true);
+  useEffect(() => {
+    firstRender.current = false;
+  }, []);
 
   return (
     /* 원본은 rgba(255,255,255,.94) + backdrop-filter 다. RN 에 blur 가 없어 반투명만 남기면
@@ -346,7 +474,7 @@ function FilterBar(p: FeedProps & { onLayout?: (e: LayoutChangeEvent) => void })
             onChangeText={p.onQuery}
             placeholder="건의 검색"
             placeholderTextColor={colors.muted}
-            autoFocus
+            autoFocus={!firstRender.current}
             style={[t, { flex: 1, fontSize: 14, color: colors.strong, padding: 0 }]}
           />
         </View>
