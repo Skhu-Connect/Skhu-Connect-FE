@@ -43,6 +43,17 @@ export function openSystemNotificationSettings(): void {
   Linking.openSettings().catch(() => {});
 }
 
+/** 앱 시작 시 한 번 호출한다 — 설치 후 첫 실행에 시스템 알림 권한 팝업을 띄운다.
+    토큰 등록은 로그인 뒤 registerForPush() 가 한다(등록엔 인증이 필요하다).
+    이미 답한 뒤에는 iOS 가 팝업 없이 기존 상태만 돌려주므로 매 실행 호출해도 안전하다. */
+export async function askPushPermission(): Promise<void> {
+  try {
+    await requestPermission(getMessaging());
+  } catch (e) {
+    console.warn("[push] permission request failed", e);
+  }
+}
+
 /** 로그인 성공 뒤 호출한다. 거부되면 조용히 넘어간다 — 알림은 부가 기능이지 필수 흐름이 아니다. */
 export async function registerForPush(): Promise<void> {
   try {

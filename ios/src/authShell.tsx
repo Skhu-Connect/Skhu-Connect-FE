@@ -25,6 +25,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const player = useVideoPlayer(require("../assets/campus-hero.mp4"), (p) => {
     p.loop = true;
     p.muted = true;
+    // expo-video 네이티브 기본값은 doNotMix — 무음이어도 오디오 세션을 뺏어 듣던 음악이 끊긴다.
+    p.audioMixingMode = "mixWithOthers";
   });
   useEffect(() => {
     if (showVideo && !paused) player.play();

@@ -210,6 +210,7 @@ export default function App() {
   /* 푸시 알림을 탭해서 열린 경우 — URL 딥링크와 같은 경로(deepId/openId)를 탄다.
      킬 상태 콜드 스타트와 백그라운드 탭 둘 다 여기로 모인다. */
   useEffect(() => {
+    push.askPushPermission(); // 설치 후 첫 실행에 권한 팝업 — 로그인 전에 물어야 나온다
     const arrive = (petitionId: number | null) => {
       if (petitionId == null) return;
       setDeepId(petitionId);
