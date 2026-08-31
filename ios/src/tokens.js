@@ -50,6 +50,10 @@ const colors = {
   status: {
     "answered-fg": "#1B8F5E",
     "answered-bg": "#DDF3E7",
+    /* 상세의 공식 답변 카드 면·테두리. answered-bg 보다 옅다 — 카드 한 장을 통째로 덮는 색이라
+       배지에 쓰는 농도로는 본문 글이 안 읽힌다. */
+    "answered-surface": "#F2F9F5",
+    "answered-line": "#D9EDE3",
     "dot-received": "#3778D8",
     "dot-reviewing": "#E09A13",
     "dot-answered": "#22A559",

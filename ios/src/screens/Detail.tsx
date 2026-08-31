@@ -12,6 +12,9 @@ import type { ReportReasonType } from "../api";
 import { ReportSheet } from "../reportSheet";
 
 const t = { fontFamily: font };
+/* 처리 상태 타임라인의 동그라미 — 끝난 단계(체크)와 진행 중(빈 링)이 같은 크기여야 줄이 안 흔들린다. */
+const stepNode = { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" } as const;
+
 export type DetailProps = {
   petition: Petition;
   votes: Votes;
@@ -150,14 +153,21 @@ export function DetailScreen(p: DetailProps) {
   // 서버 목록 응답에 총계가 없어 트리를 직접 센다(웹 CommentsSection 과 같은 방식).
   const commentTotal = p.comments.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
 
+  /* 마지막 단계는 세 모습을 가진다 — 답변이 등록됐으면 완료(초록 체크), 도달률을 채워 담당
+     부서로 넘어갔는데 아직 답변 전이면 진행 중(초록 링), 그 전이면 앞으로 올 단계(회색).
+     "지금 여기까지 와 있다" 를 보여주는 자리라 끝난 단계와 같은 체크를 쓰면 안 된다. */
+  const awaiting = reached && !answered;
   const steps = [
-    { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true },
+    { label: "접수", note: `${ymd(d.createdAt)} 익명 등록 · 담당 카테고리 ${CAT_LABEL[d.category]}`, done: true, active: false },
     {
       label: "검토중",
       note: reached ? "도달률 100% 달성 · 담당 부서에 이메일·SMS로 전달되었습니다." : "도달률 100% 달성 시 담당 부서로 전달됩니다.",
       done: reached,
+      active: false,
     },
-    { label: "답변 완료", note: answered ? "공식 답변이 등록되었습니다." : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered },
+    awaiting
+      ? { label: "공식 답변 준비 중", note: "등록되는 즉시 알림으로 안내드릴게요", done: false, active: true }
+      : { label: "답변 완료", note: answered ? "공식 답변이 등록되었습니다." : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered, active: false },
   ];
 
   const barHeight = 52 + 12 + Math.max(insets.bottom, 22);
@@ -231,20 +241,20 @@ export function DetailScreen(p: DetailProps) {
               <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong }]}>처리 상태</Text>
               {steps.map((s) => (
                 <View key={s.label} style={{ flexDirection: "row", gap: 11, alignItems: "flex-start" }}>
-                  <View
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: s.done ? (s.label === "답변 완료" ? colors.success : colors.indigo[600]) : colors.gray[150],
-                    }}
-                  >
-                    <Icon name="check" size={12} color="#fff" />
-                  </View>
+                  {s.active ? (
+                    <View style={[stepNode, { borderWidth: 5, borderColor: colors.success, backgroundColor: colors.card }]} />
+                  ) : (
+                    <View
+                      style={[
+                        stepNode,
+                        { backgroundColor: s.done ? (s.label === "답변 완료" ? colors.success : colors.indigo[600]) : colors.gray[150] },
+                      ]}
+                    >
+                      <Icon name="check" size={12} color="#fff" />
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
-                    <Text style={[t, { fontSize: 13.5, fontWeight: "700", color: s.done ? colors.strong : colors.muted }]}>{s.label}</Text>
+                    <Text style={[t, { fontSize: 13.5, fontWeight: s.active ? "800" : "700", color: s.active ? colors.success : s.done ? colors.strong : colors.muted }]}>{s.label}</Text>
                     <Text style={[t, { fontSize: 12, color: colors.muted, marginTop: 2, lineHeight: 18 }]}>{s.note}</Text>
                   </View>
                 </View>
@@ -252,14 +262,16 @@ export function DetailScreen(p: DetailProps) {
             </Card>
 
             {d.answer ? (
-              <Card style={{ borderLeftWidth: 4, borderLeftColor: colors.success, backgroundColor: "#EFFAF4" }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="checkCircle" size={16} color="#fff" />
+              /* 옅은 초록 면에 초록 말풍선 아이콘. 왼쪽 굵은 초록 바는 뺐다 — 면 색이 이미
+                 "답변" 을 말하고 있어서 바까지 있으면 카드가 두 번 소리친다. */
+              <Card style={{ backgroundColor: colors.status["answered-surface"], borderColor: colors.status["answered-line"] }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 11, marginBottom: 11 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="message" size={17} color="#fff" />
                   </View>
                   <View>
-                    <Text style={[t, { fontWeight: "700", fontSize: 13.5, color: colors.strong }]}>{d.answer.dept}</Text>
-                    <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{d.answer.date}</Text>
+                    <Text style={[t, { fontWeight: "800", fontSize: 14, color: colors.strong }]}>{d.answer.dept}</Text>
+                    <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 2 }]}>{d.answer.date}</Text>
                   </View>
                 </View>
                 <Text style={[t, { fontSize: 13.5, color: colors.body, lineHeight: 21.6 }]}>{d.answer.body}</Text>

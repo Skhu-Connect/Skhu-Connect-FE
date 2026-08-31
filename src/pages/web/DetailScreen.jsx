@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
-import { ActionMenu, Avatar, ConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, LoginPromptDialog, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
+import { ActionMenu, Avatar, CATEGORIES, ConfirmDialog, Button, Card, CategoryTag, EmpathyButton, Icon, IconButton, LoginPromptDialog, StatusBadge, ThresholdBar, petitionStatus } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 import { toggleVoteWithConfirm } from "../../components/web/voteWithConfirm";
@@ -34,18 +34,80 @@ function ShareLink({ url }) {
   );
 }
 
+/* iOS Detail.tsx 의 "처리 상태" 카드를 그대로 옮긴 것 — 단계·문구·색이 같아야 앱과 웹이 한
+   서비스로 읽힌다. 마지막 단계는 세 모습을 가진다: 답변이 등록됐으면 완료(초록 체크), 도달률을
+   채워 담당 부서로 넘어갔는데 아직 답변 전이면 진행 중(초록 링), 그 전이면 예정(회색). */
+function ymd(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+}
+
+function StatusTimeline({ p }) {
+  const reached = p.current >= p.threshold;
+  const answered = p.status === "answered";
+  const steps = [
+    { label: "접수", note: `${ymd(p.createdAt)} 익명 등록 · 담당 카테고리 ${CATEGORIES[p.category]?.label ?? ""}`, done: true, active: false },
+    {
+      label: "검토중",
+      note: reached ? "도달률 100% 달성 · 담당 부서에 이메일·SMS로 전달되었습니다." : "도달률 100% 달성 시 담당 부서로 전달됩니다.",
+      done: reached,
+      active: false,
+    },
+    reached && !answered
+      ? { label: "공식 답변 준비 중", note: "등록되는 즉시 알림으로 안내드릴게요", done: false, active: true }
+      : { label: "답변 완료", note: answered ? "공식 답변이 등록되었습니다." : "담당 부서 검토 후 공식 답변이 등록됩니다.", done: answered, active: false },
+  ];
+  return (
+    <Card style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>처리 상태</h2>
+      {steps.map((s) => (
+        <div key={s.label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              flex: "none",
+              boxSizing: "border-box",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              ...(s.active
+                ? { border: "5px solid var(--success-500)", background: "var(--surface-card)" }
+                : { background: s.done ? (s.label === "답변 완료" ? "var(--success-500)" : "var(--indigo-600)") : "var(--gray-150)" }),
+            }}
+          >
+            {s.active ? null : <Icon name="check" size={13} />}
+          </div>
+          <div>
+            <div style={{ fontSize: 14.5, fontWeight: s.active ? 800 : 700, color: s.active ? "var(--success-500)" : s.done ? "var(--text-strong)" : "var(--text-muted)" }}>
+              {s.label}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, marginTop: 2 }}>{s.note}</div>
+          </div>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+/* 옅은 초록 면에 초록 말풍선 아이콘. 왼쪽 굵은 초록 바와 우측 "답변 완료" 배지는 뺐다 —
+   면 색이 이미 "답변" 을 말하고 있고, 배지는 바로 위 제목 줄에 같은 게 이미 있다.
+   iOS Detail.tsx 의 답변 카드와 같은 모양이다. */
 function AdminAnswer({ a }) {
   return (
-    <Card style={{ borderLeft: "4px solid var(--success-500)", background: "var(--status-answered-bg)", border: "1px solid #C7E9D6" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--success-500)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-          <Icon name="shield" size={18} />
+    <Card style={{ background: "var(--status-answered-surface)", border: "1px solid var(--status-answered-line)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 11, background: "var(--success-500)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+          <Icon name="message" size={19} />
         </div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--status-answered-fg)" }}>{a.dept}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{a.date}</div>
+          <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-strong)" }}>{a.dept}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>{a.date}</div>
         </div>
-        <div style={{ marginLeft: "auto" }}><StatusBadge status="answered" size="sm" /></div>
       </div>
       <p style={{ margin: 0, fontSize: 14.5, color: "var(--gray-800)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{a.body}</p>
     </Card>
@@ -369,6 +431,8 @@ export default function DetailScreen() {
 
         <ShareLink url={`${window.location.origin}/p/${p.id}`} />
       </Card>
+
+      <div style={{ marginTop: 18 }}><StatusTimeline p={p} /></div>
 
       {answer && <div style={{ marginTop: 18 }}><AdminAnswer a={answer} /></div>}
 

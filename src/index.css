@@ -56,6 +56,10 @@
   --status-review-bg: #fbead2;
   --status-answered-fg: #1b8f5e;
   --status-answered-bg: #ddf3e7;
+  /* 상세의 공식 답변 카드 면·테두리. answered-bg 보다 옅다 — 카드 한 장을 통째로 덮는 색이라
+     배지에 쓰는 농도로는 본문 글이 안 읽힌다. iOS tokens.js 의 같은 이름과 값이 같다. */
+  --status-answered-surface: #f2f9f5;
+  --status-answered-line: #d9ede3;
   --success-500: #22a06b;
   --warning-500: #e8912b;
   --danger-500: #e5354a;
