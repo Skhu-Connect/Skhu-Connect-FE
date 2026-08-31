@@ -28,7 +28,7 @@ function ShareLink({ url }) {
           setTimeout(() => setCopied(false), 1600);
         }}
       >
-        {copied ? "복사됨" : "에타에 공유"}
+        {copied ? "복사됨" : "링크 공유"}
       </Button>
     </div>
   );

@@ -378,7 +378,7 @@ export function DetailScreen(p: DetailProps) {
         <Pressable
           onPress={p.onOpenShare}
           accessibilityRole="button"
-          accessibilityLabel="에타에 공유"
+          accessibilityLabel="링크 공유"
           style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: colors.line, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }}
         >
           <Icon name="link" size={20} color={colors.indigo[600]} />

@@ -54,7 +54,7 @@ function TabItem({ icon, label, active, onPress }: { icon: IconName; label: stri
 
 export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boolean; url: string; copied: boolean; onCopy: () => void; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title="에타에 공유">
+    <Sheet open={open} onClose={onClose} title="링크 공유">
       <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 5, lineHeight: 19.4 }]}>링크를 받은 학생은 로그인 후 바로 이 건의에 공감할 수 있습니다.</Text>
 
       <View style={{ flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14 }}>
@@ -65,7 +65,7 @@ export function ShareSheet({ open, url, copied, onCopy, onClose }: { open: boole
 
       <View style={{ gap: 9, marginTop: 14 }}>
         <Button variant="gradient" size="lg" block onPress={onCopy}>
-          {copied ? "링크가 복사되었습니다" : "링크 복사 후 에타에 붙여넣기"}
+          {copied ? "링크가 복사되었습니다" : "링크 복사"}
         </Button>
         <Button variant="outline" block onPress={onClose}>
           닫기
