@@ -8,13 +8,13 @@
 import { toast } from "../Toast";
 
 export async function toggleVoteWithConfirm(vote, id, voted, mine) {
-  if (mine && !voted) return toast("본인 청원에는 공감할 수 없습니다");
-  if (voted && !window.confirm("공감을 취소할까요?")) return;
+  if (mine && !voted) return toast("본인 청원에는 요청할 수 없습니다");
+  if (voted && !window.confirm("요청을 취소할까요?")) return;
   try {
-    toast((await vote(id)) ? "공감했습니다" : "공감을 취소했습니다");
+    toast((await vote(id)) ? "요청했습니다" : "요청을 취소했습니다");
   } catch (e) {
     // 이전엔 여기 catch 가 없어 vote() 실패가 조용히 묻혔다 — 아래 서버 쪽 최종 방어선
     // (api.toggleEmpathy 의 본인 청원 거부)을 포함해 실패를 사용자에게 보여준다.
-    toast(e?.message || "공감 처리에 실패했습니다");
+    toast(e?.message || "요청 처리에 실패했습니다");
   }
 }

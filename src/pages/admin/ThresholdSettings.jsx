@@ -75,7 +75,7 @@ function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
           <div style={{ fontWeight: 700, color: "var(--text-strong)", marginTop: 2 }}>{setting.minimumCount.toLocaleString()}명</div>
         </div>
         <div>
-          <div style={{ color: "var(--text-muted)", fontSize: 11.5 }}>목표 공감 수</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 11.5 }}>목표 요청 수</div>
           <div style={{ fontWeight: 700, color: "var(--indigo-600)", marginTop: 2 }}>{setting.targetAgreementCount.toLocaleString()}명</div>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function ThresholdSettings() {
 
   return (
     <div style={{ padding: "26px 30px", overflowY: "auto", flex: 1 }}>
-      <PageHead title="임계치 설정" desc="카테고리별 공감 임계치(전체 학생 수·비율·최소 인원)를 조회·수정합니다." />
+      <PageHead title="임계치 설정" desc="카테고리별 요청 임계치(전체 학생 수·비율·최소 인원)를 조회·수정합니다." />
       {loading ? (
         <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>불러오는 중…</p>
       ) : loadError ? (

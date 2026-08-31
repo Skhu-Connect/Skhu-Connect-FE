@@ -209,8 +209,8 @@ export type NotifPoint = {
 export const NOTIF_POINTS = [
   {
     key: "agreement",
-    title: "공감 도달",
-    desc: "내 건의가 목표 공감의 60%·100%에 닿거나, 공감한 건의가 검토에 들어가면 알려드려요.",
+    title: "요청 도달",
+    desc: "내 건의가 목표 요청의 60%·100%에 닿거나, 요청한 건의가 검토에 들어가면 알려드려요.",
     types: ["PETITION_AGREEMENT_60_PERCENT", "PETITION_AGREEMENT_100_PERCENT", "PETITION_UNDER_REVIEW"],
     icon: "trending",
     iconBg: "#FCEFD6",
@@ -219,7 +219,7 @@ export const NOTIF_POINTS = [
   {
     key: "answer",
     title: "답변 등록",
-    desc: "내가 쓰거나 공감한 건의에 학교의 공식 답변이 올라오면 알려드려요.",
+    desc: "내가 쓰거나 요청한 건의에 학교의 공식 답변이 올라오면 알려드려요.",
     types: ["PETITION_ANSWERED"],
     icon: "checkCircle",
     iconBg: "#DDF3E7",

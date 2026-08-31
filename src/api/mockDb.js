@@ -43,8 +43,8 @@ export const CATEGORY_META = {
 
 export const adminDb = {
   notifLogs: [
-    { id: 1, time: "2026.07.25 14:02", type: "threshold", petitionId: 2, msg: "공감 243/240 도달 — 생활관행정실 김도윤에게 검토 요청을 발송했습니다." },
-    { id: 2, time: "2026.07.24 09:31", type: "threshold", petitionId: 1, msg: "공감 512/480 도달 — 학술정보관 이동수에게 검토 요청을 발송했습니다." },
+    { id: 1, time: "2026.07.25 14:02", type: "threshold", petitionId: 2, msg: "요청 243/240 도달 — 생활관행정실 김도윤에게 검토 요청을 발송했습니다." },
+    { id: 2, time: "2026.07.24 09:31", type: "threshold", petitionId: 1, msg: "요청 512/480 도달 — 학술정보관 이동수에게 검토 요청을 발송했습니다." },
     { id: 3, time: "2026.05.22 16:45", type: "answer", petitionId: 4, msg: "학생지원팀 공식 답변 등록 — 청원 상태가 답변 완료로 변경되었습니다." },
   ],
 };

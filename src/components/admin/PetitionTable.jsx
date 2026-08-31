@@ -15,7 +15,7 @@ const COLS = [
   { label: "제목 / 담당", style: { padding: "10px 16px" } },
   { label: "카테고리", style: { padding: "10px 12px" } },
   { label: "상태", style: { padding: "10px 12px" } },
-  { label: "공감 / 임계치", style: { padding: "10px 12px" } },
+  { label: "요청 / 임계치", style: { padding: "10px 12px" } },
   { label: "처리", style: { padding: "10px 16px", textAlign: "right" } },
 ];
 

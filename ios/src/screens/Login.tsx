@@ -56,7 +56,7 @@ export function LoginScreen({
           <View style={{ backgroundColor: colors.indigo[50], borderWidth: 1, borderStyle: "dashed", borderColor: colors.indigo[200], borderRadius: radius.md, paddingVertical: 13, paddingHorizontal: 14, gap: 6 }}>
             <Text style={[{ fontFamily: font }, { fontSize: 11, fontWeight: "800", color: colors.indigo[600], letterSpacing: 0.44 }]}>에타 공유 링크로 접속</Text>
             <Text style={[{ fontFamily: font }, { fontSize: 13.5, fontWeight: "700", color: colors.strong, lineHeight: 19.6 }]}>{deepTitle}</Text>
-            <Text style={[{ fontFamily: font }, { fontSize: 12, color: colors.indigo[700], fontWeight: "600", lineHeight: 18 }]}>로그인하면 이 건의에 바로 공감할 수 있습니다.</Text>
+            <Text style={[{ fontFamily: font }, { fontSize: 12, color: colors.indigo[700], fontWeight: "600", lineHeight: 18 }]}>로그인하면 이 건의에 바로 요청할 수 있습니다.</Text>
           </View>
         ) : null}
 
@@ -68,7 +68,7 @@ export function LoginScreen({
           <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{error}</Text>
         ) : null}
         <Button variant="primary" size="lg" block disabled={loading} onPress={submit}>
-          {loading ? "로그인 중…" : deepTitle ? "로그인하고 공감하기" : "로그인"}
+          {loading ? "로그인 중…" : deepTitle ? "로그인하고 요청하기" : "로그인"}
         </Button>
 
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10 }}>

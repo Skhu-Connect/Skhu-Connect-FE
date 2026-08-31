@@ -430,7 +430,11 @@ export function CategoryTag({ category = "facility", size = "md", style, ...rest
   );
 }
 
-/* 핵심 인터랙션: 공감을 누르면 청원이 임계치로 다가간다. */
+/* 핵심 인터랙션: 요청을 누르면 청원이 임계치로 다가간다.
+   화면 표기는 "요청"이지만 서버·코드의 개념명은 그대로 agreement(공감)다 — agreementCount,
+   SELF_AGREEMENT_NOT_ALLOWED, votes/voted, EmpathyButton 이 다 그 이름을 쓴다. 아래 주석들이
+   "공감"이라 부르는 것은 전부 이 서버 개념이고, 사용자에게 보이는 낱말만 "요청"으로 바꿨다.
+   댓글·답글의 공감(COMMENT_LIKE/REPLY_LIKE)은 별개 동작이라 표기도 "공감" 그대로 둔다. */
 export function EmpathyButton({ count = 0, active = false, onToggle, size = "md", block = false, style, ...rest }) {
   const dims =
     size === "lg"
@@ -471,7 +475,7 @@ export function EmpathyButton({ count = 0, active = false, onToggle, size = "md"
       <svg width={dims.icon} height={dims.icon} viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" />
       </svg>
-      <span>공감</span>
+      <span>요청</span>
       <span style={{ fontVariantNumeric: "tabular-nums", opacity: active ? 1 : 0.85 }}>{count.toLocaleString()}</span>
     </button>
   );
@@ -624,7 +628,7 @@ export function LoginPromptDialog({ onConfirm, onClose }) {
       <div style={{ width: "100%", maxWidth: 360, background: "var(--surface-card)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 22 }} onClick={(e) => e.stopPropagation()}>
         <h3 id="login-prompt-title" style={{ margin: "0 0 8px", fontSize: 16.5, fontWeight: 800, color: "var(--text-strong)" }}>로그인이 필요해요</h3>
         <p style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>
-          공감·댓글·북마크는 로그인한 학생만 사용할 수 있습니다. 학교 이메일로 가입하면 바로 참여할 수 있어요.
+          요청·댓글·북마크는 로그인한 학생만 사용할 수 있습니다. 학교 이메일로 가입하면 바로 참여할 수 있어요.
         </p>
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" block onClick={onClose}>취소</Button>

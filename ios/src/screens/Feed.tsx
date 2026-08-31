@@ -137,10 +137,10 @@ function Banner({
   return (
     <LinearGradient {...gradient.hero} style={{ paddingTop: 20, paddingHorizontal: 18, paddingBottom: 22, overflow: "hidden" }}>
       <View style={{ position: "absolute", right: -50, top: -40, width: 190, height: 190, borderRadius: 95, backgroundColor: "rgba(255,255,255,.07)" }} />
-      <Text style={[t, { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,.85)" }]}>익명 건의 · 공감으로 움직이는 캠퍼스</Text>
+      <Text style={[t, { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,.85)" }]}>익명 건의 · 요청으로 움직이는 캠퍼스</Text>
       <Text style={[t, { fontSize: 21, fontWeight: "800", color: "#fff", lineHeight: 27.7, marginTop: 5, letterSpacing: -0.21 }]}>당신의 목소리를 들려주세요</Text>
       <Text style={[t, { fontSize: 12.5, color: "rgba(255,255,255,.9)", lineHeight: 19.5, marginTop: 8 }]}>
-        공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면{"\n"}담당 부서로 자동 전달됩니다.
+        요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면{"\n"}담당 부서로 자동 전달됩니다.
       </Text>
     </LinearGradient>
   );
@@ -237,7 +237,7 @@ function TrendingCard({
       <Pressable
         onPress={onMore}
         accessibilityRole="button"
-        accessibilityLabel="전체 건의를 공감순으로 보기"
+        accessibilityLabel="전체 건의를 요청순으로 보기"
         style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.subtle }}
       >
         <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.muted }]}>더보기</Text>
@@ -302,7 +302,7 @@ function SummaryCard({ newCount, newEmpathy, period }: { newCount: number; newEm
       <View style={{ flexDirection: "row", alignItems: "stretch", gap: 10 }}>
         <StatRow icon="fileText" iconBg={colors.indigo[50]} iconFg={colors.indigo[600]} valueColor={colors.indigo[600]} label="총 신규 건의 수" value={newCount} unit="건" desc="새로 등록된 건의 수" />
         {/* 누적 공감이라 "새로 발생한" 이라고는 못 쓴다 — PERIODS 주석의 근사치 한계 참고. */}
-        <StatRow icon="heart" iconBg="rgba(240,128,138,.16)" iconFg={colors.danger} valueColor={colors.danger} label="총 신규 공감 수" value={newEmpathy} unit="회" desc="신규 건의에 모인 공감" />
+        <StatRow icon="heart" iconBg="rgba(240,128,138,.16)" iconFg={colors.danger} valueColor={colors.danger} label="총 신규 요청 수" value={newEmpathy} unit="회" desc="신규 건의에 모인 요청" />
       </View>
     </Card>
   );
@@ -401,7 +401,7 @@ function FilterBar(p: FeedProps & { onLayout?: (e: LayoutChangeEvent) => void })
 }
 
 const SORT_OPTIONS: { key: Sort; label: string }[] = [
-  { key: "hot", label: "공감순" },
+  { key: "hot", label: "요청순" },
   { key: "new", label: "최신순" },
 ];
 

@@ -37,7 +37,7 @@ export default function Dashboard() {
         <Stat icon="megaphone" label="전체 청원" value={petitions.length} tone={{ bg: "var(--indigo-50)", fg: "var(--indigo-600)" }} delta="+2 오늘" />
         <Stat icon="trending" label="임계치 도달 · 검토 필요" value={reached} tone={{ bg: "var(--status-review-bg)", fg: "var(--status-review-fg)" }} />
         <Stat icon="checkCircle" label="답변 완료" value={answered} tone={{ bg: "var(--status-answered-bg)", fg: "var(--status-answered-fg)" }} />
-        <Stat icon="users" label="누적 공감" value={empathy.toLocaleString()} tone={{ bg: "#FCE7E9", fg: "var(--coral-600)" }} />
+        <Stat icon="users" label="누적 요청" value={empathy.toLocaleString()} tone={{ bg: "#FCE7E9", fg: "var(--coral-600)" }} />
       </div>
       {reached > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--status-review-bg)", border: "1px solid #F3D9A8", borderRadius: "var(--radius-md)", padding: "12px 16px", marginBottom: 20, color: "var(--status-review-fg)", fontWeight: 600, fontSize: 14 }}>

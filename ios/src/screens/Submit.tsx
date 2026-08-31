@@ -51,7 +51,7 @@ export function SubmitScreen(p: SubmitProps) {
               <Icon name="lock" size={16} color={colors.indigo[600]} />
             </View>
             <Text style={[t, { flex: 1, fontSize: 12.5, color: colors.indigo[700], lineHeight: 20 }]}>
-              당신의 목소리를 들려주세요. 모든 건의는 <Text style={{ fontWeight: "700" }}>익명</Text>으로 등록되며, 공감이 도달률 100%를 달성하면 담당 부서로 전달됩니다.
+              당신의 목소리를 들려주세요. 모든 건의는 <Text style={{ fontWeight: "700" }}>익명</Text>으로 등록되며, 요청이 도달률 100%를 달성하면 담당 부서로 전달됩니다.
             </Text>
           </View>
 

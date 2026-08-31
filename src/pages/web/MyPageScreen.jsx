@@ -265,7 +265,7 @@ export default function MyPageScreen() {
         loginId={user.loginId}
         stats={[
           [mineCount, "등록한 건의"],
-          [voteCount, "누른 공감"],
+          [voteCount, "누른 요청"],
           [answeredCount, "받은 답변"],
         ]}
       />

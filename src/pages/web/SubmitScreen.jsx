@@ -42,7 +42,7 @@ export default function SubmitScreen() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "var(--text-strong)" }}>건의 등록</h1>
         <p style={{ margin: "6px 0 0", color: "var(--text-body)", fontSize: 14.5 }}>
-          당신의 목소리를 들려주세요. 모든 건의는 <b style={{ color: "var(--indigo-600)" }}>익명</b>으로 등록되며, 공감이 도달률 100%를 달성하면 담당 부서로 전달됩니다.
+          당신의 목소리를 들려주세요. 모든 건의는 <b style={{ color: "var(--indigo-600)" }}>익명</b>으로 등록되며, 요청이 도달률 100%를 달성하면 담당 부서로 전달됩니다.
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export default function SubmitScreen() {
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "var(--indigo-50)", borderRadius: "var(--radius-md)", padding: "14px 16px" }}>
           <span style={{ flexShrink: 0, marginTop: 1, color: "var(--indigo-600)", display: "inline-flex" }}><Icon name="shield" size={17} /></span>
           <span style={{ fontSize: 13.5, color: "var(--indigo-700)", lineHeight: 1.65 }}>
-            공감 도달률은 카테고리별 기준(학과 정원 또는 전체 학생 대비 %)에 따라 <b>관리자가 설정</b>합니다. 공감이 도달률 100%를 달성하면 담당 부서로 자동 전달됩니다.
+            요청 도달률은 카테고리별 기준(학과 정원 또는 전체 학생 대비 %)에 따라 <b>관리자가 설정</b>합니다. 요청이 도달률 100%를 달성하면 담당 부서로 자동 전달됩니다.
             <br />
             등록 후 <b>10분 동안은 새 건의를 올릴 수 없습니다.</b> 이 시간은 등록한 건의를 삭제해도 줄어들지 않으니, 내용을 확인하고 등록해 주세요.
           </span>

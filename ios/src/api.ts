@@ -507,7 +507,7 @@ export async function toggleEmpathy(petitionId: number, wasVoted: boolean): Prom
     // 좋아요를 기록해 실제로는 공감 안 된 글을 공감한 것처럼 보이게 된다. 화면 쪽 사전 차단
     // (App.tsx 의 vote())을 우회한 stale 상태에 대비한 마지막 방어선이다.
     if (e instanceof ApiError && e.status === 409 && e.body?.title === "Cannot agree to own petition") {
-      throw new Error("본인 청원에는 공감할 수 없습니다");
+      throw new Error("본인 청원에는 요청할 수 없습니다");
     }
     if (e instanceof ApiError && (e.status === 409 || e.status === 404)) {
       // 서버 상태가 이미 원하는 쪽이다 — 로컬 캐시만 맞추고 성공 취급.
@@ -585,7 +585,7 @@ export async function deletePetition(petitionId: number): Promise<void> {
   try {
     await apiFetch(`/connect/petitions/${petitionId}`, { method: "DELETE" });
   } catch (e) {
-    if (e instanceof ApiError && e.status === 409) throw new Error("공감이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
+    if (e instanceof ApiError && e.status === 409) throw new Error("요청이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
     if (!(e instanceof ApiError) || e.status !== 404) throw e;
   }
   myPetitionIds.delete(petitionId);

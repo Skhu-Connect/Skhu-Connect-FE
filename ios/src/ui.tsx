@@ -395,7 +395,10 @@ export function StatusBadge({ status, size = "md" }: { status: StatusKey; size?:
   );
 }
 
-/* 핵심 인터랙션: 공감을 누르면 청원이 임계치로 다가간다. */
+/* 핵심 인터랙션: 요청을 누르면 청원이 임계치로 다가간다.
+   화면 표기는 "요청"이지만 서버·코드의 개념명은 그대로 agreement(공감)다 — 아래 주석들이
+   "공감"이라 부르는 것은 전부 그 서버 개념이다(웹 components/ui/index.jsx 와 같은 규칙).
+   댓글·답글의 공감(COMMENT_LIKE/REPLY_LIKE)은 별개 동작이라 표기도 "공감" 그대로 둔다. */
 export function EmpathyButton({
   count,
   active,
@@ -416,7 +419,7 @@ export function EmpathyButton({
   const inner = (color: string) => (
     <>
       <Icon name={active ? "heartSolid" : "heart"} size={d.icon} color={color} />
-      <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color }]}>공감</Text>
+      <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color }]}>요청</Text>
       <Text style={[base, { fontSize: d.fontSize, fontWeight: "700", color, opacity: active ? 1 : 0.85, fontVariant: ["tabular-nums"] }]}>{fmt(count)}</Text>
     </>
   );
@@ -439,7 +442,7 @@ export function EmpathyButton({
       onPress={onToggle}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={`공감 ${fmt(count)}`}
+      accessibilityLabel={`요청 ${fmt(count)}`}
       {...press}
       style={[{ flex: block ? 1 : undefined }, active ? shadow.magenta : null, pressed ? PRESS_95 : null]}
     >

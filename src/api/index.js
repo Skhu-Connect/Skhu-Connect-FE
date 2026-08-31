@@ -32,8 +32,8 @@ const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_E
 const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
 const NOTIF_MESSAGE_FALLBACK = {
-  PETITION_AGREEMENT_60_PERCENT: "내 청원이 목표 공감의 60%에 도달했습니다.",
-  PETITION_AGREEMENT_100_PERCENT: "내 청원이 목표 공감에 도달해 검토가 시작됩니다.",
+  PETITION_AGREEMENT_60_PERCENT: "내 청원이 목표 요청의 60%에 도달했습니다.",
+  PETITION_AGREEMENT_100_PERCENT: "내 청원이 목표 요청에 도달해 검토가 시작됩니다.",
   PETITION_UNDER_REVIEW: "내 청원을 담당 부서에서 검토하고 있습니다.",
   PETITION_ANSWERED: "내 청원에 공식 답변이 등록되었습니다.",
   COMMENT_REPLY: "내 댓글에 답글이 등록되었습니다.",
@@ -456,7 +456,7 @@ export async function deletePetition(petitionId) {
   try {
     await apiFetch(`/connect/petitions/${id}`, { method: "DELETE" });
   } catch (e) {
-    if (e.status === 409) throw new Error("공감이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
+    if (e.status === 409) throw new Error("요청이 달렸거나 검토가 시작된 건의는 삭제할 수 없습니다.");
     if (e.status !== 404) throw e;
   }
   myPetitionIds.delete(id);
@@ -529,7 +529,7 @@ export async function toggleEmpathy(id) {
     // 좋아요를 기록해 실제로는 공감 안 된 글을 공감한 것처럼 보이게 된다. 화면 쪽 사전 차단
     // (toggleVoteWithConfirm) 을 우회한 stale 상태에 대비한 마지막 방어선이다.
     if (e.status === 409 && e.body?.title === "Cannot agree to own petition") {
-      throw new Error("본인 청원에는 공감할 수 없습니다");
+      throw new Error("본인 청원에는 요청할 수 없습니다");
     }
     if (e.status !== 409 && e.status !== 404) throw e;
   }

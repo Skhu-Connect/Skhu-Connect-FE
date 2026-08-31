@@ -16,9 +16,9 @@ function HeroBanner() {
   return (
     <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "48px 44px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
       <div style={{ position: "relative", zIndex: 1, maxWidth: 620 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>익명 건의 · 공감으로 움직이는 캠퍼스</div>
+        <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>익명 건의 · 요청으로 움직이는 캠퍼스</div>
         <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.22 }}>당신의 목소리를 들려주세요</h1>
-        <p style={{ margin: "16px 0 0", fontSize: 16, opacity: 0.9, lineHeight: 1.65 }}>공감 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
+        <p style={{ margin: "16px 0 0", fontSize: 16, opacity: 0.9, lineHeight: 1.65 }}>요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
       </div>
       <div style={{ position: "absolute", right: -60, top: -40, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,.06)" }} />
       <div style={{ position: "absolute", right: 80, bottom: -90, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,.05)" }} />
@@ -161,10 +161,10 @@ function PeriodSummary({ newCount, newEmpathy, period }) {
         iconBg="color-mix(in srgb, var(--coral-500) 14%, white)"
         iconFg="var(--danger-500)"
         valueColor="var(--danger-500)"
-        label="총 신규 공감 수"
+        label="총 신규 요청 수"
         value={newEmpathy}
         unit="회"
-        desc="신규 건의에 모인 공감"
+        desc="신규 건의에 모인 요청"
       />
     </div>
   );
@@ -193,7 +193,7 @@ function SearchIntro({ query, count }) {
 }
 
 const SORT_OPTIONS = [
-  { key: "hot", label: "공감순" },
+  { key: "hot", label: "요청순" },
   { key: "new", label: "최신순" },
 ];
 

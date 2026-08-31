@@ -210,7 +210,7 @@ export function DetailScreen(p: DetailProps) {
           {p.deepPrompt ? (
             <LinearGradient {...gradient.mileage} style={{ paddingVertical: 12, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Icon name="heartSolid" size={15} color="#fff" />
-              <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: "#fff" }]}>에타에서 오셨네요. 아래에서 바로 공감해 주세요.</Text>
+              <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: "#fff" }]}>에타에서 오셨네요. 아래에서 바로 요청해 주세요.</Text>
             </LinearGradient>
           ) : null}
 

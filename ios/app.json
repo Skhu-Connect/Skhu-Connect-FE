@@ -3,7 +3,7 @@
     "name": "성공잇다",
     "slug": "skhu-petition-mobile",
     "scheme": "skhupetition",
-    "version": "1.1.2",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

@@ -248,11 +248,11 @@ export default function App() {
     (id: number, wasVoted: boolean) => {
       setVotes((v) => ({ ...v, [id]: !wasVoted }));
       if (!wasVoted) setDeepUsed(true);
-      flash(!wasVoted ? "공감했습니다" : "공감을 취소했습니다");
+      flash(!wasVoted ? "요청했습니다" : "요청을 취소했습니다");
       api.toggleEmpathy(id, wasVoted).catch((e) => {
         setVotes((v) => ({ ...v, [id]: wasVoted }));
         // e.message 가 있으면 그걸 보여준다(예: 본인 청원 공감 거부) - 없으면 기존 문구.
-        flash(e instanceof Error && e.message ? e.message : "공감 처리에 실패했습니다");
+        flash(e instanceof Error && e.message ? e.message : "요청 처리에 실패했습니다");
       });
     },
     [flash],
@@ -266,14 +266,14 @@ export default function App() {
     (id: number) => {
       const wasVoted = !!votes[id];
       if (!wasVoted && petitions.find((p) => p.id === id)?.mine) {
-        flash("본인 청원에는 공감할 수 없습니다");
+        flash("본인 청원에는 요청할 수 없습니다");
         return;
       }
       if (!wasVoted) {
         doVote(id, wasVoted);
         return;
       }
-      Alert.alert("공감을 취소할까요?", undefined, [
+      Alert.alert("요청을 취소할까요?", undefined, [
         { text: "취소", style: "cancel" },
         { text: "확인", onPress: () => doVote(id, wasVoted) },
       ]);
@@ -571,7 +571,7 @@ export default function App() {
         .then(patch)
         .catch(() => {
           patch({ votes: before.votes, liked: before.liked });
-          flash("공감 처리에 실패했습니다");
+          flash("요청 처리에 실패했습니다");
         });
     },
     [comments, openId, flash],
