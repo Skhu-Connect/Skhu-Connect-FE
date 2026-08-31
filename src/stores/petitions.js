@@ -21,7 +21,6 @@ const removeComment = (list, id) =>
 export const usePetitions = create((set, get) => ({
   petitions: [],
   categories: [],
-  owners: [],
   notifications: [],
   notifLogs: [],
   reports: [],
@@ -35,7 +34,7 @@ export const usePetitions = create((set, get) => ({
   loading: false,
 
   /** 학생 웹 로드. WebLayout 이 마운트 시 한 번 부른다.
-      담당자 목록·내부 알림 로그는 부르지 않는다 — 학생 화면이 쓰지 않는 관리자 데이터다. */
+      내부 알림 로그는 부르지 않는다 — 학생 화면이 쓰지 않는 관리자 데이터다. */
   loadFeed: async () => {
     set({ loading: true });
     try {
@@ -58,18 +57,17 @@ export const usePetitions = create((set, get) => ({
     }
   },
 
-  /** 관리자 콘솔 로드. AdminLayout 이 부른다 — 담당자 연락처·알림 로그는 여기서만 온다. */
+  /** 관리자 콘솔 로드. AdminLayout 이 부른다 — 알림 로그는 여기서만 온다. */
   loadAdmin: async () => {
     set({ loading: true });
     try {
-      const [petitions, categories, owners, notifLogs, reports] = await Promise.all([
+      const [petitions, categories, notifLogs, reports] = await Promise.all([
         api.listAdminPetitions(),
         api.listCategories(),
-        api.listOwners(),
         api.listNotifLogs(),
         api.listAdminReports(),
       ]);
-      set({ petitions, categories, owners, notifLogs, reports, answersById: answers(petitions) });
+      set({ petitions, categories, notifLogs, reports, answersById: answers(petitions) });
     } finally {
       set({ loading: false });
     }

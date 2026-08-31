@@ -9,6 +9,7 @@ import { Icon } from "../icons";
 import { Button, Input } from "../ui";
 import { font, onVideo } from "../theme";
 import { confirmPasswordResetCode, resetPassword, sendPasswordResetCode } from "../api";
+import { RESEND_WAIT_SECONDS, sendCodeErrorMessage, useResendCooldown } from "../useResendCooldown";
 
 function ErrorText({ children }: { children: string }) {
   return <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{children}</Text>;
@@ -69,6 +70,8 @@ function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => 
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
+  /* 이 화면은 코드를 막 보낸 직후에만 뜬다 — 쿨다운은 60초에서 시작한다. */
+  const [cooldown, startCooldown] = useResendCooldown(RESEND_WAIT_SECONDS);
 
   const confirm = async () => {
     if (!/^\d{6}$/.test(code.trim())) {
@@ -93,8 +96,10 @@ function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => 
     try {
       await sendPasswordResetCode(email);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "인증코드 재발송에 실패했습니다.");
+      setError(sendCodeErrorMessage(e, "인증코드 재발송에 실패했습니다."));
     } finally {
+      /* 성공이든 429 든 서버의 60초 창은 다시 시작한다. */
+      startCooldown();
       setResending(false);
     }
   };
@@ -111,9 +116,9 @@ function CodeStep({ email, onBack, onVerified }: { email: string; onBack: () => 
         {checking ? "확인 중…" : "확인"}
       </Button>
 
-      <Pressable onPress={resend} disabled={resending} accessibilityRole="button" style={{ alignItems: "center" }}>
-        <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: onVideo.link }]}>
-          {resending ? "재발송 중…" : "인증코드 다시 받기"}
+      <Pressable onPress={resend} disabled={resending || cooldown > 0} accessibilityRole="button" style={{ alignItems: "center" }}>
+        <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: cooldown > 0 ? onVideo.muted : onVideo.link }]}>
+          {resending ? "재발송 중…" : cooldown > 0 ? `${cooldown}초 후 다시 받기` : "인증코드 다시 받기"}
         </Text>
       </Pressable>
     </>

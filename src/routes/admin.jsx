@@ -7,7 +7,6 @@ import AdminLayout from "../layouts/AdminLayout";
 import AdminLoginScreen from "../pages/admin/Login";
 import Dashboard from "../pages/admin/Dashboard";
 import Manage from "../pages/admin/Manage";
-import Owners from "../pages/admin/Owners";
 import Logs from "../pages/admin/Logs";
 import ThresholdSettings from "../pages/admin/ThresholdSettings";
 import Reports from "../pages/admin/Reports";
@@ -19,7 +18,6 @@ export function adminRoutes() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="manage" element={<Manage />} />
-        <Route path="owners" element={<Owners />} />
         <Route path="logs" element={<Logs />} />
         <Route path="threshold-settings" element={<ThresholdSettings />} />
         <Route path="reports" element={<Reports />} />

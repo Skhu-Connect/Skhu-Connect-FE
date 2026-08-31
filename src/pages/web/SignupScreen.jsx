@@ -10,6 +10,7 @@ import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
 import { sanitizeNextPath } from "../../utils/nextPath";
+import { RESEND_WAIT_SECONDS, sendCodeErrorMessage, useResendCooldown } from "../../utils/useResendCooldown";
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 const TERMS_VERSION = "1.0";
@@ -56,8 +57,8 @@ function EmailStep({ onSent, loginHref }) {
     try {
       await api.sendSignupCode(value);
       onSent(value);
-    } catch {
-      setError("인증코드 발송에 실패했습니다. 이메일을 확인해 주세요.");
+    } catch (e) {
+      setError(sendCodeErrorMessage(e, "인증코드 발송에 실패했습니다. 이메일을 확인해 주세요."));
     } finally {
       setSending(false);
     }
@@ -114,6 +115,8 @@ function CodeStep({ email, onVerified, onBack }) {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
+  /* 이 화면은 코드를 막 보낸 직후에만 뜬다 — 쿨다운은 60초에서 시작한다. */
+  const [cooldown, startCooldown] = useResendCooldown(RESEND_WAIT_SECONDS);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -139,9 +142,11 @@ function CodeStep({ email, onVerified, onBack }) {
     setError("");
     try {
       await api.sendSignupCode(email);
-    } catch {
-      setError("인증코드 재발송에 실패했습니다.");
+    } catch (e) {
+      setError(sendCodeErrorMessage(e, "인증코드 재발송에 실패했습니다."));
     } finally {
+      /* 성공이든 429 든 서버의 60초 창은 다시 시작한다. */
+      startCooldown();
       setResending(false);
     }
   };
@@ -174,8 +179,8 @@ function CodeStep({ email, onVerified, onBack }) {
       </form>
 
       <div style={{ textAlign: "center", marginTop: 16 }}>
-        <button type="button" onClick={resend} disabled={resending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--indigo-200)", fontWeight: 700, fontSize: 13, fontFamily: "var(--font-sans)" }}>
-          {resending ? "재발송 중…" : "인증코드 다시 받기"}
+        <button type="button" onClick={resend} disabled={resending || cooldown > 0} style={{ background: "none", border: "none", cursor: resending || cooldown > 0 ? "default" : "pointer", color: cooldown > 0 ? "var(--text-muted)" : "var(--indigo-200)", fontWeight: 700, fontSize: 13, fontFamily: "var(--font-sans)" }}>
+          {resending ? "재발송 중…" : cooldown > 0 ? `${cooldown}초 후 다시 받기` : "인증코드 다시 받기"}
         </button>
       </div>
     </>

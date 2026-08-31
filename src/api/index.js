@@ -4,8 +4,8 @@
    교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
-   임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listOwners/listNotifLogs(담당자 연락처·
-   알림 로그)는 대응 엔드포인트가 없어 여전히 mockDb.js 의 CATEGORY_META/adminDb 로 동작한다.
+   임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listNotifLogs(알림 로그)는 대응 엔드포인트가
+   없어 여전히 mockDb.js 의 adminDb 로 동작한다.
    알림 설정(NotificationSettingsScreen)은 NotificationEventService의 발생 지점 5곳을 보여주고
    PATCH /connect/users/me/notification-settings로 종류별 수신 설정을 저장한다.
 
@@ -637,10 +637,6 @@ export async function listCategories() {
   return Object.entries(CATEGORY_META).map(([key, meta]) => ({ key, ...meta }));
 }
 
-export async function listOwners() {
-  return Object.entries(CATEGORY_META).map(([key, meta]) => ({ key, label: meta.label, ...meta.owner }));
-}
-
 /* ───────────────── 알림 ───────────────── */
 
 export function notificationMessage(n) {
@@ -758,8 +754,9 @@ export async function adminLogout() {
 
 /* ───────────────── 관리자 콘솔 (로그인·청원 목록·공식 답변은 실 백엔드 — 담당자·알림 로그만 mockDb.adminDb) ───────────────── */
 
-// 담당자 연락처(basis·owner)는 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위 고정값이라
-// 여전히 CATEGORY_META 에서 읽는다(#49 Owners 화면과 같은 소스). threshold 는 청원마다 다를 수
+// 담당(basis·owner)은 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위 고정값이라
+// 여전히 CATEGORY_META 에서 읽는다(청원 관리 표·답변 모달의 "담당 · 팀 · 이름" 줄이 쓴다.
+// 전용 화면이던 /admin/owners 는 제거됐다). threshold 는 청원마다 다를 수
 // 있어 응답의 targetAgreementCount 를 우선하고, 없을 때만 CATEGORY_META 폴백을 쓴다.
 function adaptAdminPetition(raw) {
   const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";

@@ -10,6 +10,7 @@ import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
 import { font, onVideo } from "../theme";
 import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
+import { isTooSoon, sendCodeErrorMessage, useResendCooldown } from "../useResendCooldown";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 
 const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
@@ -53,6 +54,8 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
   const [loading, setLoading] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  /* 발송 버튼과 "다시 받기"가 같은 send() 다 — 첫 발송 전에는 0 에서 시작한다. */
+  const [cooldown, startCooldown] = useResendCooldown();
 
   const send = async () => {
     const value = email.trim();
@@ -69,8 +72,12 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
     try {
       await sendSignupCode(value);
       setSent(true);
+      startCooldown();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "인증번호 발송에 실패했습니다.");
+      setError(sendCodeErrorMessage(e, "인증번호 발송에 실패했습니다."));
+      /* 429 면 서버는 이미 코드를 보내 둔 상태다 — 여기서도 60초를 센다.
+         반대로 400·409 는 아무것도 안 만들어졌으니 버튼을 잠그지 않는다. */
+      if (isTooSoon(e)) startCooldown();
     } finally {
       setLoading(false);
     }
@@ -126,13 +133,15 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
           <Button variant="primary" size="lg" block disabled={loading} onPress={confirm}>
             {loading ? "확인 중…" : "인증 확인"}
           </Button>
-          <Pressable onPress={send} disabled={loading} accessibilityRole="button" style={{ alignItems: "center" }}>
-            <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>인증번호 다시 받기</Text>
+          <Pressable onPress={send} disabled={loading || cooldown > 0} accessibilityRole="button" style={{ alignItems: "center" }}>
+            <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>
+              {cooldown > 0 ? `${cooldown}초 후 다시 받기` : "인증번호 다시 받기"}
+            </Text>
           </Pressable>
         </>
       ) : (
-        <Button variant="primary" size="lg" block disabled={loading} onPress={send}>
-          {loading ? "발송 중…" : "인증번호 발송"}
+        <Button variant="primary" size="lg" block disabled={loading || cooldown > 0} onPress={send}>
+          {loading ? "발송 중…" : cooldown > 0 ? `${cooldown}초 후 다시 시도` : "인증번호 발송"}
         </Button>
       )}
 
