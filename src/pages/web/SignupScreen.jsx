@@ -17,6 +17,18 @@ const TERMS_VERSION = "1.0";
 /* 인증코드가 도착하는 학교 메일함(office365). 받은편지함으로 바로 연다. */
 const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
 
+function LoginIdNotice({ onClose }) {
+  return (
+    <div role="alertdialog" aria-modal="true" aria-labelledby="login-id-notice-title" aria-describedby="login-id-notice-body" style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <div style={{ width: "min(100%, 360px)", background: "var(--surface-card)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 22 }}>
+        <h2 id="login-id-notice-title" style={{ margin: "0 0 8px", fontSize: 18, color: "var(--text-strong)" }}>아이디를 신중하게 정해 주세요</h2>
+        <p id="login-id-notice-body" style={{ margin: "0 0 20px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-body)" }}>회원가입 후에는 아이디를 변경할 수 없습니다.</p>
+        <Button type="button" variant="primary" block autoFocus onClick={onClose}>확인</Button>
+      </div>
+    </div>
+  );
+}
+
 /* iOS Signup 의 ConsentRow 와 같은 줄 구성(체크박스 + 보기 링크)이다. */
 function ConsentRow({ checked, label, href, onToggle }) {
   return (
@@ -256,6 +268,7 @@ function AccountStep({ verificationToken, onBack }) {
 
 export default function SignupScreen() {
   const authed = useSession((s) => s.authed);
+  const [noticeOpen, setNoticeOpen] = useState(true);
   const [step, setStep] = useState("email"); // email → code → account
   const [email, setEmail] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
@@ -266,6 +279,7 @@ export default function SignupScreen() {
 
   return (
     <AuthLayout>
+      {noticeOpen && <LoginIdNotice onClose={() => setNoticeOpen(false)} />}
       {step === "email" && (
         <EmailStep
           loginHref={`/login?next=${encodeURIComponent(next)}`}

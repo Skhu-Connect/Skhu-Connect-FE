@@ -26,7 +26,6 @@ export type MyProps = {
   onMarkAllNotifRead: () => void;
   onLogout: () => void;
   onDeleteAccount: (password: string) => Promise<void>;
-  onChangeLoginId: (newLoginId: string, password: string) => Promise<void>;
   onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   onUpdateDepartment: (departmentId: number, departmentName: string) => Promise<void>;
 };
@@ -36,7 +35,6 @@ export function MyScreen(p: MyProps) {
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
-  const [changeIdOpen, setChangeIdOpen] = useState(false);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [department, setDepartment] = useState(p.me?.departmentName ?? "");
   const [departmentError, setDepartmentError] = useState("");
@@ -105,8 +103,7 @@ export function MyScreen(p: MyProps) {
 
         <SectionTitle style={{ paddingTop: 18 }}>계정 정보 변경</SectionTitle>
         <View style={[{ marginHorizontal: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.subtle, borderRadius: radius.lg, overflow: "hidden" }, shadow.sm]}>
-          <AccountRow icon="user" label="아이디 변경" onPress={() => setChangeIdOpen(true)} first />
-          <AccountRow icon="lock" label="비밀번호 변경" onPress={() => setChangePwOpen(true)} />
+          <AccountRow icon="lock" label="비밀번호 변경" onPress={() => setChangePwOpen(true)} first />
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingHorizontal: 16, paddingBottom: 6 }}>
@@ -222,13 +219,12 @@ export function MyScreen(p: MyProps) {
         />
       ) : null}
       {changePwOpen ? <ChangePasswordSheet onClose={() => setChangePwOpen(false)} onSubmit={p.onChangePassword} /> : null}
-      {changeIdOpen ? <ChangeIdSheet onClose={() => setChangeIdOpen(false)} onSubmit={p.onChangeLoginId} /> : null}
     </View>
   );
 }
 
-/* 계정 정보 변경(아이디·비밀번호) 진입 행. HelpLinkRow 와 같은 뼈대인데 밖으로 안 나가고
-   시트를 연다 — 그래서 link 대신 화면 안 이동을 뜻하는 아이콘(user/lock)만 왼쪽에 둔다. */
+/* 계정 정보 변경 진입 행. HelpLinkRow 와 같은 뼈대인데 밖으로 안 나가고
+   시트를 연다 — 그래서 link 대신 화면 안 이동을 뜻하는 아이콘만 왼쪽에 둔다. */
 function AccountRow({ icon, label, onPress, first = false }: { icon: IconName; label: string; onPress: () => void; first?: boolean }) {
   return (
     <Pressable
@@ -293,72 +289,6 @@ function ChangePasswordSheet({ onClose, onSubmit }: { onClose: () => void; onSub
               <Input label="현재 비밀번호" value={current} onChangeText={(v) => { setCurrent(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               <Input label="새 비밀번호" value={next} onChangeText={(v) => { setNext(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               <Input label="새 비밀번호 확인" value={confirm} onChangeText={(v) => { setConfirm(v); setError(""); }} placeholder="••••••••" secureTextEntry />
-              {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
-              <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-                <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>
-                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: colors.body }]}>취소</Text>
-                </Pressable>
-                <Pressable disabled={busy} onPress={submit} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, opacity: busy ? 0.55 : 1 }}>
-                  <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>{busy ? "변경 중…" : "변경"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
-
-function ChangeIdSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (newLoginId: string, password: string) => Promise<void> }) {
-  const [newId, setNewId] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async () => {
-    if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
-    if (newId.trim().length > 50) return setError("아이디는 50자 이하로 입력해 주세요.");
-    setError("");
-    setBusy(true);
-    try {
-      await onSubmit(newId, password);
-      setNotice("아이디가 변경되었습니다.");
-    } catch (e) {
-      setError(e instanceof ApiError && e.status === 400 ? "현재 아이디와 다른 새 아이디를 입력해 주세요." : e instanceof ApiError && e.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e instanceof ApiError && e.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e instanceof ApiError && e.status === 409 ? "이미 사용 중인 아이디입니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "아이디를 변경하지 못했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, .45)" }}>
-        <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, gap: 14 }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[t, { fontSize: 18, fontWeight: "800", color: colors.strong }]}>아이디 변경</Text>
-              <Text style={[t, { fontSize: 12.5, color: colors.muted, marginTop: 3 }]}>본인 확인을 위해 비밀번호를 함께 입력해 주세요.</Text>
-            </View>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="닫기" hitSlop={10}>
-              <Text style={[t, { fontSize: 15, fontWeight: "700", color: colors.muted }]}>닫기</Text>
-            </Pressable>
-          </View>
-
-          {notice ? (
-            <>
-              <View style={{ backgroundColor: colors.page, borderRadius: 10, padding: 12 }}>
-                <Text style={[t, { fontSize: 12.5, color: colors.body, lineHeight: 19 }]}>{notice}</Text>
-              </View>
-              <Pressable onPress={onClose} accessibilityRole="button" style={{ backgroundColor: colors.indigo[600], borderRadius: 10, paddingVertical: 11, alignItems: "center" }}>
-                <Text style={[t, { fontSize: 14, fontWeight: "700", color: "#fff" }]}>확인</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Input label="새 아이디" value={newId} onChangeText={(v) => { setNewId(v); setError(""); }} placeholder="새 아이디를 입력하세요" maxLength={50} />
-              <Input label="비밀번호" value={password} onChangeText={(v) => { setPassword(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
               <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
                 <Pressable onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 11, paddingHorizontal: 16 }}>

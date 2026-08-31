@@ -3,7 +3,7 @@
    실제 SignupRequest 에는 이름 필드가 없다(웹도 이름을 받지 않는다) — 입력 안 받는다.
    흰 카드는 웹과 같이 뺐다 — 폼이 영상 배경 위에 직접 앉는다(theme 의 onVideo 팔레트). */
 import { useEffect, useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
@@ -222,6 +222,10 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
 
 export function SignupScreen({ onBack, onSignup }: { onBack: () => void; onSignup: () => void }) {
   const [verified, setVerified] = useState<{ email: string; token: string } | null>(null);
+
+  useEffect(() => {
+    Alert.alert("아이디를 신중하게 정해 주세요", "회원가입 후에는 아이디를 변경할 수 없습니다.", [{ text: "확인" }]);
+  }, []);
 
   return (
     <AuthShell>

@@ -46,7 +46,7 @@ function HeroCard({ dept, loginId, stats }) {
   );
 }
 
-/* 계정 정보 변경(아이디·비밀번호) 진입 행. HelpLinkRow 와 같은 뼈대인데 외부 링크가 아니라
+/* 계정 정보 변경 진입 행. HelpLinkRow 와 같은 뼈대인데 외부 링크가 아니라
    onClick 으로 다이얼로그를 연다 — 화살표를 link 대신 chevronRight 로 바꿔 "안에서 열리는" 동작임을 구분한다. */
 function AccountRow({ icon, label, onClick, first = false }) {
   return (
@@ -97,49 +97,6 @@ function ChangePasswordDialog({ onClose }) {
         <Input type="password" label="현재 비밀번호" placeholder="••••••••" autoComplete="current-password" value={current} onChange={(e) => { setCurrent(e.target.value); setError(""); }} />
         <Input type="password" label="새 비밀번호" placeholder="••••••••" autoComplete="new-password" value={next} onChange={(e) => { setNext(e.target.value); setError(""); }} />
         <Input type="password" label="새 비밀번호 확인" placeholder="••••••••" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setError(""); }} />
-        {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
-          <Button type="button" variant="outline" onClick={onClose}>취소</Button>
-          <Button type="submit" variant="primary" disabled={busy}>{busy ? "변경 중…" : "변경"}</Button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function ChangeIdDialog({ onClose }) {
-  const changeLoginId = useSession((s) => s.changeLoginId);
-  const [newId, setNewId] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!newId.trim() || !password.trim()) return setError("새 아이디와 비밀번호를 입력해 주세요.");
-    if (newId.trim().length > 50) return setError("아이디는 50자 이하로 입력해 주세요.");
-    setError("");
-    setBusy(true);
-    try {
-      await changeLoginId(newId, password);
-      toast("아이디가 변경되었습니다");
-      onClose();
-    } catch (e) {
-      setError(e?.status === 400 ? "현재 아이디와 다른 새 아이디를 입력해 주세요." : e?.status === 401 ? "현재 비밀번호가 올바르지 않습니다." : e?.status === 404 ? "사용자 정보를 찾을 수 없습니다." : e?.status === 409 ? "이미 사용 중인 아이디입니다." : e instanceof TypeError ? "네트워크 연결을 확인해 주세요." : "아이디를 변경하지 못했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div role="dialog" aria-modal="true" aria-labelledby="change-id-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
-      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
-        <div>
-          <h2 id="change-id-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>아이디 변경</h2>
-          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>본인 확인을 위해 비밀번호를 함께 입력해 주세요.</p>
-        </div>
-        <Input label="새 아이디" placeholder="새 아이디를 입력하세요" maxLength={50} value={newId} onChange={(e) => { setNewId(e.target.value); setError(""); }} />
-        <Input type="password" label="비밀번호" placeholder="••••••••" autoComplete="current-password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />
         {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
           <Button type="button" variant="outline" onClick={onClose}>취소</Button>
@@ -245,7 +202,6 @@ export default function MyPageScreen() {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
-  const [changeIdOpen, setChangeIdOpen] = useState(false);
 
   const petitions = usePetitions((s) => s.petitions);
   const bookmarked = usePetitions((s) => s.bookmarked);
@@ -328,8 +284,7 @@ export default function MyPageScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <SectionHeader icon="lock" bg="var(--indigo-50)" fg="var(--indigo-600)" title="계정 정보 변경" />
             <Card padding={0} style={{ overflow: "hidden" }}>
-              <AccountRow icon="user" label="아이디 변경" onClick={() => setChangeIdOpen(true)} first />
-              <AccountRow icon="lock" label="비밀번호 변경" onClick={() => setChangePwOpen(true)} />
+              <AccountRow icon="lock" label="비밀번호 변경" onClick={() => setChangePwOpen(true)} first />
             </Card>
           </div>
 
@@ -454,7 +409,6 @@ export default function MyPageScreen() {
 
       {deleteOpen && <DeleteAccountDialog onClose={() => setDeleteOpen(false)} />}
       {changePwOpen && <ChangePasswordDialog onClose={() => setChangePwOpen(false)} />}
-      {changeIdOpen && <ChangeIdDialog onClose={() => setChangeIdOpen(false)} />}
     </div>
   );
 }

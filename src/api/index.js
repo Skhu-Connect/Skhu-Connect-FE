@@ -13,7 +13,7 @@
    진행중 청원만 허용하므로(아니면 409) 그 조건일 때만 메뉴를 띄운다. 청원 수정(PUT)은 화면에
    진입점을 두지 않기로 했다 — 필요해지면 그 화면부터 만들 것.
 
-   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 아이디·비밀번호 변경까지
+   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 비밀번호 변경까지
    실 백엔드에 연동됐다.
 
    회원탈퇴(deleteAccount)는 /connect/users/me DELETE({password})로 연동 완료(2026-08-11, /v3/api-docs
@@ -309,16 +309,6 @@ export async function deleteAccount(password) {
   accessToken = null;
   cachedMe = null;
   resetSessionCaches();
-}
-
-export async function changeLoginId(newLoginId, password) {
-  const id = String(newLoginId ?? "").trim();
-  const pw = String(password ?? "");
-  if (!id || !pw) throw new Error("새 아이디와 비밀번호를 입력해 주세요.");
-  if (id.length > 50) throw new Error("아이디는 50자 이하로 입력해 주세요.");
-  const result = await apiFetch("/connect/users/me/login-id", { method: "PATCH", body: { newLoginId: id, password: pw } });
-  if (cachedMe) cachedMe = { ...cachedMe, loginId: result.loginId };
-  return result.loginId;
 }
 
 export async function changePassword(currentPassword, newPassword) {

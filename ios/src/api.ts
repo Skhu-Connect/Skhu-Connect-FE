@@ -7,7 +7,7 @@
    모바일 UI 가 안 쓰는 것(북마크, 댓글 수정/삭제/공감, 청원 수정/삭제, 전체 읽음)은 포팅하지
    않았다 — 진입점이 없는 코드는 만들지 않는다.
 
-   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 아이디·비밀번호 변경까지
+   비밀번호 재설정, 아이디 찾기(이메일 인증·비밀번호 확인), 로그인 상태의 비밀번호 변경까지
    실 백엔드에 연동했다.
 
    deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
@@ -309,16 +309,6 @@ export async function deleteAccount(password: string): Promise<void> {
   accessToken = null;
   cachedMe = null;
   resetSessionCaches();
-}
-
-export async function changeLoginId(newLoginId: string, password: string): Promise<string> {
-  const id = newLoginId.trim();
-  const pw = password;
-  if (!id || !pw) throw new Error("새 아이디와 비밀번호를 입력해 주세요.");
-  if (id.length > 50) throw new Error("아이디는 50자 이하로 입력해 주세요.");
-  const result = await apiFetch<{ loginId: string }>("/connect/users/me/login-id", { method: "PATCH", body: { newLoginId: id, password: pw } });
-  if (cachedMe) cachedMe = { ...cachedMe, loginId: result.loginId };
-  return result.loginId;
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {

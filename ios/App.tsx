@@ -627,11 +627,6 @@ export default function App() {
     flash("학부 정보가 수정되었습니다");
   }, [flash]);
 
-  const onChangeLoginId = useCallback(async (newLoginId: string, password: string) => {
-    const loginId = await api.changeLoginId(newLoginId, password);
-    setMe((prev) => (prev ? { ...prev, loginId } : prev));
-  }, []);
-
   const onChangePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     await api.changePassword(currentPassword, newPassword);
   }, []);
@@ -764,7 +759,6 @@ export default function App() {
               onMarkAllNotifRead={onMarkAllNotifRead}
               onLogout={onLogout}
               onDeleteAccount={onDeleteAccount}
-              onChangeLoginId={onChangeLoginId}
               onChangePassword={onChangePassword}
               onUpdateDepartment={onUpdateDepartment}
             />

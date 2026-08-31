@@ -9,7 +9,7 @@
    기기 단위 on/off 는 iOS 알림 권한이 담당한다: 아직 안 물어봤으면 여기서 묻고(권한 허용 →
    FCM 토큰 등록까지), 이미 껐으면 설정 앱으로 보낸다. */
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { AppState, Pressable, ScrollView, Text, View } from "react-native";
 import { NOTIF_POINTS, pointOf, type NotifPoint, type Notification, type NotificationSettingKey } from "../data";
 import type { NotificationSettings } from "../api";
 import { Icon } from "../icons";
@@ -128,13 +128,20 @@ function PointRow({
 }
 
 export function NotifSettingsScreen(p: NotifSettingsProps) {
-  const [status, setStatus] = useState<PushStatus>("granted");
+  /* 확인 전에는 null — "granted" 로 낙관하면 권한을 거부한 사용자에게 토글이 잠깐 켜져 보인다. */
+  const [status, setStatus] = useState<PushStatus | null>(null);
   const [selected, setSelected] = useState<NotificationSettingKey | null>(null);
   const [saving, setSaving] = useState<NotificationSettingKey | null>(null);
 
+  /* 기기 알림 권한이 없으면 종류별 설정이 무슨 값이든 푸시는 한 건도 안 온다 — 켜진 것처럼
+     보이면 거짓말이다. 그래서 꺼진 상태로 보여주고 잠근다. 서버 값은 건드리지 않는다:
+     백엔드는 이 값이 false 면 알림함 레코드조차 안 만들어서(NotificationEventService.createOnce),
+     여기서 꺼버리면 나중에 권한을 켰을 때 그 사이 알림이 통째로 사라진다. */
+  const pushOn = status === "granted";
+
   /* 응답이 비정상적으로 빠졌다면 전부 켜진 것으로 보이되 토글은 잠근다. */
   const ready = p.settings !== null;
-  const isOn = (key: NotificationSettingKey) => (ready ? p.settings![key] !== false : true);
+  const isOn = (key: NotificationSettingKey) => pushOn && (ready ? p.settings![key] !== false : true);
 
   const toggle = async (key: NotificationSettingKey) => {
     setSaving(key);
@@ -148,9 +155,15 @@ export function NotifSettingsScreen(p: NotifSettingsProps) {
   const refreshStatus = useCallback(() => {
     pushPermissionStatus().then(setStatus);
   }, []);
-  useEffect(refreshStatus, [refreshStatus]);
+  /* 설정 앱에서 권한을 바꾸고 돌아오면 앱이 죽지 않으므로 다시 확인해야 한다 — 안 하면
+     허용하고 왔는데도 토글이 계속 잠긴 채로 보인다. */
+  useEffect(() => {
+    refreshStatus();
+    const sub = AppState.addEventListener("change", (s) => s === "active" && refreshStatus());
+    return () => sub.remove();
+  }, [refreshStatus]);
 
-  const push = PUSH_COPY[status];
+  const push = status ? PUSH_COPY[status] : null;
   const onPushAction = async () => {
     if (status === "undetermined") {
       await registerForPush();
@@ -173,26 +186,32 @@ export function NotifSettingsScreen(p: NotifSettingsProps) {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingTop: 14, paddingBottom: 40 }}>
-        <View style={[card, { flexDirection: "row", alignItems: "center", gap: 12, padding: 15 }, shadow.sm]}>
-          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: status === "granted" ? colors.indigo[50] : colors.gray[150], alignItems: "center", justifyContent: "center" }}>
-            <Icon name="bell" size={17} color={status === "granted" ? colors.indigo[600] : colors.gray[600]} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[t, { fontSize: 13.5, fontWeight: "800", color: colors.strong }]}>{push.title}</Text>
-            <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4, lineHeight: 17.3 }]}>{push.desc}</Text>
-          </View>
-        </View>
-        {push.action ? (
-          <View style={{ marginHorizontal: 16, marginTop: 10 }}>
-            <Button block onPress={onPushAction}>{push.action}</Button>
-          </View>
+        {push ? (
+          <>
+            <View style={[card, { flexDirection: "row", alignItems: "center", gap: 12, padding: 15 }, shadow.sm]}>
+              <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: pushOn ? colors.indigo[50] : colors.gray[150], alignItems: "center", justifyContent: "center" }}>
+                <Icon name="bell" size={17} color={pushOn ? colors.indigo[600] : colors.gray[600]} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[t, { fontSize: 13.5, fontWeight: "800", color: colors.strong }]}>{push.title}</Text>
+                <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4, lineHeight: 17.3 }]}>{push.desc}</Text>
+              </View>
+            </View>
+            {push.action ? (
+              <View style={{ marginHorizontal: 16, marginTop: 10 }}>
+                <Button block onPress={onPushAction}>{push.action}</Button>
+              </View>
+            ) : null}
+          </>
         ) : null}
 
         <Text style={[t, { fontSize: 13, fontWeight: "800", color: colors.strong, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 }]}>알림 종류</Text>
         <Text style={[t, { fontSize: 11.5, color: colors.muted, paddingHorizontal: 16, paddingBottom: 12, lineHeight: 17.3 }]}>
-          {ready
-            ? "받고 싶은 알림만 골라서 켜고 끌 수 있어요. 항목을 누르면 그 알림만 모아서 볼 수 있어요."
-            : "종류별로 끄고 켜는 기능은 준비 중이에요. 지금은 모든 알림을 받고 있어요."}
+          {!pushOn
+            ? "기기 알림이 꺼져 있어 종류별 설정을 바꿀 수 없어요. 위에서 알림을 켜면 다시 고를 수 있어요."
+            : ready
+              ? "받고 싶은 알림만 골라서 켜고 끌 수 있어요. 항목을 누르면 그 알림만 모아서 볼 수 있어요."
+              : "종류별로 끄고 켜는 기능은 준비 중이에요. 지금은 모든 알림을 받고 있어요."}
         </Text>
         {NOTIF_POINTS.map((point) => {
           const mine = p.notifications.filter((n) => point.types.includes(n.type));
@@ -204,7 +223,7 @@ export function NotifSettingsScreen(p: NotifSettingsProps) {
               unread={mine.filter((n) => !n.read).length}
               selected={selected === point.key}
               enabled={isOn(point.key)}
-              pending={!ready || saving === point.key}
+              pending={!ready || !pushOn || saving === point.key}
               onPress={() => setSelected(selected === point.key ? null : point.key)}
               onToggle={() => toggle(point.key)}
             />
