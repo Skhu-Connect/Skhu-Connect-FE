@@ -22,7 +22,10 @@
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
 
-const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
+/* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 Railway 로 프록시해 같은 오리진이 된다.
+   (백엔드 CorsConfig 허용 오리진에 서비스 도메인이 없어 CORS preflight 403 나던 것을 우회)
+   dev 서버는 rewrite 가 없지만 localhost:5173 은 백엔드가 이미 허용하므로 절대경로 그대로 쓴다. */
+const BASE_URL = import.meta.env.DEV ? "https://skhu-connect-be-production.up.railway.app" : "";
 
 const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT" };
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));

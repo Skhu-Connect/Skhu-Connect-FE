@@ -11,6 +11,7 @@
   ],
   "rewrites": [
     { "source": "/health", "destination": "/api/health" },
+    { "source": "/connect/(.*)", "destination": "https://skhu-connect-be-production.up.railway.app/connect/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
