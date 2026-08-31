@@ -9,6 +9,7 @@ import * as api from "../../api";
 import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input } from "../../components/ui";
 import { RESEND_WAIT_SECONDS, sendCodeErrorMessage, useResendCooldown } from "../../utils/useResendCooldown";
+import { PASSWORD_HINT, validatePassword } from "../../utils/credentials";
 
 function EmailStep({ onSent }) {
   const [email, setEmail] = useState("");
@@ -148,10 +149,12 @@ function NewPasswordStep({ verificationToken, onDone, onBack }) {
   const submit = async (e) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const password = String(form.get("password") ?? "").trim();
-    const passwordConfirm = String(form.get("passwordConfirm") ?? "").trim();
-    if (!password) {
-      setError("새 비밀번호를 입력해 주세요.");
+    /* ponytail: 비밀번호는 trim 하지 않는다 — 공백은 규칙 위반이라 잘라 삼키면 안 된다. */
+    const password = String(form.get("password") ?? "");
+    const passwordConfirm = String(form.get("passwordConfirm") ?? "");
+    const passwordError = validatePassword(password, "새 비밀번호");
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== passwordConfirm) {
@@ -179,7 +182,7 @@ function NewPasswordStep({ verificationToken, onDone, onBack }) {
       <p style={{ margin: "0 0 22px", fontSize: 13.5, color: "var(--text-muted)" }}>인증 완료</p>
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Input label="새 비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
+        <Input label="새 비밀번호" name="password" type="password" hint={PASSWORD_HINT} placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         <Input label="새 비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>

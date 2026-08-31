@@ -11,6 +11,7 @@ import { Button, Input, Select } from "../ui";
 import { font, onVideo } from "../theme";
 import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
 import { isTooSoon, sendCodeErrorMessage, useResendCooldown } from "../useResendCooldown";
+import { LOGIN_ID_HINT, PASSWORD_HINT, validateLoginId, validatePassword } from "../credentials";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 
 const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
@@ -174,13 +175,20 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
   }, []);
 
   const submit = async () => {
-    if (!sid.trim() || !pw.trim()) {
-      setError("아이디·비밀번호를 입력해 주세요.");
+    const loginIdError = validateLoginId(sid.trim());
+    if (loginIdError) {
+      setError(loginIdError);
       return;
     }
     const department = departments.find((d) => d.name === dept);
     if (!department) {
       setError("소속 학부를 선택해 주세요.");
+      return;
+    }
+    /* ponytail: 비밀번호는 trim 하지 않는다 — 공백은 규칙 위반이라 잘라 삼키면 안 된다. */
+    const passwordError = validatePassword(pw);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (pw !== pwConfirm) {
@@ -208,9 +216,9 @@ function AccountStep({ email, verificationToken, onBack, onSignup }: { email: st
       <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>계정 정보 입력</Text>
       <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>{email} 인증 완료</Text>
 
-      <Input dark label="아이디" value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" />
+      <Input dark label="아이디" hint={LOGIN_ID_HINT} value={sid} onChangeText={setSid} placeholder="아이디를 입력하세요" />
       <Select dark label="소속 학부" options={departments.map((d) => d.name)} value={dept} onChange={setDept} placeholder="학부를 선택하세요" />
-      <Input dark label="비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
+      <Input dark label="비밀번호" hint={PASSWORD_HINT} value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
       <Input dark label="비밀번호 확인" value={pwConfirm} onChangeText={setPwConfirm} placeholder="••••••••" secureTextEntry />
       {error ? <ErrorText>{error}</ErrorText> : null}
       <Button variant="primary" size="lg" block disabled={saving} onPress={submit}>

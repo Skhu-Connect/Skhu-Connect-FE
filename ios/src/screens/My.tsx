@@ -8,6 +8,7 @@ import { Icon, type IconName } from "../icons";
 import { PRIVACY_POLICY_URL, TERMS_URL } from "../legal";
 import { Avatar, Button, Input, Select } from "../ui";
 import { colors, font, gradient, radius, shadow } from "../theme";
+import { PASSWORD_HINT, validatePassword } from "../credentials";
 
 const t = { fontFamily: font };
 const PAGE_SIZE = 5;
@@ -247,7 +248,9 @@ function ChangePasswordSheet({ onClose, onSubmit }: { onClose: () => void; onSub
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+    if (!current) return setError("현재 비밀번호를 입력해 주세요.");
+    const passwordError = validatePassword(next, "새 비밀번호");
+    if (passwordError) return setError(passwordError);
     if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
     setError("");
     setBusy(true);
@@ -287,7 +290,7 @@ function ChangePasswordSheet({ onClose, onSubmit }: { onClose: () => void; onSub
           ) : (
             <>
               <Input label="현재 비밀번호" value={current} onChangeText={(v) => { setCurrent(v); setError(""); }} placeholder="••••••••" secureTextEntry />
-              <Input label="새 비밀번호" value={next} onChangeText={(v) => { setNext(v); setError(""); }} placeholder="••••••••" secureTextEntry />
+              <Input label="새 비밀번호" hint={PASSWORD_HINT} value={next} onChangeText={(v) => { setNext(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               <Input label="새 비밀번호 확인" value={confirm} onChangeText={(v) => { setConfirm(v); setError(""); }} placeholder="••••••••" secureTextEntry />
               {error ? <Text style={[t, { fontSize: 12, color: colors.danger }]}>{error}</Text> : null}
               <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>

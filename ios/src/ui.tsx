@@ -164,6 +164,7 @@ const fieldBox = (focused: boolean, dark?: boolean): ViewStyle => ({
 
 export function Input({
   label,
+  hint,
   value,
   onChangeText,
   placeholder,
@@ -173,6 +174,8 @@ export function Input({
   dark,
 }: {
   label?: string;
+  /** 입력 규칙 안내. 웹 Input 의 hint 와 같은 자리(칸 아래 캡션)다. */
+  hint?: string;
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
@@ -202,6 +205,7 @@ export function Input({
           style={[base, { paddingVertical: 12, fontSize: 14, color: dark ? onVideo.text : colors.strong }]}
         />
       </View>
+      {hint ? <Text style={[base, { marginTop: 6, fontSize: 12, lineHeight: 18, color: dark ? onVideo.muted : colors.muted }]}>{hint}</Text> : null}
     </View>
   );
 }

@@ -17,6 +17,7 @@ import { Avatar, Button, Card, Icon, Input, Select } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { pointOf } from "../../components/web/notifMeta";
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
+import { PASSWORD_HINT, validatePassword } from "../../utils/credentials";
 
 /* FeedScreen 의 HeroBanner 와 같은 뼈대(그라데이션·radius-xl·shadow-md·장식 원)를 쓰되,
    기존엔 따로 떠 있던 회색 통계 카드 3장을 히어로 안에 통합했다 — WEB-02 피드 히어로가
@@ -72,7 +73,9 @@ function ChangePasswordDialog({ onClose }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!current.trim() || !next.trim()) return setError("현재 비밀번호와 새 비밀번호를 입력해 주세요.");
+    if (!current) return setError("현재 비밀번호를 입력해 주세요.");
+    const passwordError = validatePassword(next, "새 비밀번호");
+    if (passwordError) return setError(passwordError);
     if (next !== confirm) return setError("새 비밀번호가 서로 다릅니다.");
     setError("");
     setBusy(true);
@@ -95,7 +98,7 @@ function ChangePasswordDialog({ onClose }) {
           <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔드려요.</p>
         </div>
         <Input type="password" label="현재 비밀번호" placeholder="••••••••" autoComplete="current-password" value={current} onChange={(e) => { setCurrent(e.target.value); setError(""); }} />
-        <Input type="password" label="새 비밀번호" placeholder="••••••••" autoComplete="new-password" value={next} onChange={(e) => { setNext(e.target.value); setError(""); }} />
+        <Input type="password" label="새 비밀번호" hint={PASSWORD_HINT} placeholder="••••••••" autoComplete="new-password" value={next} onChange={(e) => { setNext(e.target.value); setError(""); }} />
         <Input type="password" label="새 비밀번호 확인" placeholder="••••••••" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setError(""); }} />
         {error && <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>

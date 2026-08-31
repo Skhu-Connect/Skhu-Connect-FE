@@ -11,6 +11,7 @@ import AuthLayout from "../../layouts/AuthLayout";
 import { Button, Icon, Input, Select } from "../../components/ui";
 import { sanitizeNextPath } from "../../utils/nextPath";
 import { RESEND_WAIT_SECONDS, sendCodeErrorMessage, useResendCooldown } from "../../utils/useResendCooldown";
+import { LOGIN_ID_HINT, PASSWORD_HINT, validateLoginId, validatePassword } from "../../utils/credentials";
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from "../../legal";
 
 const TERMS_VERSION = "1.0";
@@ -218,15 +219,23 @@ function AccountStep({ verificationToken, onBack }) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const loginId = String(form.get("loginId") ?? "").trim();
-    const password = String(form.get("password") ?? "").trim();
-    const passwordConfirm = String(form.get("passwordConfirm") ?? "").trim();
+    /* ponytail: 비밀번호는 trim 하지 않는다 — 공백은 규칙 위반이라 잘라 삼키면 안 되고,
+       "공백은 쓸 수 없습니다"라고 말해 줘야 사용자가 실제로 친 값을 고친다. */
+    const password = String(form.get("password") ?? "");
+    const passwordConfirm = String(form.get("passwordConfirm") ?? "");
     setError("");
-    if (!loginId || !password) {
-      setError("아이디와 비밀번호를 입력해 주세요.");
+    const loginIdError = validateLoginId(loginId);
+    if (loginIdError) {
+      setError(loginIdError);
       return;
     }
     if (!dept) {
       setError("소속 학부를 선택해 주세요.");
+      return;
+    }
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== passwordConfirm) {
@@ -252,10 +261,10 @@ function AccountStep({ verificationToken, onBack }) {
       <p style={{ margin: "0 0 22px", fontSize: 13.5, color: "var(--text-muted)" }}>이메일 인증 완료</p>
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Input label="아이디" name="loginId" placeholder="아이디를 입력하세요" prefix={<Icon name="user" size={16} />} required />
+        <Input label="아이디" name="loginId" hint={LOGIN_ID_HINT} placeholder="아이디를 입력하세요" prefix={<Icon name="user" size={16} />} autoComplete="username" required />
         <Select label="소속 학부" options={departments} value={dept} onChange={(e) => setDept(e.target.value)} placeholder={loadedDepartments ? "학부를 선택하세요" : "불러오는 중…"} />
-        <Input label="비밀번호" name="password" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
-        <Input label="비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} required />
+        <Input label="비밀번호" name="password" type="password" hint={PASSWORD_HINT} placeholder="••••••••" prefix={<Icon name="lock" size={16} />} autoComplete="new-password" required />
+        <Input label="비밀번호 확인" name="passwordConfirm" type="password" placeholder="••••••••" prefix={<Icon name="lock" size={16} />} autoComplete="new-password" required />
         {/* 약관 동의는 1단계(EmailStep)로 옮겼다 — 여기선 signup 호출에 termsAgreed 만 실어 보낸다. */}
         {error && (
           <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--danger-500)" }}>{error}</p>

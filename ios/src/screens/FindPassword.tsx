@@ -10,6 +10,7 @@ import { Button, Input } from "../ui";
 import { font, onVideo } from "../theme";
 import { confirmPasswordResetCode, resetPassword, sendPasswordResetCode } from "../api";
 import { RESEND_WAIT_SECONDS, sendCodeErrorMessage, useResendCooldown } from "../useResendCooldown";
+import { PASSWORD_HINT, validatePassword } from "../credentials";
 
 function ErrorText({ children }: { children: string }) {
   return <Text accessibilityRole="alert" style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.danger }]}>{children}</Text>;
@@ -132,8 +133,9 @@ function NewPasswordStep({ verificationToken, onBack, onDone }: { verificationTo
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
-    if (!pw.trim()) {
-      setError("새 비밀번호를 입력해 주세요.");
+    const passwordError = validatePassword(pw, "새 비밀번호");
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (pw !== pwConfirm) {
@@ -158,7 +160,7 @@ function NewPasswordStep({ verificationToken, onBack, onDone }: { verificationTo
       <Text style={[{ fontFamily: font }, { fontSize: 22, fontWeight: "800", color: onVideo.text }]}>새 비밀번호 설정</Text>
       <Text style={[{ fontFamily: font }, { fontSize: 13.5, color: onVideo.muted }]}>인증 완료</Text>
 
-      <Input dark label="새 비밀번호" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
+      <Input dark label="새 비밀번호" hint={PASSWORD_HINT} value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry />
       <Input dark label="새 비밀번호 확인" value={pwConfirm} onChangeText={setPwConfirm} placeholder="••••••••" secureTextEntry />
       {error ? <ErrorText>{error}</ErrorText> : null}
       <Button variant="primary" size="lg" block disabled={saving} onPress={submit}>
