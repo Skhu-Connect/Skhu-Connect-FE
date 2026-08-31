@@ -44,6 +44,14 @@ const NOTIF_MESSAGE_FALLBACK = {
 let accessToken = null; // 메모리에만 둔다(localStorage 0건) — README 보안 항목 2
 let refreshing = null;
 
+let onSessionExpired = () => {};
+/** refresh가 최종 실패했을 때(리프레시 토큰 만료/무효) 세션 스토어에 알린다(session.js 가 등록).
+    이 훅이 없으면 세션 도중(댓글 작성 등) 조용히 죽은 refresh 가 authed 상태에 반영되지 않아,
+    다음 새로고침 전까지 화면은 "로그인된 척"하는 좀비 상태로 남는다. */
+export function setOnSessionExpired(fn) {
+  onSessionExpired = fn;
+}
+
 async function rawFetch(path, { method = "GET", body, auth = true } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -62,6 +70,10 @@ async function refreshAccessToken() {
         if (!res.ok) throw new Error("세션이 만료되었습니다.");
         const data = await res.json();
         accessToken = data.accessToken;
+      })
+      .catch((e) => {
+        onSessionExpired();
+        throw e;
       })
       .finally(() => {
         refreshing = null;

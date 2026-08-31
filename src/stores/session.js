@@ -57,3 +57,7 @@ export const useSession = create((set) => ({
     return user;
   },
 }));
+
+// 세션 도중 조용히 실패한 refresh(리프레시 토큰 만료/무효)를 이 스토어에 반영한다 — 반영 안 하면
+// WebLayout 이 authed:true 를 계속 믿고 로그인 화면으로 안 보낸다("좀비 로그인").
+api.setOnSessionExpired(() => useSession.setState({ authed: false, user: null }));
