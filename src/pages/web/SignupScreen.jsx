@@ -18,6 +18,36 @@ const TERMS_VERSION = "1.0";
 /* 인증코드가 도착하는 학교 메일함(office365). 받은편지함으로 바로 연다. */
 const OUTLOOK_URL = "https://outlook.cloud.microsoft/mail/inbox/?culture=ko-kr&country=kr";
 
+/* 각주 링크(13px, "로그인으로 돌아가기" 옆)로 두었더니 아무도 못 눌렀다는 리포트를 받았다.
+   입력란과 같은 폭의 버튼으로 세운다 — 채움이 없어 1차 CTA 와 안 겹친다. 두 단계 모두에 둔다:
+   메일이 이미 와 있는데 화면을 다시 연 경우가 있다(사용자 요청).
+   링크 의미는 유지해야 하므로 Button 이 아니라 버튼처럼 그린 a 다(새 탭·가운데 클릭이 그대로 산다). */
+function MailboxButton() {
+  return (
+    <a
+      href={OUTLOOK_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        height: 52,
+        borderRadius: "var(--radius-pill)",
+        border: "1.5px solid var(--border-strong)",
+        background: "var(--surface-card)",
+        color: "var(--text-strong)",
+        fontSize: "var(--fs-md)",
+        fontWeight: 700,
+        textDecoration: "none",
+      }}
+    >
+      <Icon name="inbox" size={18} /> 메일함에서 인증번호 확인하기
+    </a>
+  );
+}
+
 function LoginIdNotice({ onClose }) {
   return (
     <div role="alertdialog" aria-modal="true" aria-labelledby="login-id-notice-title" aria-describedby="login-id-notice-body" style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
@@ -114,10 +144,12 @@ function EmailStep({ onSent, loginHref }) {
         </Button>
       </form>
 
+      <div style={{ marginTop: 14 }}>
+        <MailboxButton />
+      </div>
+
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, fontSize: 13 }}>
         <Link to={loginHref} style={{ color: "var(--text-muted)", fontWeight: 600 }}>로그인으로 돌아가기</Link>
-        <span style={{ color: "var(--border-strong)" }}>|</span>
-        <a href={OUTLOOK_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--indigo-200)", fontWeight: 700 }}>인증번호 바로 확인하기</a>
       </div>
     </>
   );
@@ -190,6 +222,10 @@ function CodeStep({ email, onVerified, onBack }) {
           {checking ? "확인 중…" : "확인"}
         </Button>
       </form>
+
+      <div style={{ marginTop: 14 }}>
+        <MailboxButton />
+      </div>
 
       <div style={{ textAlign: "center", marginTop: 16 }}>
         <button type="button" onClick={resend} disabled={resending || cooldown > 0} style={{ background: "none", border: "none", cursor: resending || cooldown > 0 ? "default" : "pointer", color: cooldown > 0 ? "var(--text-muted)" : "var(--indigo-200)", fontWeight: 700, fontSize: 13, fontFamily: "var(--font-sans)" }}>

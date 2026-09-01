@@ -8,7 +8,7 @@ import * as WebBrowser from "expo-web-browser";
 import { AuthShell } from "../authShell";
 import { Icon } from "../icons";
 import { Button, Input, Select } from "../ui";
-import { font, onVideo } from "../theme";
+import { font, onVideo, radius } from "../theme";
 import { confirmSignupCode, listDepartments, sendSignupCode, signup } from "../api";
 import { isTooSoon, sendCodeErrorMessage, useResendCooldown } from "../useResendCooldown";
 import { LOGIN_ID_HINT, PASSWORD_HINT, validateLoginId, validatePassword } from "../credentials";
@@ -25,6 +25,32 @@ const TERMS_VERSION = "1.0";
    못 알아들어도 스킴은 등록돼 있어 앱은 열린다(받은편지함 대신 마지막 화면). */
 function openOutlook() {
   Linking.openURL(OUTLOOK_APP_URL).catch(() => WebBrowser.openBrowserAsync(OUTLOOK_URL));
+}
+
+/* 각주 링크(13px, "로그인으로 돌아가기" 옆)로 두었더니 아무도 못 눌렀다는 리포트를 받았다.
+   입력란과 같은 폭의 버튼으로 세운다 — 채움이 없어 1차 CTA 와 안 겹친다.
+   발송 전에도 보인다: 메일이 이미 와 있는데 앱을 다시 켠 경우가 있다(사용자 요청). */
+function MailboxButton() {
+  return (
+    <Pressable
+      onPress={openOutlook}
+      accessibilityRole="link"
+      style={{
+        height: 52,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        borderRadius: radius.pill,
+        borderWidth: 1.5,
+        borderColor: onVideo.border,
+        backgroundColor: onVideo.surface,
+      }}
+    >
+      <Icon name="inbox" size={18} color={onVideo.text} />
+      <Text style={[{ fontFamily: font }, { fontSize: 16, fontWeight: "700", color: onVideo.text }]}>메일함에서 인증번호 확인하기</Text>
+    </Pressable>
+  );
 }
 
 function ErrorText({ children }: { children: string }) {
@@ -130,29 +156,26 @@ function EmailStep({ onBack, onVerified }: { onBack: () => void; onVerified: (em
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       {sent ? (
-        <>
-          <Button variant="primary" size="lg" block disabled={loading} onPress={confirm}>
-            {loading ? "확인 중…" : "인증 확인"}
-          </Button>
-          <Pressable onPress={send} disabled={loading || cooldown > 0} accessibilityRole="button" style={{ alignItems: "center" }}>
-            <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>
-              {cooldown > 0 ? `${cooldown}초 후 다시 받기` : "인증번호 다시 받기"}
-            </Text>
-          </Pressable>
-        </>
+        <Button variant="primary" size="lg" block disabled={loading} onPress={confirm}>
+          {loading ? "확인 중…" : "인증 확인"}
+        </Button>
       ) : (
         <Button variant="primary" size="lg" block disabled={loading || cooldown > 0} onPress={send}>
           {loading ? "발송 중…" : cooldown > 0 ? `${cooldown}초 후 다시 시도` : "인증번호 발송"}
         </Button>
       )}
+      <MailboxButton />
+      {sent ? (
+        <Pressable onPress={send} disabled={loading || cooldown > 0} accessibilityRole="button" style={{ alignItems: "center" }}>
+          <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>
+            {cooldown > 0 ? `${cooldown}초 후 다시 받기` : "인증번호 다시 받기"}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
         <Pressable onPress={onBack} accessibilityRole="button">
           <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "600", color: onVideo.muted }]}>로그인으로 돌아가기</Text>
-        </Pressable>
-        <Text style={{ color: onVideo.border }}>|</Text>
-        <Pressable onPress={openOutlook} accessibilityRole="link">
-          <Text style={[{ fontFamily: font }, { fontSize: 13, fontWeight: "700", color: onVideo.link }]}>인증번호 바로 확인하기</Text>
         </Pressable>
       </View>
     </>

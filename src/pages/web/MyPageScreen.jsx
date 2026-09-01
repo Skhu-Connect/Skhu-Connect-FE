@@ -9,7 +9,7 @@
    좁은 화면에서는 iOS 와 같은 세로 1열 순서로 접힌다. */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "../../stores/session";
 import { usePetitions } from "../../stores/petitions";
 import * as api from "../../api";
@@ -34,12 +34,20 @@ function HeroCard({ dept, loginId, stats }) {
         </div>
       </div>
       <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 40, marginTop: 28, paddingTop: 22, borderTop: "1px solid rgba(255,255,255,.16)" }}>
-        {stats.map(([value, label]) => (
-          <div key={label}>
-            <div style={{ fontSize: 26, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-            <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3, fontWeight: 600 }}>{label}</div>
-          </div>
-        ))}
+        {/* 통계는 그 숫자를 만든 목록으로 가는 지름길이다. "등록한 건의"만 헤더 내비에 같은 목록이
+            있어 그리로 보내고(iOS 는 하단 탭바), 나머지 둘은 갈 곳이 없어 그 자리에서 창을 띄운다. */}
+        {stats.map(({ value, label, to, onClick }) => {
+          const face = (
+            <>
+              <div style={{ fontSize: 26, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+              <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3, fontWeight: 600 }}>{label}</div>
+            </>
+          );
+          const hit = { color: "inherit", textDecoration: "none", background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", font: "inherit" };
+          if (to) return <Link key={label} to={to} aria-label={`${label} ${value}건 보기`} style={hit}>{face}</Link>;
+          if (onClick) return <button key={label} type="button" onClick={onClick} aria-label={`${label} ${value}건 보기`} style={hit}>{face}</button>;
+          return <div key={label}>{face}</div>;
+        })}
       </div>
       <div style={{ position: "absolute", right: -60, top: -50, width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,.06)" }} />
       <div style={{ position: "absolute", right: 60, bottom: -100, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,.05)" }} />
@@ -106,6 +114,63 @@ function ChangePasswordDialog({ onClose }) {
           <Button type="submit" variant="primary" disabled={busy}>{busy ? "변경 중…" : "변경"}</Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/* 통계 타일이 띄우는 건의 목록 창. "누른 요청"·"받은 답변" 두 창이 배지·아이콘·목록만 다르고
+   나머지가 같아 한 컴포넌트로 둔다(iOS My.tsx 의 PetitionSheet 와 같은 구성·같은 문구).
+   3건까지만 펼치고 나머지는 더보기로 넘긴다 — 창이 화면을 꽉 채우지 않게 한다(사용자 지시). */
+const PETITION_PREVIEW = 3;
+
+const ymd = (iso) => {
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+};
+
+function PetitionDialog({ badge, icon, empty, list, onClose }) {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? list : list.slice(0, PETITION_PREVIEW);
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="petition-dialog-title" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: 20, background: "rgba(15, 23, 42, .45)" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 520px)", maxHeight: "80vh", overflowY: "auto", background: "#fff", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+          <h2 id="petition-dialog-title" style={{ margin: 0, fontSize: 18, color: "var(--text-strong)" }}>{badge} {list.length}건</h2>
+          <button type="button" onClick={onClose} aria-label="닫기" style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>
+            <Icon name="x" size={18} />
+          </button>
+        </div>
+
+        {list.length === 0 ? (
+          <p style={{ margin: "18px 0", fontSize: 13.5, color: "var(--text-muted)" }}>{empty}</p>
+        ) : (
+          shown.map((item, i) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { onClose(); navigate(`/p/${item.id}`); }}
+              aria-label={`${badge} · ${item.title}`}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "16px 0", background: "none", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: "var(--indigo-50)", color: "var(--indigo-600)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon name={icon} size={20} />
+                </div>
+                <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+                  <span style={{ border: "1px solid var(--indigo-200)", borderRadius: "var(--radius-pill)", padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "var(--indigo-600)" }}>{badge}</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: "var(--text-strong)", lineHeight: 1.4 }}>{item.title}</span>
+                </div>
+              </div>
+              <p style={{ margin: "10px 0 0", fontSize: 13, color: "var(--text-body)", lineHeight: 1.55 }}>{item.excerpt}</p>
+              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "var(--text-muted)" }}>{ymd(item.createdAt)}</p>
+            </button>
+          ))
+        )}
+        {!expanded && list.length > PETITION_PREVIEW && <MoreButton onClick={() => setExpanded(true)} />}
+      </div>
     </div>
   );
 }
@@ -205,9 +270,11 @@ export default function MyPageScreen() {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
+  const [dialog, setDialog] = useState(null); // "voted" | "answered" — 통계 타일이 띄우는 목록 창
 
   const petitions = usePetitions((s) => s.petitions);
   const bookmarked = usePetitions((s) => s.bookmarked);
+  const voted = usePetitions((s) => s.voted);
   const myTotals = usePetitions((s) => s.myTotals);
   const notifications = usePetitions((s) => s.notifications);
   const markAllNotifRead = usePetitions((s) => s.markAllNotifRead);
@@ -255,6 +322,11 @@ export default function MyPageScreen() {
   const answeredCount = myTotals.answered;
   const unread = notifications.filter((n) => !n.read).length;
   const bookmarkedPetitions = petitions.filter((p) => bookmarked[p.id]);
+  /* 통계 타일이 띄우는 두 목록. ponytail: 위 count 는 서버가 센 값이고 이 목록은 화면에 로드된
+     최근 100건에서 고른 것이라, 100건 너머의 오래된 건의는 숫자에는 있어도 목록에는 안 나온다.
+     전용 목록 엔드포인트가 생기면 그때 맞춘다 — 지금 화면이 아는 건 이 100건뿐이다. */
+  const votedPetitions = petitions.filter((p) => voted[p.id]);
+  const myAnsweredPetitions = petitions.filter((p) => p.mine && p.status === "answered");
 
   return (
     <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 24 }}>
@@ -264,11 +336,18 @@ export default function MyPageScreen() {
         dept={user.dept}
         loginId={user.loginId}
         stats={[
-          [mineCount, "등록한 건의"],
-          [voteCount, "누른 요청"],
-          [answeredCount, "받은 답변"],
+          { value: mineCount, label: "등록한 건의", to: "/mine" },
+          { value: voteCount, label: "누른 요청", onClick: () => setDialog("voted") },
+          { value: answeredCount, label: "받은 답변", onClick: () => setDialog("answered") },
         ]}
       />
+
+      {dialog === "voted" && (
+        <PetitionDialog badge="누른 요청" icon="heart" empty="요청을 누른 건의가 없습니다." list={votedPetitions} onClose={() => setDialog(null)} />
+      )}
+      {dialog === "answered" && (
+        <PetitionDialog badge="받은 답변" icon="checkCircle" empty="답변을 받은 건의가 없습니다." list={myAnsweredPetitions} onClose={() => setDialog(null)} />
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 24, alignItems: "start" }}>
         {/* 왼쪽: 계정 설정 — 학부 수정 · 알림 설정 · 로그아웃 */}

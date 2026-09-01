@@ -33,3 +33,12 @@ __pycache__/
 
 # 목 화면 스크린샷(2.6MB). docs/ 는 열어둔다 — 실제 문서는 커밋 대상이다
 docs/screens/
+
+# 앱스토어 프리뷰 스크린샷(장당 1.5~2.8MB). 심사에 올리는 산출물이지 소스가 아니다 —
+# docs/screens/ 와 같은 이유로 뺀다.
+app-store-previews*/
+
+# 로컬 환경변수. *.local 은 .env.local 만 잡는다 — 이 레포는 공개라 .env·.env.production
+# 이 한 번 커밋되면 히스토리에 남는다(ios/.gitignore 와 같은 규칙).
+.env*
+!.env.example
