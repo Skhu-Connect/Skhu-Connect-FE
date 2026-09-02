@@ -6,7 +6,7 @@ import { CAT_CHIPS, type CategoryKey, type Notice, type Notification, type Petit
 import { count, daysLeft, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
 import { ActionMenu, CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, Sheet, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { ReportSheet } from "../reportSheet";
-import { listNotices, type ReportReasonType } from "../api";
+import type { ReportReasonType } from "../api";
 import { colors, font, gradient, radius } from "../theme";
 import type { Votes } from "../logic";
 
@@ -31,6 +31,12 @@ export type FeedProps = {
   notifications: Notification[];
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
+  /* 공지·닫힘 상태는 App.tsx 가 들고 있다 — 이 화면은 상세·MY 로 갈 때마다 언마운트되므로
+     여기에 두면 화면을 오갈 때마다 닫은 배너가 되살아나고 공지를 매번 다시 읽는다. */
+  notices: Notice[];
+  noticeClosed: boolean;
+  onCloseNotice: () => void;
+  onOpenNotice: () => void;
   searchOpen: boolean;
   onToggleSearch: () => void;
   onQuery: (q: string) => void;
@@ -49,15 +55,8 @@ export function FeedScreen(p: FeedProps) {
   const [reportId, setReportId] = useState<number | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  /* 홈 공지 배너. 홈 탭에서만 쓰므로 App 까지 올리지 않고 여기서 한 번 읽는다.
-     닫힘 상태도 저장하지 않는다 — 앱을 다시 켜면 배너가 돌아온다(이 앱은 토큰도 메모리에만 둔다). */
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [noticeClosed, setNoticeClosed] = useState(false);
-  useEffect(() => {
-    // 공지가 없거나 못 읽으면 배너도 헤더 확성기도 안 그린다 — 오류 문구는 띄우지 않는다.
-    listNotices().then(setNotices).catch(() => {});
-  }, []);
-  const showNotice = tab === "home" && notices.length > 0;
+  // 공지가 없거나 못 읽으면(App.tsx 가 빈 배열로 둔다) 배너도 헤더 확성기도 안 그린다.
+  const showNotice = tab === "home" && p.notices.length > 0;
 
   /* 급상승 카드의 "더보기" 는 TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로
      맞춰 준다(사용자 지시). 스크롤까지 옮기지 않으면 화면 밖에서 정렬만 바뀌어 아무 일도 안 일어난
@@ -78,7 +77,7 @@ export function FeedScreen(p: FeedProps) {
         hasUnread={p.hasUnread}
         onToggleSearch={p.onToggleSearch}
         onOpenNotifs={() => setNotifOpen(true)}
-        onOpenNotice={showNotice && noticeClosed ? () => setNoticeClosed(false) : undefined}
+        onOpenNotice={showNotice && p.noticeClosed ? p.onOpenNotice : undefined}
       />
       <NotifSheet
         open={notifOpen}
@@ -94,7 +93,7 @@ export function FeedScreen(p: FeedProps) {
       {/* 공지 줄이 히어로 위에 하나 더 붙으므로 고정 대상 인덱스가 하나 밀린다([1]→[2]) — 계속 FilterBar 를 가리켜야 한다.
           공지가 없을 때도 빈 View 를 자리에 둔다: stickyHeaderIndices 는 위치로 세므로 자식을 빼면 다시 밀린다(높이 0). */}
       <ScrollView ref={scrollRef} stickyHeaderIndices={[2]} showsVerticalScrollIndicator={false}>
-        {showNotice && !noticeClosed ? <NoticeBanner notices={notices} onClose={() => setNoticeClosed(true)} /> : <View />}
+        {showNotice && !p.noticeClosed ? <NoticeBanner notices={p.notices} onClose={p.onCloseNotice} /> : <View />}
         <Banner tab={tab} petitions={p.petitions} mineCount={p.mineCount} answeredCount={p.answeredCount} />
         <FilterBar {...p} onLayout={(e) => { filterY.current = e.nativeEvent.layout.y; }} />
         <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
@@ -140,15 +139,15 @@ function Header({
         <Pressable onPress={onToggleSearch} accessibilityRole="button" accessibilityLabel="건의 검색" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="search" size={19} color={colors.body} />
         </Pressable>
-        <Pressable onPress={onOpenNotifs} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
-          <Icon name="bell" size={19} color={colors.body} />
-          {hasUnread ? <View style={{ position: "absolute", top: 5, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral[500], borderWidth: 1.5, borderColor: "#fff" }} /> : null}
-        </Pressable>
         {onOpenNotice ? (
           <Pressable onPress={onOpenNotice} accessibilityRole="button" accessibilityLabel="공지사항 다시 보기" className="w-9 h-9 items-center justify-center rounded-full">
             <Icon name="megaphone" size={19} color={colors.body} />
           </Pressable>
         ) : null}
+        <Pressable onPress={onOpenNotifs} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
+          <Icon name="bell" size={19} color={colors.body} />
+          {hasUnread ? <View style={{ position: "absolute", top: 5, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral[500], borderWidth: 1.5, borderColor: "#fff" }} /> : null}
+        </Pressable>
       </View>
     </View>
   );
@@ -254,7 +253,8 @@ function NotifSheet({
 }
 
 /* 카카오톡 채팅방 상단 공지처럼 — 기본은 최신 공지 제목 한 줄, 펼치면 게시된 공지 전부(제목+내용).
-   웹 FeedScreen.jsx 의 NoticeBanner 와 같은 값(색·간격·아이콘 크기·문구)이다. */
+   웹 FeedScreen.jsx 의 NoticeBanner 와 같은 구성·색·문구다. 여백과 테두리는 플랫폼에 맞춘다 —
+   웹은 페이지 여백 안의 라운드 카드, 여기는 헤더에 붙는 폭 꽉 찬 줄이다(카카오톡 상단 공지와 같은 자리). */
 function NoticeBanner({ notices, onClose }: { notices: Notice[]; onClose: () => void }) {
   const [open, setOpen] = useState(false);
   return (

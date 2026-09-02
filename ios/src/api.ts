@@ -610,12 +610,13 @@ export async function listMyComments(): Promise<MyComment[]> {
 /** publishedAt 이 없으면 createdAt 을 게시 시각으로 본다(웹 adaptNotice 와 동일). */
 function adaptNotice(raw: any): Notice {
   const at: string = raw.publishedAt ?? raw.createdAt;
-  return { id: raw.id, title: raw.title, content: raw.content, status: raw.status, publishedAt: at, date: formatRelative(at) };
+  return { id: raw.id, title: raw.title, content: raw.content, publishedAt: at, date: formatRelative(at) };
 }
 
 /** 인증 없이 열린다 — 로그인 전에도 홈이 그려진다. 서버는 PUBLISHED 만 내려준다. */
 export async function listNotices(): Promise<Notice[]> {
-  const data = await apiFetch<any>("/connect/notices?size=100", { auth: false });
+  // sort 를 서버에 넘겨야 100건을 넘겼을 때도 첫 페이지에 최신 공지가 온다(청원 목록과 같은 방식).
+  const data = await apiFetch<any>("/connect/notices?size=100&sort=publishedAt,desc", { auth: false });
   return (data?.content ?? [])
     .map(adaptNotice)
     .sort((a: Notice, b: Notice) => parseServerDate(b.publishedAt).getTime() - parseServerDate(a.publishedAt).getTime());
