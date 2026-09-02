@@ -38,6 +38,9 @@ export type Comment = { id?: number; author: string; body: string; date: string;
 /** MY 화면 "내가 쓴 댓글" 전용 — 웹 src/api/index.js의 adaptMyComment와 동일하게 title은 없다. */
 export type MyComment = { id: number; petitionId: number; body: string; date: string };
 
+/** 홈 공지 배너용. 서버는 PUBLISHED 만 내려주지만 status 는 응답 그대로 들고 있는다(웹 adaptNotice 와 동일). */
+export type Notice = { id: number; title: string; content: string; status: string; publishedAt: string; date: string };
+
 export const CAT_LABEL: Record<CategoryKey, string> = {
   scholarship: "장학",
   facility: "시설",

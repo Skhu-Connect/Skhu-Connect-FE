@@ -36,7 +36,8 @@ export type IconName =
   | "peopleGroup"
   | "trending"
   | "calendar"
-  | "fileText";
+  | "fileText"
+  | "megaphone";
 
 type Props = {
   name: IconName;
@@ -168,6 +169,14 @@ function render(name: IconName, p: Record<string, unknown>, color: string) {
       );
     case "chevronDown":
       return <Polyline points="6 9 12 15 18 9" {...p} />;
+    /* 홈 공지 배너. 웹 Icon.jsx 의 같은 이름 지오메트리(lucide megaphone)를 그대로 옮겼다. */
+    case "megaphone":
+      return (
+        <>
+          <Path d="m3 11 18-5v12L3 14v-3z" {...p} />
+          <Path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" {...p} />
+        </>
+      );
     case "chevronRight":
       return <Path d="m9 18 6-6-6-6" {...p} />;
     case "message":
