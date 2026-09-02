@@ -600,9 +600,9 @@ export async function listMyComments() {
   return (data?.content ?? []).map(adaptMyComment);
 }
 
-/* ───────────────── 카테고리 · 담당자 (학생/관리자 공용, 클라이언트 상수) ───────────────── */
+/* ───────────────── 카테고리 (학생/관리자 공용, 클라이언트 상수) ───────────────── */
 
-/* 라벨·기준 문구·담당자는 대응 엔드포인트가 없어 CATEGORY_META 상수를 쓰지만, threshold(목표
+/* 라벨·기준 문구는 대응 엔드포인트가 없어 CATEGORY_META 상수를 쓰지만, threshold(목표
    공감 수)는 공개 GET /connect/threshold-settings 로 관리자가 설정한 실제 값을 받아와 덮어쓴다
    (세션당 1회, adminApiFetch 와 달리 인증 불필요 — 학생 화면도 호출 가능). */
 // refreshAccessToken(위 63행)과 같은 패턴 — 진행 중인 fetch 를 저장해 동시 호출이 서로 다른
@@ -745,11 +745,11 @@ export async function adminLogout() {
   adminAccessToken = null;
 }
 
-/* ───────────────── 관리자 콘솔 (로그인·청원 목록·공식 답변은 실 백엔드 — 담당자·알림 로그만 mockDb.adminDb) ───────────────── */
+/* ───────────────── 관리자 콘솔 (로그인·청원 목록·공식 답변은 실 백엔드 — 알림 로그만 mockDb.adminDb) ───────────────── */
 
-// 담당(basis·owner)은 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위 고정값이라
-// 여전히 CATEGORY_META 에서 읽는다(청원 관리 표·답변 모달의 "담당 · 팀 · 이름" 줄이 쓴다.
-// 전용 화면이던 /admin/owners 는 제거됐다). threshold 는 청원마다 다를 수
+// basis(임계치 기준 문구)는 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위
+// 고정값이라 CATEGORY_META 에서 읽는다. 담당자(팀·이름·연락처)는 지어낸 값이라 통째로
+// 뺐다 — 서버에 담당자 개념이 생기면 그때 응답에서 받는다. threshold 는 청원마다 다를 수
 // 있어 응답의 targetAgreementCount 를 우선하고, 없을 때만 CATEGORY_META 폴백을 쓴다.
 function adaptAdminPetition(raw) {
   const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
@@ -763,7 +763,6 @@ function adaptAdminPetition(raw) {
     current: raw.agreementCount ?? 0,
     threshold: raw.targetAgreementCount ?? meta.threshold,
     basis: meta.basis,
-    owner: meta.owner,
     hidden: raw.hidden ?? false,
     hiddenReason: raw.hiddenReason ?? null,
     answered: raw.status === "ANSWERED",

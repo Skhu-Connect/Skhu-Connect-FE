@@ -3,7 +3,7 @@
    학생 화면 데이터(세션·청원·댓글·공감·북마크·알림·학부)와 관리자 콘솔(로그인·청원 목록·공식
    답변·숨김복원·임계치 설정)은 이제 전부 실 백엔드에서 온다. 여기 남은 건 두 가지뿐이다.
 
-   1. CATEGORY_META — 카테고리 라벨·담당자 연락처는 대응 엔드포인트가 없어 클라이언트 상수로
+   1. CATEGORY_META — 카테고리 라벨·임계치 기준 문구는 대응 엔드포인트가 없어 클라이언트 상수로
       유지한다. threshold 필드는 초기값일 뿐이고, api/index.js 의 ensureCategoryThresholds() 가
       공개 GET /connect/threshold-settings 로 받은 실제 값으로 세션당 1회 덮어쓴다.
    2. adminDb.notifLogs — 관리자 알림 로그. 대응 엔드포인트가 없어 계속 이 목으로 돈다. */
@@ -13,31 +13,26 @@ export const CATEGORY_META = {
     label: "장학",
     threshold: 480,
     basis: "전체 학생",
-    owner: { team: "학생지원팀", name: "정명희", email: "scholarship@example.com", phone: "02-0000-0000" },
   },
   facility: {
     label: "시설",
     threshold: 480,
     basis: "전체 학생",
-    owner: { team: "시설관리팀", name: "박준호", email: "facility@example.com", phone: "02-0000-0000" },
   },
   dorm: {
     label: "기숙사",
     threshold: 240,
     basis: "기숙사 정원",
-    owner: { team: "생활관행정실", name: "김도윤", email: "dorm@example.com", phone: "02-0000-0000" },
   },
   library: {
     label: "도서관",
     threshold: 480,
     basis: "전체 학생",
-    owner: { team: "학술정보관", name: "이동수", email: "library@example.com", phone: "02-0000-0000" },
   },
   department: {
     label: "학부",
     threshold: 180,
     basis: "학과 정원",
-    owner: { team: "교학팀", name: "최주하", email: "haksa@example.com", phone: "02-0000-0000" },
   },
 };
 

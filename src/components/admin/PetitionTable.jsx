@@ -3,7 +3,7 @@
 
    진행바는 ThresholdBar 를 재사용하지 않는다 (의존 E) — 높이 7px + 오른쪽 34px 고정폭
    % 텍스트 + 아래 캡션은 별개 시각 산출물이라 재사용하면 픽셀이 어긋난다.
-   담당자 문구는 하드코딩하지 않고 p.owner 에서 읽는다 (의존 C). */
+   담당자 줄은 지어낸 목 데이터였다 — 서버에 담당자 개념이 없어 통째로 뺐다. */
 
 import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
@@ -12,7 +12,7 @@ import AnswerModal from "./AnswerModal";
 import CommentModeration from "./CommentModeration";
 
 const COLS = [
-  { label: "제목 / 담당", style: { padding: "10px 16px" } },
+  { label: "제목", style: { padding: "10px 16px" } },
   { label: "카테고리", style: { padding: "10px 12px" } },
   { label: "상태", style: { padding: "10px 12px" } },
   { label: "요청 / 임계치", style: { padding: "10px 12px" } },
@@ -28,9 +28,6 @@ function Row({ p, onAnswer, onHide, onRestore, onComments }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
           {p.hidden ? <Badge tone="danger" size="sm">숨김</Badge> : null}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-          {p.owner.team} · {p.owner.name}
         </div>
       </td>
       <td style={{ padding: "14px 12px", whiteSpace: "nowrap" }}><CategoryTag category={p.category} size="sm" /></td>

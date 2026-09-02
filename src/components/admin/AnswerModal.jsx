@@ -94,9 +94,6 @@ export default function AnswerModal({ p, onClose, onSubmit }) {
           </IconButton>
         </div>
         <h2 id="answer-modal-title" style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 800, color: "var(--text-strong)" }}>{p.title}</h2>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>
-          담당 · {p.owner.team} · {p.owner.name}
-        </div>
         <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: 14, fontSize: 14, color: "var(--text-body)", lineHeight: 1.7, marginBottom: 18 }}>{p.excerpt}</div>
         {loading ? (
           <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>기존 답변을 불러오는 중…</p>
