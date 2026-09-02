@@ -69,10 +69,12 @@ export default function WebLayout() {
   };
 
   const mobileShare = isMobile && GUEST_PATH.test(location.pathname);
+  /* 확성기는 배너가 있는 홈에서만 띄운다 — 다른 화면에서 누르면 되살릴 배너가 없어 닫힘만 조용히 풀린다. */
+  const onOpenNotice = location.pathname === "/" && noticeClosed && notices.length > 0 ? () => setNoticeClosed(false) : null;
 
   return (
     <>
-      {mobileShare ? <MobileShareHeader /> : <Header search={query} onSearch={onSearch} onOpenNotice={noticeClosed && notices.length > 0 ? () => setNoticeClosed(false) : null} />}
+      {mobileShare ? <MobileShareHeader /> : <Header search={query} onSearch={onSearch} onOpenNotice={onOpenNotice} />}
       {mobileShare ? <AppInstallBanner /> : null}
       <Outlet context={{ query, notices: noticeClosed ? [] : notices, onCloseNotice: () => setNoticeClosed(true) }} />
       <Toaster />
