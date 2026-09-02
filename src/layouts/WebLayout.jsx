@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { listNotices } from "../api";
 import { useSession } from "../stores/session";
 import { usePetitions } from "../stores/petitions";
 import { Toaster } from "../components/Toast";
@@ -29,6 +30,11 @@ export default function WebLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  /* 공지는 홈 배너(FeedScreen)와 헤더 확성기 양쪽이 쓴다 — 형제라 공통 부모인 여기서 한 번만 부르고
+     검색어와 같은 방식으로 내려준다. 닫힘은 세션 한정이라 useState 다(localStorage 안 쓴다 — iOS 앱과 맞춤).
+     실패하면 빈 배열이라 배너도 확성기도 그려지지 않는다. 공지는 부가 정보라 오류 문구를 띄우지 않는다. */
+  const [notices, setNotices] = useState([]);
+  const [noticeClosed, setNoticeClosed] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -46,6 +52,10 @@ export default function WebLayout() {
     return () => clearInterval(id);
   }, [authed, refreshNotifications]);
 
+  useEffect(() => {
+    if (authed) listNotices().then(setNotices, () => {});
+  }, [authed]);
+
   if (!authed && !restored) return null; // refreshToken 쿠키로 세션 복구 시도 중 — 결과 나오기 전엔 로그인으로 안 튕긴다
 
   if (!authed && !GUEST_PATH.test(location.pathname)) {
@@ -62,9 +72,9 @@ export default function WebLayout() {
 
   return (
     <>
-      {mobileShare ? <MobileShareHeader /> : <Header search={query} onSearch={onSearch} />}
+      {mobileShare ? <MobileShareHeader /> : <Header search={query} onSearch={onSearch} onOpenNotice={noticeClosed && notices.length > 0 ? () => setNoticeClosed(false) : null} />}
       {mobileShare ? <AppInstallBanner /> : null}
-      <Outlet context={{ query }} />
+      <Outlet context={{ query, notices: noticeClosed ? [] : notices, onCloseNotice: () => setNoticeClosed(true) }} />
       <Toaster />
     </>
   );
