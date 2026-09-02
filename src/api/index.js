@@ -668,6 +668,23 @@ export async function markNotifRead(id) {
   await apiFetch(`/connect/notifications/${Number(id)}/read`, { method: "PATCH" });
 }
 
+/* ───────────────── 공지 ─────────────────
+   GET /connect/notices 는 PUBLISHED 공지만 내려주고 인증이 필요 없다(auth:false — 비로그인
+   학생 화면도 부른다). 관리자 목록 API(GET /connect/admin/notices)가 없어 관리자 콘솔도
+   같은 목록을 쓴다 — 그래서 숨긴 공지는 콘솔에서 다시 찾을 수 없다(재공개 진입점 없음). */
+
+function adaptNotice(raw) {
+  const at = raw.publishedAt ?? raw.createdAt;
+  return { id: raw.id, title: raw.title, content: raw.content, status: raw.status, publishedAt: at, date: formatRelative(at) };
+}
+
+export async function listNotices() {
+  const data = await apiFetch("/connect/notices?size=100", { auth: false });
+  return (data?.content ?? [])
+    .map(adaptNotice)
+    .sort((a, b) => parseServerDate(b.publishedAt) - parseServerDate(a.publishedAt));
+}
+
 /* ───────────────── 관리자 인증 ─────────────────
    학생 세션(accessToken/refreshing)과 완전히 분리된 상태를 쓴다. 서버가 리프레시 쿠키명부터
    adminRefreshToken 으로 학생(refreshToken)과 구분해두므로, 401 재시도 때 학생용
@@ -912,4 +929,30 @@ export async function updateAdminThresholdSetting(category, { totalStudentCount,
     body: { totalStudentCount, thresholdRate, minimumCount, changeReason: reason },
   });
   return adaptThresholdSetting(raw);
+}
+
+/* 공지 작성·수정·숨김. 목록은 관리자 전용 엔드포인트가 없어 공개 listNotices() 를 그대로 쓴다.
+   글자수 상한(제목 100·내용 5000)은 서버 제약이라 입력 화면이 저장 전에 막는다. */
+function noticeBody(title, content) {
+  const t = String(title ?? "").trim();
+  const c = String(content ?? "").trim();
+  if (!t || !c) throw new Error("제목과 내용을 모두 입력해 주세요.");
+  return { title: t, content: c };
+}
+
+/** POST 직후 상태가 PUBLISHED 인지 스펙에 없다 — 응답 status 를 보고 아닐 때만 이어서 게시한다.
+    publish 응답이 비어 있는 서버(204)면 방금 만든 공지를 그대로 목록에 올린다. */
+export async function createNotice({ title, content }) {
+  const raw = await adminApiFetch("/connect/admin/notices", { method: "POST", body: noticeBody(title, content) });
+  if (raw.status === "PUBLISHED") return adaptNotice(raw);
+  return adaptNotice((await adminApiFetch(`/connect/admin/notices/${Number(raw.id)}/publish`, { method: "PATCH" })) ?? raw);
+}
+
+export async function updateNotice(id, { title, content }) {
+  return adaptNotice(await adminApiFetch(`/connect/admin/notices/${Number(id)}`, { method: "PUT", body: noticeBody(title, content) }));
+}
+
+/** 숨기면 공개 목록에서 빠진다 — 관리자 목록 API 가 없어 콘솔에서 다시 찾을 수 없다(되돌리기 없음). */
+export async function hideNotice(id) {
+  await adminApiFetch(`/connect/admin/notices/${Number(id)}/hide`, { method: "PATCH" });
 }

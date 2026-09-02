@@ -16,6 +16,7 @@ const NAV = [
   { to: "/admin/manage", icon: "megaphone", label: "청원 관리" },
   { to: "/admin/threshold-settings", icon: "sliders", label: "임계치 설정" },
   { to: "/admin/reports", icon: "shield", label: "신고 관리" },
+  { to: "/admin/notices", icon: "fileText", label: "공지사항" },
   { to: "/admin/logs", icon: "bell", label: "알림 로그" },
 ];
 

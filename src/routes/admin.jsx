@@ -10,6 +10,7 @@ import Manage from "../pages/admin/Manage";
 import Logs from "../pages/admin/Logs";
 import ThresholdSettings from "../pages/admin/ThresholdSettings";
 import Reports from "../pages/admin/Reports";
+import Notices from "../pages/admin/Notices";
 
 export function adminRoutes() {
   return (
@@ -21,6 +22,7 @@ export function adminRoutes() {
         <Route path="logs" element={<Logs />} />
         <Route path="threshold-settings" element={<ThresholdSettings />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="notices" element={<Notices />} />
       </Route>
     </>
   );
