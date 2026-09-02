@@ -56,13 +56,15 @@ export default function Notices() {
     }
   };
 
+  /* 실패 문구를 폼의 error 에 넣으면 목록 아래에서 숨김을 누른 관리자에겐 화면 밖에 찍힌다 —
+     같은 콘솔의 Reports 화면처럼 alert 로 알린다. */
   const hide = async (notice) => {
     try {
       await api.hideNotice(notice.id);
       setNotices((list) => list.filter((n) => n.id !== notice.id));
       if (editingId === notice.id) reset();
     } catch (e) {
-      setError(e.message);
+      window.alert(e.message);
     }
   };
 

@@ -675,11 +675,12 @@ export async function markNotifRead(id) {
 
 function adaptNotice(raw) {
   const at = raw.publishedAt ?? raw.createdAt;
-  return { id: raw.id, title: raw.title, content: raw.content, status: raw.status, publishedAt: at, date: formatRelative(at) };
+  return { id: raw.id, title: raw.title, content: raw.content, publishedAt: at, date: formatRelative(at) };
 }
 
 export async function listNotices() {
-  const data = await apiFetch("/connect/notices?size=100", { auth: false });
+  // sort 를 서버에 넘겨야 100건을 넘겼을 때도 첫 페이지에 최신 공지가 온다(청원 목록과 같은 방식).
+  const data = await apiFetch("/connect/notices?size=100&sort=publishedAt,desc", { auth: false });
   return (data?.content ?? [])
     .map(adaptNotice)
     .sort((a, b) => parseServerDate(b.publishedAt) - parseServerDate(a.publishedAt));
@@ -941,11 +942,17 @@ function noticeBody(title, content) {
 }
 
 /** POST 직후 상태가 PUBLISHED 인지 스펙에 없다 — 응답 status 를 보고 아닐 때만 이어서 게시한다.
-    publish 응답이 비어 있는 서버(204)면 방금 만든 공지를 그대로 목록에 올린다. */
+    publish 응답이 비어 있는 서버(204)면 방금 만든 공지를 그대로 목록에 올린다.
+    게시가 실패하면 작성된 공지는 DRAFT 로 서버에 남는데, 관리자 목록 API 가 없어 콘솔에서 다시 찾을 수
+    없다 — 그래서 "작성 실패" 와 구분되는 문구로 알린다(그대로 다시 저장하면 새 공지가 하나 더 생긴다). */
 export async function createNotice({ title, content }) {
   const raw = await adminApiFetch("/connect/admin/notices", { method: "POST", body: noticeBody(title, content) });
   if (raw.status === "PUBLISHED") return adaptNotice(raw);
-  return adaptNotice((await adminApiFetch(`/connect/admin/notices/${Number(raw.id)}/publish`, { method: "PATCH" })) ?? raw);
+  try {
+    return adaptNotice((await adminApiFetch(`/connect/admin/notices/${Number(raw.id)}/publish`, { method: "PATCH" })) ?? raw);
+  } catch (e) {
+    throw new Error(`공지는 저장됐지만 게시에 실패했습니다(${e.message}). 잠시 후 다시 저장하면 새 공지로 게시됩니다.`);
+  }
 }
 
 export async function updateNotice(id, { title, content }) {
