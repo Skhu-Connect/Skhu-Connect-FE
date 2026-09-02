@@ -679,8 +679,10 @@ function adaptNotice(raw) {
 }
 
 export async function listNotices() {
-  // sort 를 서버에 넘겨야 100건을 넘겼을 때도 첫 페이지에 최신 공지가 온다(청원 목록과 같은 방식).
-  const data = await apiFetch("/connect/notices?size=100&sort=publishedAt,desc", { auth: false });
+  /* 이 엔드포인트는 sort 파라미터를 받지 않는다 — 없는 필드명을 넣어도 200 에 sorted:false 가 온다
+     (청원 목록과 달리 Pageable 바인딩이 없다). 그래서 정렬은 아래에서 직접 한다. 공지가 100건을
+     넘으면 첫 페이지에 최신 공지가 없을 수 있고, 그때는 백엔드에 정렬을 요청해야 한다. */
+  const data = await apiFetch("/connect/notices?size=100", { auth: false });
   return (data?.content ?? [])
     .map(adaptNotice)
     .sort((a, b) => parseServerDate(b.publishedAt) - parseServerDate(a.publishedAt));
