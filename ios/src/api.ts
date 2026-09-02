@@ -615,8 +615,8 @@ function adaptNotice(raw: any): Notice {
 
 /** 인증 없이 열린다 — 로그인 전에도 홈이 그려진다. 서버는 PUBLISHED 만 내려준다. */
 export async function listNotices(): Promise<Notice[]> {
-  // sort 를 서버에 넘겨야 100건을 넘겼을 때도 첫 페이지에 최신 공지가 온다(청원 목록과 같은 방식).
-  const data = await apiFetch<any>("/connect/notices?size=100&sort=publishedAt,desc", { auth: false });
+  // 이 엔드포인트는 sort 파라미터를 받지 않는다(웹 src/api/index.js listNotices 주석 참고) — 정렬은 아래에서 한다.
+  const data = await apiFetch<any>("/connect/notices?size=100", { auth: false });
   return (data?.content ?? [])
     .map(adaptNotice)
     .sort((a: Notice, b: Notice) => parseServerDate(b.publishedAt).getTime() - parseServerDate(a.publishedAt).getTime());

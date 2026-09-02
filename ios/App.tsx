@@ -620,6 +620,8 @@ export default function App() {
     setComments({});
     setNotifications([]);
     setMyComments([]);
+    setNotices([]);
+    setNoticeClosed(false); // 안 지우면 다시 로그인했을 때 배너 없이 헤더 확성기만 남는다
   }, []);
 
   const onLogout = useCallback(async () => {
