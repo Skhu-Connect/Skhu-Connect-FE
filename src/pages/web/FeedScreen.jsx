@@ -12,10 +12,14 @@ import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedPa
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 
-/* 카카오톡 채팅방 상단 공지처럼 — 기본은 최신 공지 제목 한 줄, 펼치면 게시된 공지 전부(제목+내용).
-   닫으면 헤더 확성기로 되살린다(닫힘 상태는 WebLayout 이 들고 있다). */
+/* 카카오톡 채팅방 상단 공지처럼 — 기본은 현재 공지 제목 한 줄(처음엔 최신 것), 펼치면 그 한 건만
+   본문까지 보이고 오른쪽 버튼으로 다음 공지로 넘어간다. 마지막 다음은 처음으로 돈다 — 버튼이
+   하나뿐이라 되돌아갈 다른 길이 없다. 닫으면 헤더 확성기로 되살린다(닫힘은 WebLayout 이 들고 있다). */
 function NoticeBanner({ notices, onClose }) {
   const [open, setOpen] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const current = notices[idx] ?? notices[0];
+  const many = notices.length > 1;
   const row = { display: "flex", alignItems: "center", gap: 10 };
   return (
     <div style={{ background: "var(--indigo-50)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "10px 12px" }}>
@@ -27,9 +31,16 @@ function NoticeBanner({ notices, onClose }) {
           onClick={() => setOpen((o) => !o)}
           style={{ ...row, flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-sans)", textAlign: "left" }}
         >
-          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>
-            {notices[0].title}
+          {/* 접혔을 때만 한 줄로 자른다 — 펼치면 이 줄이 그 공지의 제목 역할을 그대로 해서 본문 위에 제목을 또 쓰지 않는다. */}
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: open ? "normal" : "nowrap", fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>
+            {current.title}
           </span>
+          {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
+          {many && (
+            <span style={{ flexShrink: 0, minWidth: 18, padding: "1px 6px", borderRadius: "var(--radius-pill)", background: "var(--indigo-600)", color: "#fff", fontSize: 11, fontWeight: 700, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+              {notices.length}
+            </span>
+          )}
           <span style={{ display: "flex", transform: open ? "rotate(180deg)" : "none", flexShrink: 0 }}>
             <Icon name="chevronDown" size={17} color="var(--text-muted)" />
           </span>
@@ -39,14 +50,19 @@ function NoticeBanner({ notices, onClose }) {
         </IconButton>
       </div>
       {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
-          {notices.map((n) => (
-            <div key={n.id}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>{n.title}</div>
-              <p style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{n.content}</p>
-              <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{n.date}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{current.content}</p>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{current.date}</div>
+          </div>
+          {many && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{idx + 1} / {notices.length}</span>
+              <IconButton variant="ghost" size={28} ariaLabel="다음 공지" onClick={() => setIdx((i) => (i + 1) % notices.length)}>
+                <Icon name="chevronRight" size={16} />
+              </IconButton>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
