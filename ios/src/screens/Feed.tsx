@@ -252,11 +252,16 @@ function NotifSheet({
   );
 }
 
-/* 카카오톡 채팅방 상단 공지처럼 — 기본은 최신 공지 제목 한 줄, 펼치면 게시된 공지 전부(제목+내용).
+/* 카카오톡 채팅방 상단 공지처럼 — 기본은 현재 공지 제목 한 줄(처음엔 최신 것), 펼치면 그 한 건만
+   본문까지 보이고 오른쪽 버튼으로 다음 공지로 넘어간다. 마지막 다음은 처음으로 돈다 — 버튼이
+   하나뿐이라 되돌아갈 다른 길이 없다.
    웹 FeedScreen.jsx 의 NoticeBanner 와 같은 구성·색·문구다. 여백과 테두리는 플랫폼에 맞춘다 —
    웹은 페이지 여백 안의 라운드 카드, 여기는 헤더에 붙는 폭 꽉 찬 줄이다(카카오톡 상단 공지와 같은 자리). */
 function NoticeBanner({ notices, onClose }: { notices: Notice[]; onClose: () => void }) {
   const [open, setOpen] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const current = notices[idx] ?? notices[0];
+  const many = notices.length > 1;
   return (
     <View style={{ backgroundColor: colors.indigo[50], borderBottomWidth: 1, borderBottomColor: colors.subtle, paddingHorizontal: 14, paddingVertical: 10 }}>
       <View className="flex-row items-center" style={{ gap: 10 }}>
@@ -269,9 +274,16 @@ function NoticeBanner({ notices, onClose }: { notices: Notice[]; onClose: () => 
           className="flex-1 flex-row items-center"
           style={{ gap: 10, minWidth: 0 }}
         >
-          <Text numberOfLines={1} style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>
-            {notices[0].title}
+          {/* 접혔을 때만 한 줄로 자른다 — 펼치면 이 줄이 제목 역할을 그대로 해서 본문 위에 제목을 또 쓰지 않는다. */}
+          <Text numberOfLines={open ? undefined : 1} style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>
+            {current.title}
           </Text>
+          {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
+          {many ? (
+            <View style={{ minWidth: 18, paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.pill, backgroundColor: colors.indigo[600] }}>
+              <Text style={[t, { fontSize: 11, fontWeight: "700", color: "#fff", textAlign: "center" }]}>{notices.length}</Text>
+            </View>
+          ) : null}
           <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
             <Icon name="chevronDown" size={17} color={colors.muted} />
           </View>
@@ -281,14 +293,26 @@ function NoticeBanner({ notices, onClose }: { notices: Notice[]; onClose: () => 
         </Pressable>
       </View>
       {open ? (
-        <View style={{ gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
-          {notices.map((n) => (
-            <View key={n.id}>
-              <Text style={[t, { fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>{n.title}</Text>
-              <Text style={[t, { fontSize: 13, lineHeight: 20.8, color: colors.body, marginTop: 4 }]}>{n.content}</Text>
-              <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4 }]}>{n.date}</Text>
+        <View className="flex-row items-center" style={{ gap: 10, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[t, { fontSize: 13, lineHeight: 20.8, color: colors.body }]}>{current.content}</Text>
+            <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4 }]}>{current.date}</Text>
+          </View>
+          {many ? (
+            <View className="flex-row items-center" style={{ gap: 6 }}>
+              <Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>
+                {idx + 1} / {notices.length}
+              </Text>
+              <Pressable
+                onPress={() => setIdx((i) => (i + 1) % notices.length)}
+                accessibilityRole="button"
+                accessibilityLabel="다음 공지"
+                className="w-7 h-7 items-center justify-center rounded-full"
+              >
+                <Icon name="chevronRight" size={16} color={colors.body} />
+              </Pressable>
             </View>
-          ))}
+          ) : null}
         </View>
       ) : null}
     </View>
