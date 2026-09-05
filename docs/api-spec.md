@@ -123,6 +123,20 @@
   - `notificationEnabled=false`면 종류별 설정과 관계없이 모든 새 알림이 차단된다.
 - 기기 단위 on/off 는 iOS 알림 권한이 담당한다(NotifSettings.tsx).
 
+## 공지 (2026-09-02 확인)
+
+- `GET /connect/notices?page&size` → `PageNoticeResponse`(Spring Page: `content[] totalElements totalPages
+  number size first last empty`). **PUBLISHED 공지만** 내려주며 **인증 불필요**(토큰 없이 200 확인).
+- `NoticeResponse`: `id title content status(DRAFT|PUBLISHED|HIDDEN) createdBy createdAt updatedAt publishedAt`.
+- `POST /connect/admin/notices` `{title, content}` → `NoticeResponse`. **title 100자·content 5000자 상한**(서버
+  제약이라 작성 화면이 저장 전에 막는다). 생성 직후 status 가 PUBLISHED 인지 스펙에 없어, 응답 status 를
+  보고 아닐 때만 이어서 publish 를 호출한다(`createNotice`).
+- `PUT /connect/admin/notices/{id}` 같은 body → 수정.
+- `PATCH /connect/admin/notices/{id}/publish` · `/hide` · `/republish` — 요청 body 없음.
+- **`GET /connect/admin/notices` 가 없다.** 관리자 콘솔 목록도 공개 `GET /connect/notices` 로 채울 수밖에
+  없어 **게시된 공지만 보인다** — 숨긴(HIDDEN) 공지는 콘솔에서 다시 찾을 수 없고, 그래서 `/republish` 는
+  진입점이 없어 프론트에 구현하지 않았다(숨김은 사실상 되돌릴 수 없는 동작 — 확인 창에 명시).
+
 ## 차단 (2026-08-18 추가 확인)
 
 - `POST /connect/users/me/blocks` `{targetType: "PETITION"|"COMMENT", contentId}` → 201

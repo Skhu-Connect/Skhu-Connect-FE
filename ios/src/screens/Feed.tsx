@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, type LayoutChangeEvent, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icon } from "../icons";
-import { CAT_CHIPS, type CategoryKey, type Notification, type Petition } from "../data";
+import { CAT_CHIPS, type CategoryKey, type Notice, type Notification, type Petition } from "../data";
 import { count, daysLeft, ddayLabel, type Filter, type Sort, type Tab } from "../logic";
 import { ActionMenu, CAT_ICON, Card, CategoryTag, EmpathyButton, LogoMark, Sheet, StatusBadge, ThresholdBar, fmt } from "../ui";
 import { ReportSheet } from "../reportSheet";
@@ -31,6 +31,12 @@ export type FeedProps = {
   notifications: Notification[];
   onOpenNotification: (n: Notification) => void;
   onMarkAllNotifRead: () => void;
+  /* 공지·닫힘 상태는 App.tsx 가 들고 있다 — 이 화면은 상세·MY 로 갈 때마다 언마운트되므로
+     여기에 두면 화면을 오갈 때마다 닫은 배너가 되살아나고 공지를 매번 다시 읽는다. */
+  notices: Notice[];
+  noticeClosed: boolean;
+  onCloseNotice: () => void;
+  onOpenNotice: () => void;
   searchOpen: boolean;
   onToggleSearch: () => void;
   onQuery: (q: string) => void;
@@ -49,6 +55,9 @@ export function FeedScreen(p: FeedProps) {
   const [reportId, setReportId] = useState<number | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
 
+  // 공지가 없거나 못 읽으면(App.tsx 가 빈 배열로 둔다) 배너도 헤더 확성기도 안 그린다.
+  const showNotice = tab === "home" && p.notices.length > 0;
+
   /* 급상승 카드의 "더보기" 는 TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로
      맞춰 준다(사용자 지시). 스크롤까지 옮기지 않으면 화면 밖에서 정렬만 바뀌어 아무 일도 안 일어난
      것처럼 보인다 — 고정되는 FilterBar 의 y 로 옮겨 필터바가 상단에 붙고 목록이 바로 아래 오게 한다. */
@@ -63,7 +72,13 @@ export function FeedScreen(p: FeedProps) {
   return (
     <View className="flex-1 bg-page">
       {/* 제목은 탭과 무관하게 서비스 이름으로 고정한다 — 무슨 목록인지는 아래 머리말이 말한다. */}
-      <Header title="성공잇다" hasUnread={p.hasUnread} onToggleSearch={p.onToggleSearch} onOpenNotifs={() => setNotifOpen(true)} />
+      <Header
+        title="성공잇다"
+        hasUnread={p.hasUnread}
+        onToggleSearch={p.onToggleSearch}
+        onOpenNotifs={() => setNotifOpen(true)}
+        onOpenNotice={showNotice && p.noticeClosed ? p.onOpenNotice : undefined}
+      />
       <NotifSheet
         open={notifOpen}
         onClose={() => setNotifOpen(false)}
@@ -75,7 +90,10 @@ export function FeedScreen(p: FeedProps) {
       {/* 본문(건의 목록)이 먼저, 급상승·기간요약은 그 아래 보조 위젯으로 둔다 — 에브리타임 홈처럼
           목록에 바로 닿게 하려는 것(사용자 지시). 대시보드를 위에 두면 건의를 보려고 매번 그만큼
           스크롤해야 한다. */}
-      <ScrollView ref={scrollRef} stickyHeaderIndices={[1]} showsVerticalScrollIndicator={false}>
+      {/* 공지 줄이 히어로 위에 하나 더 붙으므로 고정 대상 인덱스가 하나 밀린다([1]→[2]) — 계속 FilterBar 를 가리켜야 한다.
+          공지가 없을 때도 빈 View 를 자리에 둔다: stickyHeaderIndices 는 위치로 세므로 자식을 빼면 다시 밀린다(높이 0). */}
+      <ScrollView ref={scrollRef} stickyHeaderIndices={[2]} showsVerticalScrollIndicator={false}>
+        {showNotice && !p.noticeClosed ? <NoticeBanner notices={p.notices} onClose={p.onCloseNotice} /> : <View />}
         <Banner tab={tab} petitions={p.petitions} mineCount={p.mineCount} answeredCount={p.answeredCount} />
         <FilterBar {...p} onLayout={(e) => { filterY.current = e.nativeEvent.layout.y; }} />
         <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
@@ -98,7 +116,20 @@ export function FeedScreen(p: FeedProps) {
   );
 }
 
-function Header({ title, hasUnread, onToggleSearch, onOpenNotifs }: { title: string; hasUnread: boolean; onToggleSearch: () => void; onOpenNotifs: () => void }) {
+/** onOpenNotice 는 "공지가 있고 + 배너가 닫혀 있을 때"만 넘어온다 — 그때만 확성기를 띄운다(웹 Header.jsx 와 같다). */
+function Header({
+  title,
+  hasUnread,
+  onToggleSearch,
+  onOpenNotifs,
+  onOpenNotice,
+}: {
+  title: string;
+  hasUnread: boolean;
+  onToggleSearch: () => void;
+  onOpenNotifs: () => void;
+  onOpenNotice?: () => void;
+}) {
   return (
     <View className="flex-row items-center gap-[10px] px-[14px] bg-card border-b border-subtle" style={{ height: 52 }}>
       <LogoMark size={32} />
@@ -108,6 +139,11 @@ function Header({ title, hasUnread, onToggleSearch, onOpenNotifs }: { title: str
         <Pressable onPress={onToggleSearch} accessibilityRole="button" accessibilityLabel="건의 검색" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="search" size={19} color={colors.body} />
         </Pressable>
+        {onOpenNotice ? (
+          <Pressable onPress={onOpenNotice} accessibilityRole="button" accessibilityLabel="공지사항 다시 보기" className="w-9 h-9 items-center justify-center rounded-full">
+            <Icon name="megaphone" size={19} color={colors.body} />
+          </Pressable>
+        ) : null}
         <Pressable onPress={onOpenNotifs} accessibilityRole="button" accessibilityLabel="알림" className="w-9 h-9 items-center justify-center rounded-full">
           <Icon name="bell" size={19} color={colors.body} />
           {hasUnread ? <View style={{ position: "absolute", top: 5, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral[500], borderWidth: 1.5, borderColor: "#fff" }} /> : null}
@@ -213,6 +249,73 @@ function NotifSheet({
         <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: colors.indigo[600] }]}>전체 알림 보기</Text>
       </Pressable>
     </Sheet>
+  );
+}
+
+/* 카카오톡 채팅방 상단 공지처럼 — 기본은 현재 공지 제목 한 줄(처음엔 최신 것), 펼치면 그 한 건만
+   본문까지 보이고 오른쪽 버튼으로 다음 공지로 넘어간다. 마지막 다음은 처음으로 돈다 — 버튼이
+   하나뿐이라 되돌아갈 다른 길이 없다.
+   웹 FeedScreen.jsx 의 NoticeBanner 와 같은 구성·색·문구다. 여백과 테두리는 플랫폼에 맞춘다 —
+   웹은 페이지 여백 안의 라운드 카드, 여기는 헤더에 붙는 폭 꽉 찬 줄이다(카카오톡 상단 공지와 같은 자리). */
+function NoticeBanner({ notices, onClose }: { notices: Notice[]; onClose: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const current = notices[idx] ?? notices[0];
+  const many = notices.length > 1;
+  return (
+    <View style={{ backgroundColor: colors.indigo[50], borderBottomWidth: 1, borderBottomColor: colors.subtle, paddingHorizontal: 14, paddingVertical: 10 }}>
+      <View className="flex-row items-center" style={{ gap: 10 }}>
+        <Icon name="megaphone" size={17} color={colors.indigo[600]} />
+        <Pressable
+          onPress={() => setOpen((o) => !o)}
+          accessibilityRole="button"
+          accessibilityLabel={open ? "공지사항 접기" : "공지사항 펼치기"}
+          accessibilityState={{ expanded: open }}
+          className="flex-1 flex-row items-center"
+          style={{ gap: 10, minWidth: 0 }}
+        >
+          {/* 접혔을 때만 한 줄로 자른다 — 펼치면 이 줄이 제목 역할을 그대로 해서 본문 위에 제목을 또 쓰지 않는다. */}
+          <Text numberOfLines={open ? undefined : 1} style={[t, { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.strong }]}>
+            {current.title}
+          </Text>
+          {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
+          {many ? (
+            <View style={{ minWidth: 18, paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.pill, backgroundColor: colors.indigo[600] }}>
+              <Text style={[t, { fontSize: 11, fontWeight: "700", color: "#fff", textAlign: "center" }]}>{notices.length}</Text>
+            </View>
+          ) : null}
+          <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
+            <Icon name="chevronDown" size={17} color={colors.muted} />
+          </View>
+        </Pressable>
+        <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="공지사항 닫기" className="w-7 h-7 items-center justify-center rounded-full">
+          <Icon name="x" size={15} color={colors.muted} />
+        </Pressable>
+      </View>
+      {open ? (
+        <View className="flex-row items-center" style={{ gap: 10, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.subtle }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[t, { fontSize: 13, lineHeight: 20.8, color: colors.body }]}>{current.content}</Text>
+            <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4 }]}>{current.date}</Text>
+          </View>
+          {many ? (
+            <View className="flex-row items-center" style={{ gap: 6 }}>
+              <Text style={[t, { fontSize: 11.5, fontWeight: "700", color: colors.muted }]}>
+                {idx + 1} / {notices.length}
+              </Text>
+              <Pressable
+                onPress={() => setIdx((i) => (i + 1) % notices.length)}
+                accessibilityRole="button"
+                accessibilityLabel="다음 공지"
+                className="w-7 h-7 items-center justify-center rounded-full"
+              >
+                <Icon name="chevronRight" size={16} color={colors.body} />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
   );
 }
 

@@ -14,7 +14,7 @@
    PATCH /connect/users/me/department({departmentId})로 연동한다. */
 
 import { NOTIF_TYPE_TITLE, pointOf } from "./data";
-import type { AdminAnswer, CategoryKey, Comment, MyComment, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
+import type { AdminAnswer, CategoryKey, Comment, MyComment, Notice, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
 
 const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
@@ -603,6 +603,23 @@ function adaptMyComment(uc: any): MyComment {
 export async function listMyComments(): Promise<MyComment[]> {
   const data = await apiFetch<any>("/connect/users/me/comments?size=100");
   return (data?.content ?? []).map(adaptMyComment);
+}
+
+/* ───────────────── 공지 ───────────────── */
+
+/** publishedAt 이 없으면 createdAt 을 게시 시각으로 본다(웹 adaptNotice 와 동일). */
+function adaptNotice(raw: any): Notice {
+  const at: string = raw.publishedAt ?? raw.createdAt;
+  return { id: raw.id, title: raw.title, content: raw.content, publishedAt: at, date: formatRelative(at) };
+}
+
+/** 인증 없이 열린다 — 로그인 전에도 홈이 그려진다. 서버는 PUBLISHED 만 내려준다. */
+export async function listNotices(): Promise<Notice[]> {
+  // 이 엔드포인트는 sort 파라미터를 받지 않는다(웹 src/api/index.js listNotices 주석 참고) — 정렬은 아래에서 한다.
+  const data = await apiFetch<any>("/connect/notices?size=100", { auth: false });
+  return (data?.content ?? [])
+    .map(adaptNotice)
+    .sort((a: Notice, b: Notice) => parseServerDate(b.publishedAt).getTime() - parseServerDate(a.publishedAt).getTime());
 }
 
 /* ───────────────── 알림 ───────────────── */

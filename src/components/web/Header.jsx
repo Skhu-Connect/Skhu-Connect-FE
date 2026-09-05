@@ -216,7 +216,8 @@ const navLinkStyle = ({ isActive }) => ({
   textDecoration: "none",
 });
 
-export default function Header({ search, onSearch }) {
+/** onOpenNotice 는 "공지가 있고 + 배너가 닫혀 있을 때"만 WebLayout 이 넘긴다 — 그때만 확성기를 띄운다. */
+export default function Header({ search, onSearch, onOpenNotice }) {
   const user = useSession((s) => s.user);
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -238,6 +239,11 @@ export default function Header({ search, onSearch }) {
         </nav>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <SearchBox value={search} onChange={onSearch} />
+          {onOpenNotice && (
+            <IconButton variant="ghost" ariaLabel="공지사항 다시 보기" onClick={onOpenNotice}>
+              <Icon name="megaphone" size={20} />
+            </IconButton>
+          )}
           <NotifBell />
           <Button variant="primary" size="sm" leadingIcon={<Icon name="plus" size={16} />} onClick={() => navigate("/submit")}>건의 등록</Button>
           {user && <AvatarMenu user={user} onSelect={onMenu} />}

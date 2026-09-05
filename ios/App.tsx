@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
 
-import type { CategoryKey, Comment, MyComment, Notification, NotificationSettingKey, Petition } from "./src/data";
+import type { CategoryKey, Comment, MyComment, Notice, Notification, NotificationSettingKey, Petition } from "./src/data";
 import { visibleList, type Sort, type Tab, type Votes } from "./src/logic";
 import { FeedScreen } from "./src/screens/Feed";
 import { DetailScreen } from "./src/screens/Detail";
@@ -69,6 +69,10 @@ export default function App() {
   const [petitions, setPetitions] = useState<Petition[]>([]);
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  /* 홈 공지 배너. 닫힘 상태를 FeedScreen 이 아니라 여기 두는 이유: 그 화면은 상세·MY 로 갈 때마다
+     언마운트되므로(아래 screen === "feed" 분기) 화면을 한 번 오갈 때마다 닫은 배너가 되살아난다. */
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [noticeClosed, setNoticeClosed] = useState(false);
   const [myComments, setMyComments] = useState<MyComment[]>([]);
   const [votes, setVotes] = useState<Votes>({});
   const [openId, setOpenId] = useState<number | null>(null);
@@ -196,6 +200,13 @@ export default function App() {
       api.listNotifications().then(setNotifications).catch(() => {});
     }, 30000);
     return () => clearInterval(id);
+  }, [authed]);
+
+  /* 공지는 로그인 뒤 한 번만 읽는다 — bootstrap 의 Promise.all 에 넣지 않는 이유는 실패해도 로그인
+     흐름을 막으면 안 되기 때문이다. 실패하면 빈 배열이라 배너도 헤더 확성기도 그려지지 않는다. */
+  useEffect(() => {
+    if (!authed) return;
+    api.listNotices().then(setNotices).catch(() => {});
   }, [authed]);
 
   /* 앱이 열려 있는 동안 FCM 이 오면(시스템 배너 없음) 알림 목록을 바로 갱신하고 토스트로 알린다. */
@@ -609,6 +620,8 @@ export default function App() {
     setComments({});
     setNotifications([]);
     setMyComments([]);
+    setNotices([]);
+    setNoticeClosed(false); // 안 지우면 다시 로그인했을 때 배너 없이 헤더 확성기만 남는다
   }, []);
 
   const onLogout = useCallback(async () => {
@@ -690,6 +703,10 @@ export default function App() {
               notifications={notifications}
               onOpenNotification={onOpenNotification}
               onMarkAllNotifRead={onMarkAllNotifRead}
+              notices={notices}
+              noticeClosed={noticeClosed}
+              onCloseNotice={() => setNoticeClosed(true)}
+              onOpenNotice={() => setNoticeClosed(false)}
               searchOpen={searchOpen}
               onToggleSearch={() => {
                 setSearchOpen((s) => !s);

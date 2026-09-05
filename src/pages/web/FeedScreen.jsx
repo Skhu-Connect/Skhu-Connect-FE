@@ -7,10 +7,67 @@
 import { useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
-import { Button, CATEGORIES, ConfirmDialog, Icon } from "../../components/ui";
+import { Button, CATEGORIES, ConfirmDialog, Icon, IconButton } from "../../components/ui";
 import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
+
+/* 카카오톡 채팅방 상단 공지처럼 — 기본은 현재 공지 제목 한 줄(처음엔 최신 것), 펼치면 그 한 건만
+   본문까지 보이고 오른쪽 버튼으로 다음 공지로 넘어간다. 마지막 다음은 처음으로 돈다 — 버튼이
+   하나뿐이라 되돌아갈 다른 길이 없다. 닫으면 헤더 확성기로 되살린다(닫힘은 WebLayout 이 들고 있다). */
+function NoticeBanner({ notices, onClose }) {
+  const [open, setOpen] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const current = notices[idx] ?? notices[0];
+  const many = notices.length > 1;
+  const row = { display: "flex", alignItems: "center", gap: 10 };
+  return (
+    <div style={{ background: "var(--indigo-50)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "10px 12px" }}>
+      <div style={row}>
+        <Icon name="megaphone" size={17} color="var(--indigo-600)" />
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          style={{ ...row, flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-sans)", textAlign: "left" }}
+        >
+          {/* 접혔을 때만 한 줄로 자른다 — 펼치면 이 줄이 그 공지의 제목 역할을 그대로 해서 본문 위에 제목을 또 쓰지 않는다. */}
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: open ? "normal" : "nowrap", fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>
+            {current.title}
+          </span>
+          {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
+          {many && (
+            <span style={{ flexShrink: 0, minWidth: 18, padding: "1px 6px", borderRadius: "var(--radius-pill)", background: "var(--indigo-600)", color: "#fff", fontSize: 11, fontWeight: 700, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+              {notices.length}
+            </span>
+          )}
+          <span style={{ display: "flex", transform: open ? "rotate(180deg)" : "none", flexShrink: 0 }}>
+            <Icon name="chevronDown" size={17} color="var(--text-muted)" />
+          </span>
+        </button>
+        <IconButton variant="ghost" size={26} ariaLabel="공지사항 닫기" onClick={onClose}>
+          <Icon name="x" size={15} />
+        </IconButton>
+      </div>
+      {open && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{current.content}</p>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{current.date}</div>
+          </div>
+          {many && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{idx + 1} / {notices.length}</span>
+              <IconButton variant="ghost" size={28} ariaLabel="다음 공지" onClick={() => setIdx((i) => (i + 1) % notices.length)}>
+                <Icon name="chevronRight" size={16} />
+              </IconButton>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function HeroBanner() {
   return (
@@ -263,7 +320,7 @@ function FilterBar({ categories, active, onChange }) {
 export default function FeedScreen({ nav = "feed" }) {
   const petitions = usePetitions((s) => s.petitions);
   const categories = usePetitions((s) => s.categories);
-  const { query } = useOutletContext();
+  const { query, notices, onCloseNotice } = useOutletContext();
   const navigate = useNavigate();
   const [cat, setCat] = useState("all");
   // 청원 등록 직후에는 최신순으로 연다 — 공감 0인 새 청원이 공감순에서 맨 아래로 밀리기 때문.
@@ -342,6 +399,7 @@ export default function FeedScreen({ nav = "feed" }) {
         />
       )}
       {reportId !== null && <ReportDialog target="게시글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)} />}
+      {nav === "feed" && notices.length > 0 && <NoticeBanner notices={notices} onClose={onCloseNotice} />}
       {intro}
       {/* 웹은 데스크톱 폭이 넉넉해 두 카드를 2열로 두어도 건의 목록이 첫 화면에 들어온다 —
           그래서 상단에 둔다. 세로로 쌓이는 iOS 는 목록 아래로 내렸다(Feed.tsx). */}
