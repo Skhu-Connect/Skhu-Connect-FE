@@ -38,9 +38,12 @@ export async function pushPermissionStatus(): Promise<PushStatus> {
   }
 }
 
-/** 한 번 거부하면 iOS 는 앱 안에서 다시 물을 수 없다 — 그때는 설정 앱으로 보낸다. */
+/** 한 번 거부하면 iOS 는 앱 안에서 다시 물을 수 없다 — 그때는 설정 앱으로 보낸다.
+    "app-settings:notifications" 는 UIApplication.openNotificationSettingsURLString(iOS 15.4+) 의
+    실제 값이다(UIKitCore 바이너리에서 확인) — 설정 > 앱 > 성공잇다 > 알림 까지 한 번에 간다.
+    Linking.openSettings() 는 "app-settings:" 뿐이라 앱 페이지에서 멈춘다 — 못 열 때만 그리로 떨어진다. */
 export function openSystemNotificationSettings(): void {
-  Linking.openSettings().catch(() => {});
+  Linking.openURL("app-settings:notifications").catch(() => Linking.openSettings().catch(() => {}));
 }
 
 /** 앱 시작 시 한 번 호출한다 — 설치 후 첫 실행에 시스템 알림 권한 팝업을 띄운다.

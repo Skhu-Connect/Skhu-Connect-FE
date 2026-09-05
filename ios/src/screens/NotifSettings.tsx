@@ -7,7 +7,7 @@
    서버가 돌려준 5개 전체 설정으로 상태를 덮는다.
 
    기기 단위 on/off 는 iOS 알림 권한이 담당한다: 아직 안 물어봤으면 여기서 묻고(권한 허용 →
-   FCM 토큰 등록까지), 이미 껐으면 설정 앱으로 보낸다. */
+   FCM 토큰 등록까지), 그 밖에는 언제든 설정 앱으로 보낸다 — 허용한 뒤에도 버튼은 남는다. */
 import { useCallback, useEffect, useState } from "react";
 import { AppState, Pressable, ScrollView, Text, View } from "react-native";
 import { NOTIF_POINTS, pointOf, type NotifPoint, type Notification, type NotificationSettingKey } from "../data";
@@ -46,11 +46,12 @@ function Toggle({ on, label, disabled, onPress }: { on: boolean; label: string; 
   );
 }
 
-const PUSH_COPY: Record<PushStatus, { title: string; desc: string; action: string | null }> = {
+/* 세 상태 모두 버튼이 있다 — 허용한 뒤에도 기기 설정으로 가는 길은 계속 열어 둔다. */
+const PUSH_COPY: Record<PushStatus, { title: string; desc: string; action: string }> = {
   granted: {
     title: "푸시 알림 켜짐",
-    desc: "아래에서 켜 둔 종류의 알림을 이 기기로 보내드려요.",
-    action: null,
+    desc: "아래에서 켜 둔 종류의 알림을 이 기기로 보내드려요. 기기 설정에서 언제든 다시 끌 수 있어요.",
+    action: "기기 설정 열기",
   },
   undetermined: {
     title: "푸시 알림 꺼짐",
@@ -197,11 +198,9 @@ export function NotifSettingsScreen(p: NotifSettingsProps) {
                 <Text style={[t, { fontSize: 11.5, color: colors.muted, marginTop: 4, lineHeight: 17.3 }]}>{push.desc}</Text>
               </View>
             </View>
-            {push.action ? (
-              <View style={{ marginHorizontal: 16, marginTop: 10 }}>
-                <Button block onPress={onPushAction}>{push.action}</Button>
-              </View>
-            ) : null}
+            <View style={{ marginHorizontal: 16, marginTop: 10 }}>
+              <Button block variant={pushOn ? "outline" : "primary"} onPress={onPushAction}>{push.action}</Button>
+            </View>
           </>
         ) : null}
 
