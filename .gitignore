@@ -42,3 +42,8 @@ app-store-previews*/
 # 이 한 번 커밋되면 히스토리에 남는다(ios/.gitignore 와 같은 규칙).
 .env*
 !.env.example
+
+# 하네스 워크트리와 그걸 가리키는 CLAUDE.md. claude-harness 는 자체 .git 을 가진
+# 별도 레포라 커밋해봐야 gitlink 만 박히고 내용은 안 따라온다.
+CLAUDE.md
+claude-harness
