@@ -100,3 +100,23 @@ Phase 5(신규 기능 확장, 학생 웹) 실행 항목은 [roadmap-web.md](road
 - [FEAT] 학생 웹 홈 공지사항 배너 추가 — 선행: 관리자 콘솔 공지사항 작성 화면 추가. `FeedScreen.jsx` 홈(`nav === "feed"`)에 접힘 한 줄 배너를, `Header.jsx` 검색·벨 옆에 재오픈용 확성기를 넣고, 닫힘 상태는 두 컴포넌트의 공통 부모 `WebLayout` 의 `useState` 에 세션 한정으로 둔다(`localStorage` 쓰지 않는다 — iOS 와 동작을 맞춘 결정).
 - [FEAT] iOS 홈 공지사항 배너 추가 — 선행: 학생 웹 홈 공지사항 배너 추가(모양 확정). `Feed.tsx` 의 `ScrollView` 안 `Banner` 위에 배너를, `Header` 검색·벨 옆에 확성기를 넣는다. `stickyHeaderIndices` 를 `[2]` 로 밀고 `icons.tsx` 에 `megaphone` 을 추가한다. 웹과 코드를 공유하지 않아 별도 구현이다.
 - [FIX] 앱 빌드가 Firebase 설정 파일을 찾지 못하는 문제 — 선행 없음. 클라우드 빌드는 git 이 추적하는 파일만 올리는데 `GoogleService-Info.plist` 는 무시 목록에 있어 빌드가 그 자리에서 멈춘다. 이 레포는 공개라 파일을 커밋하면 Firebase 키가 그대로 노출되므로, 빌드 서비스의 파일 환경변수로 주입한다. 정적 설정 파일은 환경변수를 못 읽으니 그 위에 얇은 설정 스크립트를 얹어 해당 항목 하나만 덮어쓰고, 나머지 설정은 지금 형식 그대로 둔다. 로컬 실행은 기존 경로를 그대로 쓰게 해서 개발 흐름이 바뀌지 않아야 한다.
+
+### [FIX] 백엔드 서버 주소 이전 반영 (2026-09-06)
+
+**목표** — 백엔드가 `skhu-connect-be-production.up.railway.app` 에서 `i1000u.hueeng.com` 으로 옮겨졌다.
+웹(운영·개발)·iOS·헬스체크가 전부 새 주소를 보고, 옛 주소를 가리키는 런타임 상수가 하나도 남지 않는다.
+
+- [ ] **계약·의존** — API 계약은 그대로다. 바뀌는 것은 호스트뿐이라 화면·스토어·어댑터는 손대지 않는다.
+  런타임 상수는 네 곳이다: `vercel.json` 의 `/connect/*` rewrite 목적지, `api/health.js` 의 `BACKEND_HEALTH`,
+  `src/api/index.js` 의 dev 전용 `BASE_URL`, `ios/src/api.ts` 의 `BASE_URL`. 운영 웹은 `BASE_URL=""` 로
+  같은 오리진 rewrite 를 타므로 목적지를 정하는 것은 `vercel.json` 하나다. 새 서버는 `localhost:5173` 오리진의
+  preflight 를 이미 허용하고 있어(확인 완료) CORS 설정 변경은 필요 없다. iOS 는 네이티브 fetch 라 CORS 밖이다.
+- [ ] **순서·검증** — 상수 네 곳을 한 번에 바꾼다(부분 교체 상태가 더 위험하다 — 옛 주소는 이미 404 다).
+  완료 조건: (1) `/health` 가 `backend.status: UP` 으로 200 (2) 로그인·토큰 재발급·관리자 로그인/재발급이
+  새 호스트로 나간다 (3) 목록 조회와 글·댓글 작성이 동작한다 (4) iOS 로그인과 FCM 토큰 등록이 동작한다
+  (5) 레포에 옛 호스트를 가리키는 런타임 상수가 0건이다.
+- [ ] **재검토** — 새 의존성·추상화 없음. 호스트를 환경변수로 빼지 않는다(빌드 타임에 고정이고, 운영 목적지는
+  `vercel.json` 이 정하므로 변수를 하나 더 만들면 진실의 출처가 둘이 된다). 문서·주석의 옛 호스트 언급은
+  코드가 있는 파일의 주석과, 옛 호스트 주소를 그대로 적어 둔 문서(`README.md`·`docs/api-spec.md`·
+  `exec-plans/roadmap-web.md`)까지 같은 치환으로 고친다. `ios/appstore-external-services.md` 는 호스팅
+  제공자(법인명)까지 바뀌는 고지 문서라 이번 이슈에서 손대지 않는다 — 새 제공자 정보를 받아 따로 고친다.

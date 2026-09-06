@@ -61,7 +61,7 @@ src/
 
 ## 백엔드 연동 (Phase 6, 2026-08-07)
 
-학생 웹은 실 백엔드(`skhu-connect-be-production.up.railway.app`)로 연동됐다. **관리자 콘솔은 대응
+학생 웹은 실 백엔드(`i1000u.hueeng.com`)로 연동됐다. **관리자 콘솔은 대응
 엔드포인트가 없어 여전히 `mockDb.js` 의 별도 데모 데이터로 동작한다** — 학생 웹의 실제 청원과는
 다른 데이터셋이다(관리자가 답변해도 학생 웹에는 반영되지 않는다). 계약 차이·엔드포인트 목록은
 `docs/api-spec.md`, 이슈 분할·결정 사항은 `exec-plans/roadmap-web.md` Phase 6 을 본다.

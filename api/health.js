@@ -5,7 +5,7 @@
    브라우저에서 직접 못 찌르는 이유 — /actuator/health 에는 CORS 헤더가 없다. 서버에서
    부르면 CORS 자체가 없으므로 상태값을 그대로 읽을 수 있다. */
 
-const BACKEND_HEALTH = "https://skhu-connect-be-production.up.railway.app/actuator/health";
+const BACKEND_HEALTH = "https://i1000u.hueeng.com/actuator/health";
 
 export default async function handler(req, res) {
   const started = Date.now();

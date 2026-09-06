@@ -1,6 +1,6 @@
 /* 데이터 접근 계약. 화면·스토어는 **이 파일의 async 함수만** 호출한다.
 
-   Phase 6(백엔드 연동)에서 mock 을 실 백엔드(skhu-connect-be-production.up.railway.app) fetch 로
+   Phase 6(백엔드 연동)에서 mock 을 실 백엔드(i1000u.hueeng.com) fetch 로
    교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
@@ -22,10 +22,10 @@
 import { CATEGORY_META, adminDb } from "./mockDb.js";
 import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
 
-/* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 Railway 로 프록시해 같은 오리진이 된다.
+/* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 백엔드로 프록시해 같은 오리진이 된다.
    (백엔드 CorsConfig 허용 오리진에 서비스 도메인이 없어 CORS preflight 403 나던 것을 우회)
    dev 서버는 rewrite 가 없지만 localhost:5173 은 백엔드가 이미 허용하므로 절대경로 그대로 쓴다. */
-const BASE_URL = import.meta.env.DEV ? "https://skhu-connect-be-production.up.railway.app" : "";
+const BASE_URL = import.meta.env.DEV ? "https://i1000u.hueeng.com" : "";
 
 const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT" };
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
