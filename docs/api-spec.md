@@ -1,6 +1,6 @@
 # 실 백엔드 API 계약 (2026-08-27 갱신)
 
-`https://skhu-connect-be-production.up.railway.app` — 스웨거 `/swagger-ui/index.html`, 스펙 `/v3/api-docs`.
+`https://i1000u.hueeng.com` — 스웨거 `/swagger-ui/index.html`, 스펙 `/v3/api-docs`.
 `src/api/index.js` 를 fetch 로 교체할 때 이 문서를 원본으로 삼는다. mock 계약(`README.md` "API 계약"
 절)과의 차이만 적는다 — 같은 것은 다시 안 적는다.
 

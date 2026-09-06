@@ -1,4 +1,4 @@
-/* 실 백엔드(skhu-connect-be-production.up.railway.app) 연동 계약. 화면·App.tsx 는
+/* 실 백엔드(i1000u.hueeng.com) 연동 계약. 화면·App.tsx 는
    이 파일의 async 함수만 호출한다.
 
    웹 src/api/index.js 를 TS 로 포팅했다 — 어댑터·인증 흐름·이미 겪은 백엔드 제약(댓글 수
@@ -17,7 +17,7 @@ import { NOTIF_TYPE_TITLE, pointOf } from "./data";
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notice, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
 
-const BASE_URL = "https://skhu-connect-be-production.up.railway.app";
+const BASE_URL = "https://i1000u.hueeng.com";
 
 const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
   scholarship: "SCHOLARSHIP",
