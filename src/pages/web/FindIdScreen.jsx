@@ -24,7 +24,7 @@ function MethodToggle({ method, onChange }) {
               flex: 1,
               padding: "10px 12px",
               borderRadius: "var(--radius-md)",
-              border: active ? "1.5px solid var(--indigo-400)" : "1px solid var(--border-strong)",
+              border: active ? "1.5px solid var(--focus-border)" : "1px solid var(--border-strong)",
               background: active ? "rgba(99,102,241,.2)" : "rgba(255,255,255,.08)",
               color: active ? "#fff" : "var(--text-muted)",
               fontWeight: 700,

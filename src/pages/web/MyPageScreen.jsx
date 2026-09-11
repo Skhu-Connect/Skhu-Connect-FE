@@ -26,7 +26,7 @@ function HeroCard({ dept, loginId, stats }) {
   return (
     <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "36px 40px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
       <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 18 }}>
-        <Avatar size={64} ring />
+        <Avatar size={64} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", opacity: 0.75, textTransform: "uppercase" }}>소속 학부</div>
           <div style={{ fontSize: 22, fontWeight: 800, marginTop: 3 }}>{dept}</div>

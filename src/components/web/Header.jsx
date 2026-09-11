@@ -179,7 +179,7 @@ function AvatarMenu({ user, onSelect }) {
       width={240}
       trigger={
         <button type="button" aria-label="내 메뉴" aria-expanded={open} onClick={() => setOpen((o) => !o)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "inline-flex" }}>
-          <Avatar size={38} ring />
+          <Avatar size={38} />
         </button>
       }
     >

@@ -10,7 +10,18 @@
      Tailwind 의 미사용 토큰 트리셰이킹을 끄기 위한 것 — 인라인 style 의 var() 는
      Tailwind 스캐너가 보지 못한다.
    - --text-* 는 Tailwind 의 font-size 네임스페이스와 충돌한다. 원본의 --text-strong
-     (색상) / --text-h3 (font shorthand) 는 @theme 밖 :root 에 원래 이름으로 둔다. */
+     (색상) / --text-h3 (font shorthand) 는 @theme 밖 :root 에 원래 이름으로 둔다.
+
+   이슈 #100 ("AI 가 만든 것 같다" 피드백)으로 시각 규칙을 바꿨다. 새 화면·컴포넌트는 이것만 따른다:
+   - 색: 액센트는 인디고 하나(--color-primary). 나머지는 중립 회색 한 계열과 의미색(성공·경고·위험)뿐.
+     그라데이션·색 그림자는 쓰지 않는다. teal/violet/coral/magenta/blue 와 --gradient-hero 는
+     아직 옛 화면·관리자 콘솔이 쓰고 있어 남겨 둔 것이다 — 새로 쓰지 않는다.
+   - 모양: 컨트롤(버튼·입력·칩·배지·아이콘 버튼)은 --radius-md(6px), 떠 있는 면(모달·드롭다운·
+     토스트)과 남은 카드는 --radius-lg(10px). 알약·원형은 쓰지 않는다(아바타만 원).
+   - 그림자: 떠 있는 레이어에만 --shadow-lg. --shadow-xs/sm/md 는 none 이다.
+   - 글자: 13px 미만 금지. 크기는 --fs-* 단계만 쓴다. 보조 글씨(--text-muted)도 AA 4.5:1 이상.
+   - 다크: 시맨틱 토큰(--surface-* · --border-* · --text-* · --color-primary* · 상태색)만 다크 값을
+     가진다. 원시 팔레트(--gray-500 …)를 화면에서 직접 쓰면 다크에서 안 바뀐다. */
 
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 @import "tailwindcss";
@@ -46,77 +57,71 @@
   --magenta-500: #e12e6d;
   --blue-500: #4c6ef5;
 
-  /* ===== Semantic / status — 접수 → 검토중 → 답변 완료 =====
-     인디고(접수)·바이올렛·밝은 블루가 뒤섞인 이전 조합이 흔한 "AI 생성 대시보드" 팔레트로
-     읽힌다는 지적에 따라 재배치했다. 접수는 브랜드 인디고 대신 중립 슬레이트로 빼고,
-     검토중은 더 짙은 오커로 무게를 준다. 답변 완료(그린)는 "완료" 의미가 보편적이라 유지. */
-  --status-received-fg: #52596b;
-  --status-received-bg: #eceef2;
+  /* ===== Semantic / status — 진행중 → 검토중 → 답변 완료 =====
+     상태는 이제 색 원 없이 글자색으로만 구분한다(StatusBadge). 그래서 fg 는 흰 바탕 13px
+     글씨로도 AA 4.5:1 을 넘겨야 한다 — 답변 완료 초록을 #1b8f5e(4.1:1)에서 한 단계 내렸다. */
+  --status-received-fg: #55555e;
+  --status-received-bg: #ededef;
   --status-review-fg: #9a5b00;
   --status-review-bg: #fbead2;
-  --status-answered-fg: #1b8f5e;
-  --status-answered-bg: #ddf3e7;
-  /* 상세의 공식 답변 카드 면·테두리. answered-bg 보다 옅다 — 카드 한 장을 통째로 덮는 색이라
-     배지에 쓰는 농도로는 본문 글이 안 읽힌다. iOS tokens.js 의 같은 이름과 값이 같다. */
+  --status-answered-fg: #1a7f53;
+  --status-answered-bg: #eef8f2; /* 배지 글자(answered-fg 13px)가 AA 를 넘기는 가장 진한 면 */
+  /* 상세의 공식 답변 면·테두리. answered-bg 보다 옅다 — 한 구역을 통째로 덮는 색이라
+     배지에 쓰는 농도로는 본문 글이 안 읽힌다. */
   --status-answered-surface: #f2f9f5;
   --status-answered-line: #d9ede3;
-  --success-500: #22a06b;
+  /* 성공·위험은 채움뿐 아니라 글자색으로도 쓴다(오류 문구·도달 문구) — 흰 바탕 AA 를 맞춘 값이다. */
+  --success-500: #1a7f53;
   --warning-500: #e8912b;
-  --danger-500: #e5354a;
+  --danger-500: #d12c42;
+  --danger-fill: #d12c42; /* 흰 글자를 얹는 채움. 다크에서 --danger-500 은 글자용으로 밝아져 채움에 못 쓴다 */
+  --danger-bg: #fdf0f2;
   --info-500: #4c6ef5;
 
-  /* ===== Neutrals ===== */
+  /* ===== Neutrals — 채도 없는 회색 한 계열 =====
+     이전 회색(#f0f1f6, #23242f …)은 푸른 보라 기가 있어 화면 전체가 인디고로 물들었다.
+     --gray-500 은 흰 바탕 5:1 — 보조 글씨가 이 값이다. */
   --white: #ffffff;
-  --gray-50: #f5f6fa;
-  --gray-100: #f0f1f6; /* page background */
-  --gray-150: #e9eaf1;
-  --gray-200: #e1e2ec;
-  --gray-300: #cfd0dc;
-  --gray-400: #a9aab9;
-  --gray-500: #8b8c9c;
-  --gray-600: #6a6b7b;
-  --gray-700: #4c4d5c;
-  --gray-800: #333442;
-  --gray-900: #23242f;
+  --gray-25: #fbfbfb; /* page background */
+  --gray-50: #f5f5f6;
+  --gray-100: #f0f0f1;
+  --gray-150: #e9e9eb;
+  --gray-200: #e3e3e6;
+  --gray-300: #cfcfd4;
+  --gray-400: #a3a3ab;
+  --gray-500: #6e6e78;
+  --gray-600: #5a5a63;
+  --gray-700: #414148;
+  --gray-800: #2c2c31;
+  --gray-900: #1c1c20;
 
   /* ===== Semantic aliases ===== */
   --color-primary: var(--indigo-600);
   --color-primary-hover: var(--indigo-700);
   --color-primary-weak: var(--indigo-50);
-  --color-secondary: var(--teal-500);
-  --color-secondary-hover: var(--teal-600);
 
-  --surface-page: var(--gray-100);
+  --surface-page: var(--gray-25);
   --surface-card: var(--white);
   --surface-sunken: var(--gray-50);
   --border-subtle: var(--gray-200);
   --border-strong: var(--gray-300);
 
-  /* ===== Status dot (StatusBadge 원형 아이콘 배경) =====
-     원본: skhu_tag_components/status/*.svg 의 circle fill 그대로. 분류(CategoryTag)는
-     이제 색을 쓰지 않고 아이콘 모양으로만 구분해 --cat-* 토큰은 삭제했다 — 자세한 이유는
-     CategoryTag/StatusBadge 주석(src/components/ui/index.jsx) 참고. */
-  --status-dot-in-progress: #3778d8;
-  --status-dot-reviewing: #e09a13;
-  --status-dot-answered: #22a559;
-  --status-dot-expired: #8e949e;
+  /* ===== Radii — 컨트롤 6px · 떠 있는 면 10px ===== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 6px; /* 버튼·입력·칩·배지·아이콘 버튼 */
+  --radius-lg: 10px; /* 모달·드롭다운·토스트·남은 카드 */
+  --radius-xl: 10px;
+  --radius-pill: 999px; /* 관리자 콘솔·옛 화면만 쓴다. 새로 쓰지 않는다 */
+  --radius-full: 50%; /* 아바타 */
 
-  /* ===== Radii — cards 18px, pill buttons fully round ===== */
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px; /* icon tiles, inputs */
-  --radius-lg: 18px; /* cards */
-  --radius-xl: 24px; /* hero / large panels */
-  --radius-pill: 999px; /* buttons, chips, badges */
-  --radius-full: 50%; /* avatars, date circles */
-
-  /* ===== Shadows — soft, cool-tinted ===== */
-  --shadow-xs: 0 1px 2px rgba(38, 38, 79, 0.06);
-  --shadow-sm: 0 2px 8px rgba(38, 38, 79, 0.06);
-  --shadow-md: 0 6px 20px rgba(38, 38, 79, 0.08);
-  --shadow-lg: 0 14px 40px rgba(38, 38, 79, 0.12);
-  --shadow-primary: 0 10px 24px rgba(61, 58, 148, 0.28);
-  --shadow-magenta: 0 12px 28px rgba(225, 46, 109, 0.28);
+  /* ===== Shadows — 떠 있는 레이어에만 =====
+     xs/sm/md 는 카드에 깔던 그림자다. 카드를 걷어내는 중이라 값부터 없앴다 —
+     남은 사용처는 화면을 옮기면서 지운다. */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 12px 32px rgba(20, 20, 24, 0.14);
 
   /* ===== Fonts ===== */
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, sans-serif;
@@ -132,10 +137,11 @@
   --text-on-primary: var(--white);
 
   --focus-ring: color-mix(in srgb, var(--indigo-500) 45%, transparent);
+  --focus-border: var(--indigo-500); /* 입력칸 포커스 테두리 */
+  --scrim: rgba(20, 20, 24, 0.45); /* 모달 뒤 어둠 */
 
-  /* --- Signature gradients --- */
+  /* --- 옛 히어로 그라데이션. 옛 화면·관리자 콘솔 전용 — 새로 쓰지 않는다 --- */
   --gradient-hero: linear-gradient(100deg, #3d5ab5 0%, #34348a 55%, #26264f 100%);
-  --gradient-mileage: linear-gradient(90deg, #7a5cd0 0%, #e12e6d 100%);
 
   /* --- Weights --- */
   --fw-regular: 400;
@@ -144,17 +150,19 @@
   --fw-bold: 700;
   --fw-extrabold: 800;
 
-  /* --- Type scale (px) --- */
-  --fs-caption: 12px;
-  --fs-sm: 13px;
-  --fs-body: 14px;
+  /* --- Type scale (px) — 13 · 14 · 15 · 16 · 17 · 20 · 24 · 28 ---
+     13px 가 바닥이다. 16px 은 입력칸 전용 — iOS 사파리·에타 웹뷰는 16px 미만 입력칸에 포커스하면
+     화면을 확대한다. */
+  --fs-caption: 13px;
+  --fs-sm: 14px;
+  --fs-body: 15px;
   --fs-md: 16px;
-  --fs-lg: 18px;
+  --fs-lg: 17px;
   --fs-xl: 20px;
   --fs-2xl: 24px;
-  --fs-title: 28px; /* card / section titles */
-  --fs-display: 40px; /* big numerals */
-  --fs-display-lg: 56px; /* hero counts */
+  --fs-title: 28px;
+  --fs-display: 40px;
+  --fs-display-lg: 56px;
 
   --lh-tight: 1.15;
   --lh-snug: 1.3;
@@ -199,6 +207,50 @@
   color-scheme: light;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* 다크 토큰. 지금은 data-theme="dark" 를 단 요소 안에서만 켜진다(/_ds 의 다크 열).
+   학생 화면을 전부 시맨틱 토큰으로 옮긴 뒤 prefers-color-scheme 으로 페이지 전체에 연다 —
+   그 전에 열면 아직 #fff 를 직접 칠한 화면들이 다크 위에 흰 상자로 뜬다.
+   시맨틱 토큰만 다시 정의한다. 원시 팔레트는 라이트 값 그대로다. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #141416;
+  --surface-card: #1c1c1f;
+  --surface-sunken: #242428;
+  --border-subtle: #2e2e33;
+  --border-strong: #46464d;
+
+  --text-strong: #f1f1f3;
+  --text-body: #cfcfd4;
+  --text-muted: #9e9ea7;
+  --text-on-primary: #ffffff;
+
+  /* 흰 글자가 AA 를 넘기면서 어두운 바탕에서 묻히지 않는 인디고 */
+  --color-primary: #5b58c4;
+  --color-primary-hover: #6a67cf;
+  --color-primary-weak: #25243d;
+  --focus-ring: rgba(143, 140, 232, 0.45);
+  --focus-border: #8f8ce8;
+  --scrim: rgba(0, 0, 0, 0.6);
+
+  --status-received-fg: #b4b4bc;
+  --status-received-bg: #26262b;
+  --status-review-fg: #e8b25a;
+  --status-review-bg: #3a2e1a;
+  --status-answered-fg: #5cc98f;
+  --status-answered-bg: #173326;
+  --status-answered-surface: #15241c;
+  --status-answered-line: #1f3a2c;
+  --success-500: #5cc98f;
+  --danger-500: #ff7b88;
+  --danger-fill: #c23548;
+  --danger-bg: #3a1d22;
+
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  background: var(--surface-page);
+  color: var(--text-body);
 }
 
 /* tokens/base.css + .dc.html 의 html,body{margin:0;background:var(--surface-page)} */
@@ -247,6 +299,110 @@ button {
 
 p {
   margin-block: 1em;
+}
+
+/* ===== DS 상태 스타일 (components/ui) =====
+   인라인 style 로는 :hover · :active · :focus-visible · :disabled 를 못 쓴다. 색·테두리·상태는
+   여기, 크기·간격은 컴포넌트 인라인 style 에 둔다. variant 는 data-variant 로 고른다. */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.ds-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.ds-btn:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 2px;
+}
+.ds-btn[data-variant="primary"] {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+.ds-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+.ds-btn[data-variant="outline"] {
+  background: var(--surface-card);
+  color: var(--text-strong);
+  border-color: var(--border-strong);
+}
+.ds-btn[data-variant="ghost"] {
+  background: transparent;
+  color: var(--text-body);
+}
+.ds-btn[data-variant="ghost"][data-icon] {
+  color: var(--text-muted);
+}
+.ds-btn[data-variant="outline"]:hover:not(:disabled),
+.ds-btn[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ds-btn[data-variant="danger"] {
+  background: var(--danger-fill);
+  color: #fff;
+}
+.ds-btn[data-variant="danger"]:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+/* 비활성은 흐리게 만든 인디고(연보라)가 아니라 중립 회색 면이다 — 모든 variant 공통. */
+.ds-btn:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+}
+
+.ds-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.ds-field:focus-within,
+.ds-control:focus {
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.ds-field[data-error],
+.ds-control[data-error] {
+  border-color: var(--danger-500);
+  box-shadow: none;
+}
+.ds-control {
+  width: 100%;
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: none;
+  color: var(--text-strong);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.ds-field input::placeholder,
+.ds-control::placeholder {
+  color: var(--text-muted);
+}
+
+/* 배경은 인라인 style 에 두지 않는다 — 인라인이 :hover 규칙을 이긴다. */
+.ds-menu-item {
+  background: none;
+}
+.ds-menu-item:hover {
+  background: var(--surface-sunken);
 }
 
 /* 로그인·회원가입 폼(layouts/AuthLayout.jsx)은 배경 영상 위에 얹혀 밝은 팔레트로 뒤집힌다.

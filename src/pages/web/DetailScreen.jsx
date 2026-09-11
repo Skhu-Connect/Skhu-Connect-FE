@@ -18,7 +18,7 @@ function ShareLink({ url }) {
       <Icon name="link" size={18} color="var(--indigo-600)" />
       <span style={{ flex: 1, fontSize: 13.5, color: "var(--indigo-700)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{url}</span>
       <Button
-        variant={copied ? "secondary" : "outline"}
+        variant="outline"
         size="sm"
         leadingIcon={<Icon name={copied ? "check" : "share"} size={15} />}
         onClick={() => {
