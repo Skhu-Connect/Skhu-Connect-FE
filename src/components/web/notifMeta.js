@@ -18,8 +18,6 @@ export const NOTIF_POINTS = [
     desc: "내 건의가 목표 요청의 60%·100%에 닿거나, 요청한 건의가 검토에 들어가면 알려드려요.",
     types: ["PETITION_AGREEMENT_60_PERCENT", "PETITION_AGREEMENT_100_PERCENT", "PETITION_UNDER_REVIEW"],
     icon: "trending",
-    bg: "var(--status-review-bg)",
-    fg: "var(--status-review-fg)",
   },
   {
     key: "answer",
@@ -27,8 +25,6 @@ export const NOTIF_POINTS = [
     desc: "내가 쓰거나 요청한 건의에 학교의 공식 답변이 올라오면 알려드려요.",
     types: ["PETITION_ANSWERED"],
     icon: "checkCircle",
-    bg: "var(--status-answered-bg)",
-    fg: "var(--status-answered-fg)",
   },
   {
     key: "reply",
@@ -36,8 +32,6 @@ export const NOTIF_POINTS = [
     desc: "내가 쓴 댓글에 다른 학생이 답글을 달면 알려드려요.",
     types: ["COMMENT_REPLY"],
     icon: "message",
-    bg: "var(--indigo-50)",
-    fg: "var(--indigo-600)",
   },
   {
     key: "like",
@@ -45,8 +39,6 @@ export const NOTIF_POINTS = [
     desc: "내가 쓴 댓글이나 답글에 공감이 눌리면 알려드려요.",
     types: ["COMMENT_LIKE", "REPLY_LIKE"],
     icon: "heart",
-    bg: "#FCE7E9",
-    fg: "var(--coral-600)",
   },
   {
     key: "notice",
@@ -54,8 +46,6 @@ export const NOTIF_POINTS = [
     desc: "학생회·관리자가 새 공지를 올리면 알려드려요.",
     types: ["NOTICE"],
     icon: "fileText",
-    bg: "var(--gray-150)",
-    fg: "var(--gray-700)",
   },
   {
     key: "report",
@@ -63,8 +53,6 @@ export const NOTIF_POINTS = [
     desc: "내가 신고한 글·댓글의 처리 결과나, 내가 쓴 글·댓글이 숨김·계정 정지된 사실을 알려드려요.",
     types: ["REPORT_DISMISSED", "REPORT_ACTION_TAKEN", "CONTENT_HIDDEN", "ACCOUNT_LOGIN_BANNED"],
     icon: "flag",
-    bg: "var(--teal-50)",
-    fg: "var(--teal-600)",
   },
 ];
 
@@ -84,7 +72,10 @@ export const NOTIF_TYPE_TITLE = {
   ACCOUNT_LOGIN_BANNED: "로그인 제한",
 };
 
-const FALLBACK = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", bg: "var(--gray-150)", fg: "var(--gray-700)" };
+/* 종류별 색(bg/fg)은 뺐다(이슈 #100). 여섯 종류에 여섯 색을 물려 놓으니 헤더 드롭다운·
+   마이페이지 알림함·알림 설정 세 화면에 액센트가 한꺼번에 퍼졌는데, 정작 종류는 바로 옆
+   아이콘과 제목이 이미 말해 준다. 타일 모양은 index.css 의 .notif-tile 이 맡는다. */
+const FALLBACK = { key: "etc", title: "알림", desc: "", types: [], icon: "bell" };
 
 /** 서버 NotificationType → 그 알림이 속한 포인트. 모르는 종류(백엔드가 enum 을 늘린 경우)는 회색 기본값. */
 export const NOTIF_META = Object.fromEntries(NOTIF_POINTS.flatMap((p) => p.types.map((type) => [type, p])));

@@ -128,7 +128,7 @@ function NotifBell() {
                 }}
                 style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "12px 16px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
               >
-                <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: m.bg, color: m.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div className="notif-tile" style={{ width: 32, height: 32 }}>
                   <Icon name={m.icon} size={16} />
                 </div>
                 <div style={{ minWidth: 0 }}>

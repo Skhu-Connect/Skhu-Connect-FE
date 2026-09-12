@@ -54,7 +54,7 @@ function PointCard({ point, total, unread, selected, enabled, pending, onSelect,
         aria-pressed={selected}
         style={{ display: "flex", alignItems: "flex-start", gap: 13, flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-sans)" }}
       >
-        <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: point.bg, color: point.fg, display: "flex", alignItems: "center", justifyContent: "center", opacity: enabled ? 1 : 0.45 }}>
+        <div className="notif-tile" style={{ width: 36, height: 36, opacity: enabled ? 1 : 0.45 }}>
           <Icon name={point.icon} size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -203,7 +203,7 @@ export default function NotificationSettingsScreen() {
                   }}
                   style={{ display: "flex", gap: 11, width: "100%", textAlign: "left", padding: "13px 18px", background: n.read ? "transparent" : "var(--indigo-50)", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
                 >
-                  <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: m.bg, color: m.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div className="notif-tile">
                     <Icon name={m.icon} size={17} />
                   </div>
                   <div>
