@@ -764,6 +764,14 @@ p {
   color: var(--text-body);
   font-variant-numeric: tabular-nums;
 }
+/* 메뉴 슬롯. 메뉴가 없는 행에서도 폭을 차지해 앞의 D-day 가 밀려나지 않게 한다.
+   32px 는 ActionMenu 안쪽 IconButton 의 size 와 같은 값이다. */
+.petition-row-menu {
+  display: inline-flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  width: 32px;
+}
 .petition-row h3 {
   margin: var(--space-2) 0 var(--space-2);
   font-size: var(--fs-lg);

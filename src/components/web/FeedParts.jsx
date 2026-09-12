@@ -57,15 +57,21 @@ export function PetitionRow({ p, author, onReport, onBlock, onDelete }) {
               adaptPetition(api/index.js)이 date: "" 를 내는데, 그때 span 이 사라지면 앵커가
               통째로 없어져 메뉴가 상태 배지 옆까지 튄다. 빈 span 은 폭 0 이라 보이지 않는다. */}
           <span className="petition-row-date">{p.date}</span>
-          {(onReport || onBlock || onDelete) && (
-            <ActionMenu
-              label="게시글 메뉴"
-              style={{ marginLeft: 0 }}
-              onReport={onReport}
-              onBlock={onBlock && (() => setBlocking(true))}
-              onDelete={onDelete}
-            />
-          )}
+          {/* 메뉴 자리는 메뉴가 없을 때도 비워 둔다. 신고·차단·삭제가 모두 막힌 행(내 글인데
+              요청이 이미 들어와 삭제도 안 되는 경우)에서는 메뉴가 통째로 빠지는데, 그러면
+              위 날짜가 그 자리까지 40px 밀려나 행마다 D-day 위치가 어긋난다.
+              동작 없는 빈 메뉴를 그릴 수는 없으니 자리만 잡는다. */}
+          <span className="petition-row-menu">
+            {(onReport || onBlock || onDelete) && (
+              <ActionMenu
+                label="게시글 메뉴"
+                style={{ marginLeft: 0 }}
+                onReport={onReport}
+                onBlock={onBlock && (() => setBlocking(true))}
+                onDelete={onDelete}
+              />
+            )}
+          </span>
         </div>
         <h3>
           <Link to={`/p/${p.id}`}>{p.title}</Link>
