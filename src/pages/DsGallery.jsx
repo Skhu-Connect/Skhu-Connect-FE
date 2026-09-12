@@ -15,12 +15,12 @@ import {
   Icon,
   IconButton,
   Input,
-  PetitionCard,
   Select,
   StatusBadge,
   Textarea,
   ThresholdBar,
 } from "../components/ui";
+import { PetitionRow } from "../components/web/FeedParts";
 
 const CATS = Object.keys(CATEGORIES);
 const STATUSES = ["received", "reviewing", "answered", "expired"];
@@ -113,7 +113,7 @@ function Gallery({ theme }) {
         </div>
       </Section>
 
-      <Section title="CategoryTag · StatusBadge" note="글자만. 상태는 글자색 하나로 구분">
+      <Section title="CategoryTag · StatusBadge" note="카테고리는 중립 글자. 상태는 진한 단색 면 + 흰 글자(만료만 회색 면)">
         <Row>
           {CATS.map((c) => (
             <CategoryTag key={c} category={c} />
@@ -145,22 +145,24 @@ function Gallery({ theme }) {
         </div>
       </Section>
 
-      <Section title="Card · PetitionCard" note="카드는 테두리만. PetitionCard 는 피드 화면을 옮길 때 목록 행으로 바뀐다">
+      <Section title="Card · PetitionRow" note="카드는 테두리만. 피드는 카드 그리드 대신 목록 행이다 — 제목이 링크라 키보드로 열린다">
         <Card style={{ width: "100%" }}>기본 Card</Card>
-        <PetitionCard
-          style={{ width: "100%" }}
-          title="중앙도서관 시험기간 24시간 개방 요청"
-          excerpt="시험기간만이라도 열람실을 24시간 운영해 주세요. 밤 12시에 문을 닫으면 자리 경쟁이 너무 심합니다."
-          category="library"
-          status="reviewing"
-          current={512}
-          threshold={480}
-          basisLabel="전체 학생"
-          date="2일 전"
-          comments={47}
-          voted
-          onClick={() => {}}
-        />
+        <div style={{ width: "100%" }}>
+          <PetitionRow
+            p={{
+              id: 1,
+              title: "중앙도서관 시험기간 24시간 개방 요청",
+              category: "library",
+              status: "reviewing",
+              current: 512,
+              threshold: 480,
+              author: "익명",
+              date: "D-12",
+              comments: 47,
+              mine: false,
+            }}
+          />
+        </div>
       </Section>
     </div>
   );

@@ -70,6 +70,15 @@
      배지에 쓰는 농도로는 본문 글이 안 읽힌다. */
   --status-answered-surface: #f2f9f5;
   --status-answered-line: #d9ede3;
+  /* 상태 배지는 파스텔 면을 걷고 진한 단색 + 흰 글자로 간다(이슈 #100 피드백).
+     위의 --status-*-bg/fg 쌍은 그대로 둔다 — 알림 아이콘 타일(notifMeta)·Badge tone·
+     관리자 대시보드·로그가 아직 그 쌍을 쓰고, 피드 목록의 "담당 부서 전달됨"(.reached)도
+     -answered-fg 를 글자색으로 쓴다. 그 둘을 한 토큰으로 합치면 어두운 면에 어두운 글리프가
+     얹힌다. 흰 글자 대비: 7.56 · 6.76 · 7.90:1 (AA 통과).
+     다크에서도 같은 채움을 쓴다 — 상태 식별이 테마마다 달라지지 않게. */
+  --status-received-solid: #4b5563;
+  --status-review-solid: #8a4b1f;
+  --status-answered-solid: #235b47;
   /* 성공·위험은 채움뿐 아니라 글자색으로도 쓴다(오류 문구·도달 문구) — 흰 바탕 AA 를 맞춘 값이다. */
   --success-500: #1a7f53;
   --warning-500: #e8912b;
@@ -410,4 +419,663 @@ p {
    color-scheme: dark 가 주는 UA 기본값(흰색 50%)이 대비 3.5:1 로 AA 미달이라 여기서만 올린다. */
 .auth-on-video input::placeholder {
   color: rgba(255, 255, 255, 0.72);
+}
+
+/* ===== 상태 배지 (components/ui StatusBadge) =====
+   글자색 하나로만 구분하던 것을 진한 단색 면으로 바꿨다. 만료는 상태가 아니라 시간이
+   지난 것이라 의미색을 주지 않는다 — 중립 회색 면이다. */
+.ds-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--status-received-solid);
+  color: #fff;
+  white-space: nowrap;
+}
+.ds-status[data-status="reviewing"] {
+  background: var(--status-review-solid);
+}
+.ds-status[data-status="answered"] {
+  background: var(--status-answered-solid);
+}
+.ds-status[data-status="expired"] {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+/* ===== 학생 웹 셸 · 피드 (이슈 #100) =====
+   이 화면들만 인라인 style 대신 클래스를 쓴다. 모바일에서 헤더가 세 줄로 접히고 본문이
+   한 열로 내려가는 것이 이번 교체의 핵심인데, 인라인 style 로는 미디어 쿼리를 못 쓴다.
+   글자 크기는 --fs-* 단계만 쓴다(13px 바닥). 간격도 --space-* 축을 먼저 쓰되, 그 축에 없는
+   레이아웃 치수(열 폭·사이드바 여백처럼 값 자체가 구도인 것)는 4px 격자 위 리터럴 px 로 둔다 —
+   억지로 축에 맞추면 구도가 틀어진다. 없애려는 건 화면마다 제각각인 소수 px 다. */
+
+.web-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.web-header-inner {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.web-header-inner > a {
+  flex-shrink: 0;
+}
+.web-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  align-self: stretch;
+  white-space: nowrap;
+}
+/* 밑줄이 글자에 붙게 a 를 세로로 늘린다 — 원래 NavLink 는 body 의 line-height 1.5 를
+   상속받아 밑줄이 4.5px 내려가 있었다. */
+.web-header-nav a {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-body);
+  text-decoration: none;
+}
+.web-header-nav a:hover {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.web-header-nav a[aria-current="page"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+/* 접었다 펴는 검색 대신 늘 열린 칸이다 — 접힌 검색은 아이콘을 한 번 더 누르게 하고,
+   열릴 때 옆 항목을 밀어 헤더가 흔들렸다. */
+.web-header-search {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 196px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.web-header-search:focus-within {
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+/* 16px — iOS 사파리·에타 웹뷰는 16px 미만 입력칸에 포커스하면 화면을 확대한다. */
+.web-header-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  color: var(--text-strong);
+}
+.web-header-search input::placeholder {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.web-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feed-page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 32px var(--page-gutter) 80px;
+}
+/* 그라데이션 히어로를 걷어낸 자리. 42px 제목 + 장식 원 두 개가 첫 화면을 덮어 건의 목록이
+   1095px 아래에 있었다. 캠퍼스 사진은 이미 있던 자산을 그대로 쓴다. */
+.feed-intro {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  align-items: center;
+  min-height: 176px;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
+}
+.feed-intro-copy {
+  padding: var(--space-6) var(--space-8);
+}
+.feed-intro h1 {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+  word-break: keep-all;
+}
+.feed-intro p {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--text-body);
+  word-break: keep-all;
+}
+.feed-intro img {
+  width: 100%;
+  height: 176px;
+  object-fit: cover;
+  object-position: center 55%;
+}
+
+.feed-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 60px;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.feed-notice-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-body);
+  text-align: left;
+}
+.feed-notice-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feed-notice-count {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.feed-notice-body {
+  margin: 0 0 var(--space-5) 30px;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--text-body);
+  white-space: pre-wrap;
+}
+.feed-notice-body time {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+/* 목록이 본문, 급상승·기간 요약이 보조다. 둘을 위아래로 쌓으면 건의가 화면 밖으로 밀린다. */
+.feed-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 48px;
+  margin-top: var(--space-8);
+  align-items: start;
+}
+.feed-layout[data-single] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.feed-main {
+  min-width: 0;
+  scroll-margin-top: var(--space-5);
+}
+
+.feed-page-title {
+  margin: var(--space-6) 0 0;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+}
+.feed-page-title span {
+  margin-left: var(--space-2);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-regular);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.feed-page-desc {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--text-muted);
+}
+
+.feed-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.feed-list-head h2 {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+}
+.feed-list-head h2 span {
+  margin-left: 6px;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-regular);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* 테두리가 있어야 컨트롤로 읽힌다 — 흰 면이 --surface-page(#fbfbfb) 위에 놓여
+   테두리 없이는 UA 셰브론만 남고 그냥 글자로 보인다. 검색칸과 같은 선을 쓴다. */
+.feed-sort {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+/* 알약 칩을 밑줄 탭으로 바꿨다 — 인디고로 채운 칩이 같은 줄의 건의 등록 버튼과 강조를 다퉜다. */
+.feed-cat-tabs {
+  display: flex;
+  gap: 22px;
+  margin-top: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+.feed-cat-tabs button {
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 0 1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.feed-cat-tabs button[aria-pressed="true"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+
+/* 카드 그리드를 걷어낸 목록 행. 테두리 상자가 반복되면 제목보다 상자가 먼저 읽힌다. */
+.petition-row {
+  /* 요청 버튼 열의 예약 폭. 모바일에서 버튼이 행 오른쪽 아래에 겹쳐 앉고 꼬리줄이 그 폭을
+     비워 둬야 하는데, 두 값이 따로 놀면 긴 꼬리줄이 버튼 밑으로 흐른다. 한 값을 공유한다.
+     가장 넓은 경우는 네 자리 요청 수 + 요청함(체크 아이콘) 상태다(실측 138px). */
+  --row-action-w: 140px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.petition-row-info {
+  flex: 1;
+  min-width: 0;
+}
+.petition-row-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.petition-row-date {
+  margin-left: auto;
+  color: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+.petition-row h3 {
+  margin: var(--space-2) 0 var(--space-2);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-normal);
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.petition-row h3 a {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.petition-row h3 a:hover {
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.petition-row-foot {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 14px;
+  row-gap: var(--space-1);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.petition-row-foot .reached {
+  color: var(--status-answered-fg);
+}
+.petition-row-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.petition-row-action > span {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-empty {
+  padding: 64px var(--space-5);
+  text-align: center;
+  color: var(--text-muted);
+}
+.feed-empty > svg {
+  margin: 0 auto;
+}
+.feed-empty h3 {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text-strong);
+}
+.feed-empty p {
+  margin: 6px 0 0;
+  font-size: var(--fs-sm);
+}
+
+.feed-side {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 28px;
+}
+.feed-side h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+}
+.feed-period {
+  display: flex;
+  gap: 2px;
+  margin-top: var(--space-4);
+  padding: 3px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+.feed-period button {
+  flex: 1;
+  min-height: 34px;
+  padding: 6px var(--space-1);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.feed-period button[aria-pressed="true"] {
+  background: var(--surface-card);
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+.feed-trending ol {
+  margin: var(--space-3) 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.feed-trending li {
+  display: flex;
+  gap: var(--space-3);
+  padding: 14px 0;
+}
+.feed-trending .rank {
+  flex: none;
+  width: 12px;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+.feed-trending li a {
+  min-width: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.feed-trending li a > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.feed-trending li a:hover > span {
+  text-decoration: underline;
+}
+.feed-trending small {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: 6px;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.feed-trending small b {
+  font-weight: var(--fw-medium);
+}
+.feed-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.feed-summary {
+  margin-top: var(--space-5);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+}
+.feed-summary h2 span {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-regular);
+  color: var(--text-muted);
+}
+.feed-summary dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 var(--space-3);
+}
+.feed-summary dt {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.feed-summary dd {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.feed-summary dd span {
+  margin-left: 3px;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-regular);
+  color: var(--text-muted);
+}
+.feed-summary > p {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-relaxed);
+  color: var(--text-muted);
+}
+
+@media (max-width: 1100px) {
+  .web-header-inner {
+    gap: 18px;
+  }
+  .web-header-nav {
+    gap: var(--space-4);
+  }
+  .web-header-search {
+    width: 150px;
+  }
+  .feed-layout {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 28px;
+  }
+  .feed-side {
+    padding-left: var(--space-5);
+  }
+}
+
+/* 모바일: 헤더는 로고·행동 / 내비 / 검색 세 줄로 접고, 본문은 한 열이다.
+   기존 카드 그리드는 최소 340px 열 + 좌우 24px 여백이라 390px 화면에서 가로로 넘쳤다. */
+@media (max-width: 767px) {
+  .web-header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--space-3);
+    padding: var(--space-3) var(--space-4) 0;
+  }
+  .web-header-inner > a {
+    grid-area: 1 / 1;
+  }
+  .web-header-actions {
+    grid-area: 1 / 2;
+  }
+  .web-header-nav {
+    grid-area: 2 / 1 / auto / -1;
+    margin-top: var(--space-2);
+    gap: 28px;
+    min-height: 44px;
+  }
+  .web-header-search {
+    grid-area: 3 / 1 / auto / -1;
+    width: 100%;
+    height: 44px;
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .feed-page {
+    padding: var(--space-5) var(--space-4) 48px;
+  }
+  .feed-intro {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .feed-intro-copy {
+    padding: var(--space-6) var(--space-5);
+  }
+  .feed-intro h1 {
+    font-size: var(--fs-2xl);
+    line-height: var(--lh-snug);
+  }
+  .feed-intro img {
+    display: none;
+  }
+  .feed-notice {
+    gap: var(--space-2);
+    min-height: 56px;
+  }
+  .feed-notice-count {
+    display: none;
+  }
+  .feed-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    margin-top: var(--space-6);
+  }
+  .feed-page-title {
+    font-size: var(--fs-2xl);
+  }
+  .feed-sort {
+    min-height: 44px;
+  }
+  .feed-cat-tabs {
+    gap: var(--space-5);
+    margin-top: var(--space-1);
+  }
+  /* 요청 버튼을 행 오른쪽 아래에 고정하고 본문은 폭을 다 쓴다 — 가로로 나란히 두면
+     제목이 좁아져 서너 줄로 접힌다. */
+  .petition-row {
+    position: relative;
+    gap: var(--space-2);
+    padding: var(--space-5) 0;
+    align-items: flex-end;
+  }
+  .petition-row-info {
+    flex-basis: 100%;
+  }
+  /* 제목도 버튼 폭을 비워 둔다. 버튼 열은 position:absolute 라 흐름에서 빠져 있고, 그 윗변이
+     꼬리줄보다 17px 위로 올라와 제목 마지막 줄을 파고든다 — 꼬리줄에만 예약하면 실측 세로
+     여유가 0px 이다. 긴 제목이 한 줄 일찍 접히는 건 그 자리에 컨트롤이 있으니 맞는 동작이다. */
+  .petition-row h3 {
+    margin: var(--space-2) 0 var(--space-3);
+    padding-right: var(--row-action-w);
+    font-size: var(--fs-md);
+  }
+  .petition-row-foot {
+    gap: 6px var(--space-2);
+    padding-right: var(--row-action-w);
+    min-height: 48px;
+    align-content: center;
+  }
+  .petition-row-action {
+    position: absolute;
+    right: 0;
+    bottom: var(--space-5);
+    gap: var(--space-1);
+    min-width: var(--row-action-w);
+  }
+  .feed-side {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-6) 0 0;
+  }
+  .feed-period button {
+    min-height: 44px;
+  }
+  .feed-summary dl {
+    gap: var(--space-6);
+  }
 }

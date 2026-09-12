@@ -1,85 +1,80 @@
 /* 피드 (ROADMAP 1-3). 원본: web-app-v7.jsx 186–292행.
    한 화면이 경로 3개(/ · /answered · /mine)와 검색 상태에 따라 머리말만 갈아 끼운다 —
-   쪼개면 그리드·필터가 세 번 중복된다.
-   카테고리 칩·정렬 토글은 화면 useState 다(스토어 아님). 검색어는 Header 가 들고
-   Outlet context 로 내려온다. */
+   쪼개면 목록·필터가 세 번 중복된다.
+   카테고리 탭·정렬은 화면 useState 다(스토어 아님). 검색어는 Header 가 들고 Outlet context 로 내려온다.
+
+   이슈 #100 ("AI 가 만든 것 같다")로 화면을 다시 짰다. 걷어낸 것:
+   - 그라데이션 히어로(42px 제목 + 장식 원 두 개) → 얕은 안내 면 + 이미 있던 캠퍼스 사진
+   - 급상승·기간요약 카드 두 장이 목록 위를 덮던 구조 → 목록이 본문, 둘은 오른쪽 보조 열
+     (1440px 에서 첫 건의 제목이 y=1095px 에 있었다)
+   - 분홍 통계 타일·인디고 알약 칩 → 중립 숫자·밑줄 탭. 강조는 인디고 하나로 모은다
+   - 카드 그리드 → 목록 행(FeedParts). 최소 340px 열이 390px 화면에서 가로로 넘쳤다
+   레이아웃 클래스는 index.css 의 .feed-* 다 — 모바일 한 열 접힘에 미디어 쿼리가 필요하다.
+
+   데이터·필터·정렬·기간 계산은 그대로다. 화면만 바꾼다. */
 
 import { useRef, useState } from "react";
-import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { usePetitions } from "../../stores/petitions";
 import { Button, CATEGORIES, ConfirmDialog, Icon, IconButton } from "../../components/ui";
-import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
+import { EmptyState, PageIntro, PetitionList } from "../../components/web/FeedParts";
 import { toast } from "../../components/Toast";
 import { ReportDialog } from "../../components/web/ReportDialog";
 
 /* 카카오톡 채팅방 상단 공지처럼 — 기본은 현재 공지 제목 한 줄(처음엔 최신 것), 펼치면 그 한 건만
    본문까지 보이고 오른쪽 버튼으로 다음 공지로 넘어간다. 마지막 다음은 처음으로 돈다 — 버튼이
-   하나뿐이라 되돌아갈 다른 길이 없다. 닫으면 헤더 확성기로 되살린다(닫힘은 WebLayout 이 들고 있다). */
-function NoticeBanner({ notices, onClose }) {
+   하나뿐이라 되돌아갈 다른 길이 없다. 닫으면 헤더 확성기로 되살린다(닫힘은 WebLayout 이 들고 있다).
+   인디고 면 + 알약 개수 배지였던 것을 한 줄 띠로 낮췄다 — 공지는 본문이 아니라 알림이다. */
+function NoticeRow({ notices, onClose }) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
   const current = notices[idx] ?? notices[0];
   const many = notices.length > 1;
-  const row = { display: "flex", alignItems: "center", gap: 10 };
+
   return (
-    <div style={{ background: "var(--indigo-50)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "10px 12px" }}>
-      <div style={row}>
-        <Icon name="megaphone" size={17} color="var(--indigo-600)" />
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-          style={{ ...row, flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-sans)", textAlign: "left" }}
-        >
+    <>
+      <div className="feed-notice">
+        <Icon name="megaphone" size={17} color="var(--color-primary)" />
+        <button type="button" className="feed-notice-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {/* 접혔을 때만 한 줄로 자른다 — 펼치면 이 줄이 그 공지의 제목 역할을 그대로 해서 본문 위에 제목을 또 쓰지 않는다. */}
-          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: open ? "normal" : "nowrap", fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>
-            {current.title}
-          </span>
-          {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
-          {many && (
-            <span style={{ flexShrink: 0, minWidth: 18, padding: "1px 6px", borderRadius: "var(--radius-pill)", background: "var(--indigo-600)", color: "#fff", fontSize: 11, fontWeight: 700, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-              {notices.length}
-            </span>
-          )}
-          <span style={{ display: "flex", transform: open ? "rotate(180deg)" : "none", flexShrink: 0 }}>
-            <Icon name="chevronDown" size={17} color="var(--text-muted)" />
-          </span>
+          <span className="feed-notice-title">{current.title}</span>
+          <Icon name="chevronDown" size={16} style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : undefined }} />
         </button>
-        <IconButton variant="ghost" size={26} ariaLabel="공지사항 닫기" onClick={onClose}>
-          <Icon name="x" size={15} />
+        {/* 접힌 줄에서 "더 있다"를 알리는 건 이 숫자뿐이다 — 한 건이면 알릴 것이 없어 안 그린다. */}
+        {many && (
+          <>
+            <span className="feed-notice-count">
+              {idx + 1} / {notices.length}
+            </span>
+            <IconButton variant="ghost" size={32} ariaLabel="다음 공지" onClick={() => setIdx((i) => (i + 1) % notices.length)}>
+              <Icon name="chevronRight" size={16} />
+            </IconButton>
+          </>
+        )}
+        <IconButton variant="ghost" size={32} ariaLabel="공지사항 닫기" onClick={onClose}>
+          <Icon name="x" size={16} />
         </IconButton>
       </div>
       {open && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{current.content}</p>
-            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{current.date}</div>
-          </div>
-          {many && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{idx + 1} / {notices.length}</span>
-              <IconButton variant="ghost" size={28} ariaLabel="다음 공지" onClick={() => setIdx((i) => (i + 1) % notices.length)}>
-                <Icon name="chevronRight" size={16} />
-              </IconButton>
-            </div>
-          )}
-        </div>
+        <p className="feed-notice-body">
+          {current.content}
+          <time>{current.date}</time>
+        </p>
       )}
-    </div>
+    </>
   );
 }
 
-function HeroBanner() {
+/** 홈 머리말. 문구는 원래 히어로의 것을 그대로 쓴다 — 바꾼 것은 크기와 배경뿐이다. */
+function FeedIntro() {
   return (
-    <div style={{ position: "relative", overflow: "hidden", background: "var(--gradient-hero)", borderRadius: "var(--radius-xl)", padding: "48px 44px", color: "#fff", boxShadow: "var(--shadow-md)" }}>
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 620 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>익명 건의 · 요청으로 움직이는 캠퍼스</div>
-        <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.22 }}>당신의 목소리를 들려주세요</h1>
-        <p style={{ margin: "16px 0 0", fontSize: 16, opacity: 0.9, lineHeight: 1.65 }}>요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면<br />담당 부서로 자동 전달됩니다.</p>
+    <section className="feed-intro">
+      <div className="feed-intro-copy">
+        <h1>당신의 목소리를 들려주세요</h1>
+        <p>요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면 담당 부서로 자동 전달됩니다.</p>
       </div>
-      <div style={{ position: "absolute", right: -60, top: -40, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,.06)" }} />
-      <div style={{ position: "absolute", right: 80, bottom: -90, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,.05)" }} />
-    </div>
+      <img src="/campus-hero.jpg" alt="성공회대학교 캠퍼스" width="360" height="176" />
+    </section>
   );
 }
 
@@ -96,93 +91,6 @@ const PERIODS = [
   { key: "all", label: "전체", ms: null },
 ];
 
-function PeriodTabs({ period, onChange }) {
-  return (
-    <div style={{ display: "inline-flex", padding: 3, background: "var(--surface-sunken)", borderRadius: "var(--radius-pill)", gap: 2 }}>
-      {PERIODS.map((p) => {
-        const active = p.key === period;
-        return (
-          <button
-            key={p.key}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(p.key)}
-            style={{ padding: "7px 16px", borderRadius: "var(--radius-pill)", border: "none", background: active ? "var(--indigo-600)" : "transparent", color: active ? "#fff" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-          >
-            {p.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** 급상승 건의 TOP 5 — 선택 기간에 새로 등록된 건의 중 공감순 상위 5건. */
-function TrendingList({ list, period, onPeriod, onMore }) {
-  const navigate = useNavigate();
-  return (
-    <div style={{ height: "100%", background: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="trending" size={18} color="var(--indigo-600)" />
-        <h2 style={{ margin: 0, fontSize: 15.5, fontWeight: 800, color: "var(--text-strong)" }}>급상승 건의 TOP 5</h2>
-        <div style={{ marginLeft: "auto" }}>
-          <PeriodTabs period={period} onChange={onPeriod} />
-        </div>
-      </div>
-      {list.length === 0 ? (
-        <p style={{ margin: "6px 0", fontSize: 13.5, color: "var(--text-muted)" }}>선택한 기간에 새로 등록된 건의가 없어요.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {list.map((p, i) => {
-            const meta = CATEGORIES[p.category] ?? CATEGORIES.facility;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => navigate(`/p/${p.id}`)}
-                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "none", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", padding: "11px 4px", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-sans)" }}
-              >
-                <span style={{ width: 16, flexShrink: 0, fontSize: 14, fontWeight: 800, color: i < 3 ? "var(--indigo-600)" : "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
-                <Icon name={meta.icon} size={15} color="var(--text-strong)" stroke={2.2} />
-                <span style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)" }}>{meta.label}</span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 600, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
-                <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "var(--indigo-600)", fontVariantNumeric: "tabular-nums" }}>
-                  <Icon name="heart" size={13} />
-                  {p.current}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {/* TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로 맞추고 그리로 스크롤한다(사용자 지시). */}
-      <button
-        type="button"
-        onClick={onMore}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, width: "100%", marginTop: "auto", paddingTop: 12, background: "none", border: "none", borderTop: "1px solid var(--border-subtle)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}
-      >
-        더보기
-        <Icon name="chevronRight" size={14} />
-      </button>
-    </div>
-  );
-}
-
-function StatTile({ icon, iconBg, iconFg, label, value, unit, desc, valueColor }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: "var(--radius-md)", background: iconBg }}>
-      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon name={icon} size={19} color={iconFg} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)" }}>{label}</div>
-        <div style={{ fontSize: 24, fontWeight: 800, color: valueColor, fontVariantNumeric: "tabular-nums" }}>{value}{unit}</div>
-        <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{desc}</div>
-      </div>
-    </div>
-  );
-}
-
 /* 부제는 기간마다 다른 문장을 쓴다 — "선택한 기간" 이라고만 하면 위 탭을 다시 봐야 뭘 세는지 안다. */
 const PERIOD_NOTE = {
   day: "오늘 기준 새로운 활동을 보여드려요.",
@@ -191,129 +99,71 @@ const PERIOD_NOTE = {
   all: "전체 기간의 활동을 보여드려요.",
 };
 
-/** 기간 요약 — TrendingList 와 같은 period 를 공유해 같은 기간의 신규 건의/공감을 센다. */
-function PeriodSummary({ newCount, newEmpathy, period }) {
+/** 보조 열 — 급상승 TOP 5 와 기간 요약. 둘은 같은 period 를 공유한다.
+    통계는 아이콘 타일·색 면 없이 숫자만 둔다. 목록이 본문이고 이쪽은 곁다리다. */
+function FeedSide({ trending, newCount, newEmpathy, period, onPeriod, onMore }) {
   const label = (PERIODS.find((p) => p.key === period) ?? PERIODS[0]).label;
-  return (
-    <div style={{ height: "100%", background: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="calendar" size={17} color="var(--indigo-600)" />
-        <h2 style={{ margin: 0, fontSize: 15.5, fontWeight: 800, color: "var(--text-strong)" }}>기간 요약</h2>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-muted)" }}>({label})</span>
-      </div>
-      <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>{PERIOD_NOTE[period]}</p>
-      <StatTile
-        icon="fileText"
-        iconBg="var(--indigo-50)"
-        iconFg="var(--indigo-600)"
-        valueColor="var(--indigo-600)"
-        label="총 신규 건의 수"
-        value={newCount}
-        unit="건"
-        desc="새로 등록된 건의 수"
-      />
-      {/* 누적 공감이라 "새로 발생한" 이라고는 못 쓴다 — PERIODS 주석의 근사치 한계 참고. */}
-      <StatTile
-        icon="heart"
-        iconBg="color-mix(in srgb, var(--coral-500) 14%, white)"
-        iconFg="var(--danger-500)"
-        valueColor="var(--danger-500)"
-        label="총 신규 요청 수"
-        value={newEmpathy}
-        unit="회"
-        desc="신규 건의에 모인 요청"
-      />
-    </div>
-  );
-}
 
-/* 목록 구역 머리말. 대시보드(급상승·기간요약)만 "아이콘+제목" 머리말을 갖고 그 아래 목록 구역은
-   맨몸 칩으로 시작해, 위아래가 서로 다른 화면처럼 보였다(사용자 지적). 같은 리듬의 머리말을 목록에도
-   달아 한 페이지의 두 구역으로 읽히게 한다 — 아이콘·크기·색은 대시보드 카드 머리말과 같은 값이다. */
-function ListHeading({ children }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--text-strong)" }}>건의 목록</h2>
-      {children}
-    </div>
-  );
-}
-
-function SearchIntro({ query, count }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9, background: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)", padding: "18px 24px" }}>
-      <Icon name="search" size={18} color="var(--indigo-600)" />
-      <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-strong)" }}>&lsquo;{query}&rsquo; 검색 결과</h1>
-      <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--indigo-600)", fontVariantNumeric: "tabular-nums" }}>{count}건</span>
-    </div>
-  );
-}
-
-const SORT_OPTIONS = [
-  { key: "hot", label: "요청순" },
-  { key: "new", label: "최신순" },
-];
-
-/** 헤더의 알림·메뉴 드롭다운과 같은 패턴(트리거+바깥 클릭 닫기) — 정렬 옵션을 리스트로 보여준다. */
-function SortMenu({ sort, onChange }) {
-  const [open, setOpen] = useState(false);
-  const current = SORT_OPTIONS.find((o) => o.key === sort) ?? SORT_OPTIONS[0];
-  return (
-    <div style={{ marginLeft: "auto", position: "relative" }}>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-      >
-        <Icon name="sliders" size={16} />
-        {current.label}
-        <Icon name="chevronDown" size={14} />
-      </button>
-      {open && (
-        <>
-          <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
-          <div role="listbox" aria-label="정렬 방식" style={{ position: "absolute", right: 0, top: 26, minWidth: 120, background: "var(--surface-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-lg)", zIndex: 31, overflow: "hidden" }}>
-            {SORT_OPTIONS.map((o) => (
-              <button
-                key={o.key}
-                type="button"
-                role="option"
-                aria-selected={o.key === sort}
-                onClick={() => { onChange(o.key); setOpen(false); }}
-                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", background: o.key === sort ? "var(--indigo-50)" : "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: o.key === sort ? 700 : 500, color: o.key === sort ? "var(--indigo-600)" : "var(--text-body)" }}
-              >
-                {o.label}
-              </button>
+    <aside className="feed-side">
+      <section className="feed-trending">
+        <h2>급상승 건의 TOP 5</h2>
+        <div className="feed-period" role="group" aria-label="급상승 기간">
+          {PERIODS.map((p) => (
+            <button key={p.key} type="button" aria-pressed={p.key === period} onClick={() => onPeriod(p.key)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {trending.length === 0 ? (
+          <p className="feed-page-desc">선택한 기간에 새로 등록된 건의가 없어요.</p>
+        ) : (
+          <ol>
+            {trending.map((p, i) => (
+              <li key={p.id}>
+                <span className="rank">{i + 1}</span>
+                <Link to={`/p/${p.id}`}>
+                  <span>{p.title}</span>
+                  <small>
+                    {(CATEGORIES[p.category] ?? CATEGORIES.facility).label}
+                    <b>요청 {p.current.toLocaleString()}</b>
+                  </small>
+                </Link>
+              </li>
             ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+          </ol>
+        )}
+        {/* TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·요청순으로 맞추고 그리로 스크롤한다(사용자 지시). */}
+        <button type="button" className="feed-more" onClick={onMore}>
+          더보기
+          <Icon name="arrowRight" size={15} />
+        </button>
+      </section>
 
-function FilterBar({ categories, active, onChange }) {
-  return (
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {categories.map((c) => {
-        const on = active === c.key;
-        const icon = CATEGORIES[c.key]?.icon;
-        return (
-          <button
-            key={c.key}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onChange(c.key)}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: "var(--radius-pill)", border: on ? "1.5px solid transparent" : "1.5px solid var(--border-strong)", background: on ? "var(--indigo-600)" : "var(--surface-card)", color: on ? "#fff" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-          >
-            {icon && <Icon name={icon} size={15} stroke={2.2} />}
-            {c.label}
-          </button>
-        );
-      })}
-    </div>
+      <section className="feed-summary">
+        <h2>
+          기간 요약 <span>({label})</span>
+        </h2>
+        <dl>
+          <div>
+            <dt>총 신규 건의 수</dt>
+            <dd>
+              {newCount}
+              <span>건</span>
+            </dd>
+          </div>
+          {/* 누적 요청이라 "새로 발생한" 이라고는 못 쓴다 — PERIODS 주석의 근사치 한계 참고. */}
+          <div>
+            <dt>총 신규 요청 수</dt>
+            <dd>
+              {newEmpathy.toLocaleString()}
+              <span>회</span>
+            </dd>
+          </div>
+        </dl>
+        <p>{PERIOD_NOTE[period]}</p>
+      </section>
+    </aside>
   );
 }
 
@@ -323,9 +173,9 @@ export default function FeedScreen({ nav = "feed" }) {
   const { query, notices, onCloseNotice } = useOutletContext();
   const navigate = useNavigate();
   const [cat, setCat] = useState("all");
-  // 청원 등록 직후에는 최신순으로 연다 — 공감 0인 새 청원이 공감순에서 맨 아래로 밀리기 때문.
+  // 청원 등록 직후에는 최신순으로 연다 — 요청 0인 새 청원이 요청순에서 맨 아래로 밀리기 때문.
   const [sort, setSort] = useState(useLocation().state?.sort ?? "hot");
-  /* 기본값이 일간이면 최근 24시간에 등록된 건의가 있어야 두 카드가 차는데, 이 서비스는 등록
+  /* 기본값이 일간이면 최근 24시간에 등록된 건의가 있어야 두 구역이 차는데, 이 서비스는 등록
      빈도가 그만큼 높지 않아 첫 화면이 거의 늘 비어 보인다. 월간으로 열어 두고 좁히는 건 탭에 맡긴다. */
   const [period, setPeriod] = useState("month");
   // 차단은 스토어(petitions)에서 바로 지워지므로 여기선 API 호출과 토스트만 맡는다.
@@ -335,7 +185,7 @@ export default function FeedScreen({ nav = "feed" }) {
   const [reportId, setReportId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
-  /* 급상승 카드의 "더보기" — TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·공감순으로 맞추고
+  /* 급상승의 "더보기" — TOP 5 너머를 보여줄 별도 화면 대신 아래 목록을 전체·요청순으로 맞추고
      그 자리로 스크롤한다(사용자 지시). 스크롤 없이 정렬만 바꾸면 화면 밖에서 일어나 아무 반응이
      없어 보인다. */
   const listRef = useRef(null);
@@ -360,35 +210,30 @@ export default function FeedScreen({ nav = "feed" }) {
   /* 관리자가 숨긴 청원은 공개 목록(GET /connect/petitions)에서 서버가 이미 걸러 준다 — 학생 응답엔
      hidden 필드조차 없다. 다만 스토어(usePetitions.petitions)를 관리자 콘솔(loadAdmin)과 공용으로
      쓰기 때문에, 관리자가 콘솔에서 학생 화면으로 넘어온 직후 loadFeed 가 끝나기 전까지는 숨김 청원이
-     남아 있는 목록이 그대로 그려진다. 여기서 한 번 걸러 그리드·급상승 양쪽이 그 창을 타지 않게 한다. */
+     남아 있는 목록이 그대로 그려진다. 여기서 한 번 걸러 목록·급상승 양쪽이 그 창을 타지 않게 한다. */
   const visible = petitions.filter((p) => !p.hidden);
   const base = nav === "answered" ? visible.filter((p) => p.status === "answered") : nav === "mine" ? visible.filter((p) => p.mine) : visible;
   let list = base.filter((p) => cat === "all" || p.category === cat);
-  const q = query.trim().toLowerCase();
-  if (q) list = list.filter((p) => `${p.title} ${p.excerpt}`.toLowerCase().includes(q));
+  const q = query.trim();
+  const needle = q.toLowerCase();
+  if (needle) list = list.filter((p) => `${p.title} ${p.excerpt}`.toLowerCase().includes(needle));
   // 만료(30일 경과) 청원은 기본 피드에서 뺀다. 검색 결과와 /mine(마이페이지 진입 지점)에는 남긴다.
   else if (nav !== "mine") list = list.filter((p) => !p.expired);
   list = [...list].sort((a, b) => (sort === "hot" ? b.current - a.current : b.id - a.id));
+
   // 급상승·기간요약은 카테고리/정렬 선택과 무관하게 항상 선택된 기간 전체를 본다.
   const periodDef = PERIODS.find((p) => p.key === period) ?? PERIODS[0];
   const periodStart = periodDef.ms == null ? 0 : Date.now() - periodDef.ms;
-  const periodPetitions = nav === "feed" && !q ? base.filter((p) => !p.expired && Date.parse(p.createdAt) >= periodStart) : [];
+  const periodPetitions = nav === "feed" && !needle ? base.filter((p) => !p.expired && Date.parse(p.createdAt) >= periodStart) : [];
   const trending = [...periodPetitions].sort((a, b) => b.current - a.current).slice(0, 5);
   const newCount = periodPetitions.length;
   const newEmpathy = periodPetitions.reduce((sum, p) => sum + p.current, 0);
 
-  const intro = q ? (
-    <SearchIntro query={query.trim()} count={list.length} />
-  ) : nav === "feed" ? (
-    <HeroBanner />
-  ) : nav === "answered" ? (
-    <PageIntro icon="checkCircle" bg="var(--status-answered-bg)" fg="var(--status-answered-fg)" title="답변 완료" count={base.length} desc="학교가 공식 답변을 등록한 건의입니다." />
-  ) : (
-    <PageIntro icon="user" bg="var(--indigo-50)" fg="var(--indigo-600)" title="내 건의" count={base.length} desc="내가 등록한 건의의 진행 상황입니다. 목록은 본인에게만 표시되며, 다른 학생에게는 익명으로 보입니다." />
-  );
+  // 홈(검색 안 함)일 때만 안내 면과 보조 열을 쓴다. 나머지는 제목 한 줄 + 한 열이다.
+  const isHome = nav === "feed" && !needle;
 
   return (
-    <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 26 }}>
+    <div className="feed-page">
       {deleteId !== null && (
         <ConfirmDialog
           title="이 건의를 삭제할까요?"
@@ -398,48 +243,80 @@ export default function FeedScreen({ nav = "feed" }) {
           onClose={() => setDeleteId(null)}
         />
       )}
-      {reportId !== null && <ReportDialog target="게시글" onClose={() => setReportId(null)} onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)} />}
-      {nav === "feed" && notices.length > 0 && <NoticeBanner notices={notices} onClose={onCloseNotice} />}
-      {intro}
-      {/* 웹은 데스크톱 폭이 넉넉해 두 카드를 2열로 두어도 건의 목록이 첫 화면에 들어온다 —
-          그래서 상단에 둔다. 세로로 쌓이는 iOS 는 목록 아래로 내렸다(Feed.tsx). */}
-      {nav === "feed" && !q && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
-          <div style={{ flex: "2 1 420px" }}>
-            <TrendingList list={trending} period={period} onPeriod={setPeriod} onMore={showAllByEmpathy} />
-          </div>
-          <div style={{ flex: "1 1 300px" }}>
-            <PeriodSummary newCount={newCount} newEmpathy={newEmpathy} period={period} />
-          </div>
-        </div>
+      {reportId !== null && (
+        <ReportDialog
+          target="게시글"
+          onClose={() => setReportId(null)}
+          onSubmit={(reasonType, reasonDetail) => reportPetition(reportId, reasonType, reasonDetail)}
+        />
       )}
-      {/* 머리말 → 필터 → 건수 순으로 한 덩어리(gap 12)로 묶는다. 부모 gap(26)보다 좁게 붙여야
-          칩 줄이 위 대시보드에 딸린 것처럼 보이지 않는다. */}
-      <div ref={listRef} style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 20 }}>
-        {nav === "feed" && !q && (
-          <ListHeading>
-            <SortMenu sort={sort} onChange={setSort} />
-          </ListHeading>
-        )}
-        <FilterBar categories={[{ key: "all", label: "전체" }, ...categories]} active={cat} onChange={setCat} />
-        {nav === "feed" && !q ? (
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{list.length}건</span>
-        ) : (
-          <div style={{ display: "flex" }}>
-            <SortMenu sort={sort} onChange={setSort} />
+
+      {isHome && <FeedIntro />}
+      {nav === "feed" && notices.length > 0 && <NoticeRow notices={notices} onClose={onCloseNotice} />}
+      {!isHome && (
+        <PageIntro
+          title={needle ? `‘${q}’ 검색 결과` : nav === "answered" ? "답변 완료" : "내 건의"}
+          count={needle ? list.length : base.length}
+          desc={
+            needle
+              ? undefined
+              : nav === "answered"
+                ? "학교가 공식 답변을 등록한 건의입니다."
+                : "내가 등록한 건의의 진행 상황입니다. 목록은 본인에게만 표시되며, 다른 학생에게는 익명으로 보입니다."
+          }
+        />
+      )}
+
+      <div className="feed-layout" data-single={isHome ? undefined : ""}>
+        <section className="feed-main" ref={listRef} aria-label="건의 목록">
+          <div className="feed-list-head">
+            {/* 건수는 한 화면에 한 번만 쓴다 — 홈이 아니면 위 제목이 이미 들고 있다. */}
+            <h2>건의 목록{isHome && <span>{list.length}건</span>}</h2>
+            <select className="feed-sort" aria-label="정렬 방식" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="hot">요청순</option>
+              <option value="new">최신순</option>
+            </select>
           </div>
+          <div className="feed-cat-tabs" role="group" aria-label="카테고리">
+            {[{ key: "all", label: "전체" }, ...categories].map((c) => (
+              <button key={c.key} type="button" aria-pressed={cat === c.key} onClick={() => setCat(c.key)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {list.length === 0 ? (
+            <EmptyState
+              title={needle ? `‘${q}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 건의가 없습니다" : "해당 조건의 건의가 없습니다"}
+              desc={needle ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 건의를 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
+            >
+              {nav === "mine" && !needle && (
+                <Button variant="primary" onClick={() => navigate("/submit")}>
+                  건의 등록
+                </Button>
+              )}
+            </EmptyState>
+          ) : (
+            <PetitionList
+              list={list}
+              authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined}
+              onReport={setReportId}
+              onBlock={handleBlock}
+              onDelete={setDeleteId}
+            />
+          )}
+        </section>
+
+        {isHome && (
+          <FeedSide
+            trending={trending}
+            newCount={newCount}
+            newEmpathy={newEmpathy}
+            period={period}
+            onPeriod={setPeriod}
+            onMore={showAllByEmpathy}
+          />
         )}
       </div>
-      {list.length === 0 ? (
-        <EmptyState
-          title={q ? `‘${query.trim()}’에 대한 검색 결과가 없습니다` : nav === "mine" ? "아직 등록한 건의가 없습니다" : "해당 조건의 건의가 없습니다"}
-          desc={q ? "다른 검색어로 다시 시도해 주세요." : nav === "mine" ? "첫 건의를 익명으로 등록해 보세요." : "다른 카테고리를 선택해 주세요."}
-        >
-          {nav === "mine" && !q && <Button variant="primary" onClick={() => navigate("/submit")}>건의 등록</Button>}
-        </EmptyState>
-      ) : (
-        <PetitionGrid list={list} authorOf={nav === "mine" ? () => "익명 · 내 건의" : undefined} onReport={setReportId} onBlock={handleBlock} onDelete={setDeleteId} />
-      )}
     </div>
   );
 }

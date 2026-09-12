@@ -38,6 +38,11 @@ docs/screens/
 # docs/screens/ 와 같은 이유로 뺀다.
 app-store-previews*/
 
+# 화면 검토용 임시 하니스. 학생 화면은 mock 모드가 없어 실서버 로그인을 타므로, 로그인 없이
+# 띄우려면 authed 를 박아 두는 entry 가 필요하다. 그건 검토가 끝나면 지울 것이지 공개 레포에
+# 남길 것이 아니다(제품 라우터·빌드 entry 에는 등록하지 않는다).
+design-preview/
+
 # 로컬 환경변수. *.local 은 .env.local 만 잡는다 — 이 레포는 공개라 .env·.env.production
 # 이 한 번 커밋되면 히스토리에 남는다(ios/.gitignore 와 같은 규칙).
 .env*

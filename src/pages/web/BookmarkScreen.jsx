@@ -2,7 +2,7 @@
    머리말·그리드·빈 상태는 피드와 같은 부품이다(FeedParts). */
 
 import { usePetitions } from "../../stores/petitions";
-import { EmptyState, PageIntro, PetitionGrid } from "../../components/web/FeedParts";
+import { EmptyState, PageIntro, PetitionList } from "../../components/web/FeedParts";
 
 export default function BookmarkScreen() {
   // 셀렉터는 원시 상태만 고른다 — 새 배열을 만드는 셀렉터는 zustand 5 에서 무한 렌더가 된다.
@@ -11,20 +11,21 @@ export default function BookmarkScreen() {
   const list = petitions.filter((p) => bookmarked[p.id]);
 
   return (
-    <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "28px var(--page-gutter) 80px", display: "flex", flexDirection: "column", gap: 26 }}>
+    <div className="feed-page">
       <PageIntro
-        icon="bookmark"
-        bg="var(--indigo-50)"
-        fg="var(--indigo-600)"
         title="북마크"
         count={list.length}
         desc="저장해 둔 건의입니다. 상세 화면의 북마크 버튼으로 추가·해제할 수 있습니다."
       />
-      {list.length === 0 ? (
-        <EmptyState title="저장한 건의가 없습니다" desc="건의 상세 화면에서 북마크 버튼을 눌러 저장해 보세요." />
-      ) : (
-        <PetitionGrid list={list} />
-      )}
+      <div className="feed-layout" data-single="">
+        <section className="feed-main">
+          {list.length === 0 ? (
+            <EmptyState title="저장한 건의가 없습니다" desc="건의 상세 화면에서 북마크 버튼을 눌러 저장해 보세요." />
+          ) : (
+            <PetitionList list={list} />
+          )}
+        </section>
+      </div>
     </div>
   );
 }

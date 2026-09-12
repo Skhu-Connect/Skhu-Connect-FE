@@ -25,35 +25,25 @@ export function WordMark() {
   );
 }
 
+/** 늘 열린 검색 칸. 아이콘만 있다가 눌러야 펴지던 것을 걷어냈다 — 한 번 더 누르게 하고,
+    펴질 때 옆 항목을 밀어 헤더가 흔들렸다. 알약 + --gray-100 원시 회색도 같이 나갔다.
+    모양은 index.css 의 .web-header-search 가 맡는다(모바일에서 한 줄을 통째로 쓴다). */
 function SearchBox({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const show = open || !!value;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, background: show ? "var(--gray-100)" : "transparent", borderRadius: "var(--radius-pill)", padding: show ? "3px 4px 3px 14px" : 0 }}>
-      {show && <Icon name="search" size={17} color="var(--text-muted)" />}
-      {show && (
-        <input
-          autoFocus
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              onChange("");
-              setOpen(false);
-            }
-          }}
-          placeholder="건의 검색"
-          aria-label="건의 검색"
-          style={{ width: 180, border: "none", background: "transparent", outline: "none", fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--text-strong)" }}
-        />
-      )}
-      {show ? (
-        <IconButton variant="ghost" size={32} ariaLabel="검색어 지우기" onClick={() => { onChange(""); setOpen(false); }}>
-          <Icon name="x" size={16} />
-        </IconButton>
-      ) : (
-        <IconButton variant="ghost" ariaLabel="검색" onClick={() => setOpen(true)}>
-          <Icon name="search" size={20} />
+    <div className="web-header-search">
+      <Icon name="search" size={18} />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onChange("");
+        }}
+        placeholder="건의 검색"
+        aria-label="건의 검색"
+      />
+      {value && (
+        <IconButton variant="ghost" size={28} ariaLabel="검색어 지우기" onClick={() => onChange("")}>
+          <Icon name="x" size={15} />
         </IconButton>
       )}
     </div>
@@ -108,7 +98,8 @@ function NotifBell() {
             <Icon name="bell" size={20} />
           </IconButton>
           {unread > 0 && (
-            <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, borderRadius: 99, background: "var(--coral-500)", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none" }}>{unread}</span>
+            /* 코럴(옛 액센트) + 10.5px 를 의미색 + 13px 바닥으로 올렸다. 배지가 그만큼 커진다. */
+            <span style={{ position: "absolute", top: -3, right: -3, minWidth: 19, height: 19, borderRadius: "var(--radius-xs)", background: "var(--danger-fill)", color: "#fff", fontSize: "var(--fs-caption)", fontWeight: "var(--fw-bold)", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", pointerEvents: "none", fontVariantNumeric: "tabular-nums" }}>{unread}</span>
           )}
         </div>
       }
@@ -201,22 +192,9 @@ function AvatarMenu({ user, onSelect }) {
   );
 }
 
-const navLinkStyle = ({ isActive }) => ({
-  background: "none",
-  border: "none",
-  fontFamily: "var(--font-sans)",
-  fontSize: 15,
-  fontWeight: isActive ? 700 : 500,
-  // 원본은 nav 를 <button> 으로 짜서 UA 의 line-height:normal 이었다. 여기는 NavLink(<a>)라
-  // body 의 1.5 를 상속받아 링크 박스가 4.5px 두꺼워지고 활성 밑줄이 그만큼 내려간다.
-  lineHeight: "normal",
-  color: isActive ? "var(--indigo-600)" : "var(--text-body)",
-  padding: "8px 2px",
-  borderBottom: isActive ? "2.5px solid var(--indigo-600)" : "2.5px solid transparent",
-  textDecoration: "none",
-});
-
-/** onOpenNotice 는 "공지가 있고 + 배너가 닫혀 있을 때"만 WebLayout 이 넘긴다 — 그때만 확성기를 띄운다. */
+/** onOpenNotice 는 "공지가 있고 + 배너가 닫혀 있을 때"만 WebLayout 이 넘긴다 — 그때만 확성기를 띄운다.
+    활성 표시는 NavLink 가 붙여 주는 aria-current="page" 로 고른다 — 스타일 함수 대신 index.css
+    (.web-header-nav)가 맡는다. 모바일에서 헤더가 세 줄로 접히는 데 미디어 쿼리가 필요하다. */
 export default function Header({ search, onSearch, onOpenNotice }) {
   const user = useSession((s) => s.user);
   const navigate = useNavigate();
@@ -229,16 +207,16 @@ export default function Header({ search, onSearch, onOpenNotice }) {
   };
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(255,255,255,.9)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--border-subtle)" }}>
-      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", padding: "0 var(--page-gutter)", height: 66, display: "flex", alignItems: "center", gap: 28 }}>
+    <header className="web-header">
+      <div className="web-header-inner">
         <WordMark />
-        <nav style={{ display: "flex", alignItems: "center", gap: 22, marginLeft: 8 }}>
-          <NavLink to="/" end style={navLinkStyle} onClick={() => onSearch("")}>전체 건의</NavLink>
-          <NavLink to="/answered" style={navLinkStyle} onClick={() => onSearch("")}>답변 완료</NavLink>
-          <NavLink to="/mine" style={navLinkStyle} onClick={() => onSearch("")}>내 건의</NavLink>
+        <nav className="web-header-nav" aria-label="주 메뉴">
+          <NavLink to="/" end onClick={() => onSearch("")}>전체 건의</NavLink>
+          <NavLink to="/answered" onClick={() => onSearch("")}>답변 완료</NavLink>
+          <NavLink to="/mine" onClick={() => onSearch("")}>내 건의</NavLink>
         </nav>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-          <SearchBox value={search} onChange={onSearch} />
+        <SearchBox value={search} onChange={onSearch} />
+        <div className="web-header-actions">
           {onOpenNotice && (
             <IconButton variant="ghost" ariaLabel="공지사항 다시 보기" onClick={onOpenNotice}>
               <Icon name="megaphone" size={20} />

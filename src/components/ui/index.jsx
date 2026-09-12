@@ -317,23 +317,28 @@ export function EmpathyButton({ count = 0, active = false, onToggle, size = "md"
 }
 
 /* 청원 라이프사이클: received (진행중) → reviewing (검토중) → answered (답변 완료), + 파생 상태 expired (만료됨).
-   색 원 안의 흰 글리프는 뺐다 — 뜻은 안 읽히고 색만 늘렸다. 글자색 하나로 구분한다. */
+   색 원 안의 흰 글리프는 뺐다 — 뜻은 안 읽히고 색만 늘렸다. 남은 글자색 하나마저도 이슈 #100
+   피드백(파스텔 제거)으로 진한 단색 면 + 흰 글자가 됐다. 목록에서 상태가 카테고리·날짜와
+   같은 회색 글자로 섞여 안 읽히던 것을 면으로 떼어낸다.
+   면 색은 index.css 의 .ds-status[data-status] 가 정한다 — 만료만 중립 회색 면이다(시간이
+   지난 것이지 처리 상태가 아니라 의미색을 주지 않는다). */
 const STATUS = {
-  received: { label: "진행중", fg: "var(--status-received-fg)" },
-  reviewing: { label: "검토중", fg: "var(--status-review-fg)" },
-  answered: { label: "답변 완료", fg: "var(--status-answered-fg)" },
-  expired: { label: "만료됨", fg: "var(--text-muted)" },
+  received: { label: "진행중" },
+  reviewing: { label: "검토중" },
+  answered: { label: "답변 완료" },
+  expired: { label: "만료됨" },
 };
 
 export function StatusBadge({ status = "received", size = "md", style, ...rest }) {
   const s = STATUS[status] || STATUS.received;
   return (
     <span
+      className="ds-status"
+      data-status={status}
       style={{
         fontFamily: "var(--font-sans)",
         fontWeight: "var(--fw-semibold)",
         lineHeight: 1.3,
-        color: s.fg,
         fontSize: size === "sm" ? "var(--fs-caption)" : "var(--fs-sm)",
         ...style,
       }}
@@ -452,7 +457,10 @@ export function LoginPromptDialog({ onConfirm, onClose }) {
 /** 신고·차단 오버플로 메뉴. 피드 카드·청원 상세·댓글이 모두 이걸 쓴다 — 같은 두 동작이
     화면마다 다른 모양이면 어디서 뭘 할 수 있는지 매번 다시 찾아야 한다.
     카드 위에서도 쓰이므로 클릭이 카드 이동으로 새지 않게 막는다. */
-export function ActionMenu({ onReport, onBlock, onDelete, label = "메뉴" }) {
+/* style 은 바깥 span 에 합쳐진다. 아래 marginLeft:auto 를 끄려는 용도다 —
+   댓글 행(DetailScreen)처럼 이 메뉴가 유일한 오른쪽 앵커인 곳이 있어 기본값은 그대로 두고,
+   이미 앵커가 있는 곳(피드 목록 행)에서만 호출부가 0 으로 덮는다. */
+export function ActionMenu({ onReport, onBlock, onDelete, label = "메뉴", style }) {
   const [open, setOpen] = useState(false);
   const item = (danger) => ({
     display: "flex",
@@ -471,7 +479,7 @@ export function ActionMenu({ onReport, onBlock, onDelete, label = "메뉴" }) {
   });
 
   return (
-    <span style={{ marginLeft: "auto", position: "relative", display: "inline-flex" }} onClick={(e) => e.stopPropagation()}>
+    <span style={{ marginLeft: "auto", position: "relative", display: "inline-flex", ...style }} onClick={(e) => e.stopPropagation()}>
       <IconButton variant="ghost" size={32} ariaLabel={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Icon name="moreVertical" size={17} />
       </IconButton>
@@ -504,91 +512,6 @@ export function ActionMenu({ onReport, onBlock, onDelete, label = "메뉴" }) {
   );
 }
 
-/* 청원 하나를 요약하는 피드 아이템. 청원 프리미티브를 조합한다.
-   ponytail: 카드 모양 자체는 피드 화면을 옮길 때 목록 행으로 바꾼다 — 여기선 호버 들림·
-   가운뎃점·손으로 그린 아이콘만 걷어냈다. */
-export function PetitionCard({
-  title,
-  excerpt,
-  category = "facility",
-  status = "received",
-  current = 0,
-  threshold = 100,
-  basisLabel = "학과 정원",
-  author = "익명",
-  date,
-  comments = 0,
-  voted = false,
-  onToggleVote,
-  onReport,
-  onBlock,
-  onDelete,
-  onClick,
-  style,
-  ...rest
-}) {
-  const [blocking, setBlocking] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        position: "relative",
-        background: "var(--surface-card)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-lg)",
-        padding: "var(--pad-card)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        cursor: onClick ? "pointer" : "default",
-        ...style,
-      }}
-      {...rest}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <CategoryTag category={category} size="sm" />
-        <StatusBadge status={status} size="sm" />
-        {(onReport || onBlock || onDelete) && (
-          <ActionMenu
-            label="게시글 메뉴"
-            onReport={onReport}
-            onBlock={onBlock && (() => setBlocking(true))}
-            onDelete={onDelete}
-          />
-        )}
-      </div>
-      {blocking && (
-        <ConfirmDialog
-          title="이 글을 쓴 사용자를 차단할까요?"
-          onConfirm={() => onBlock()}
-          onClose={() => setBlocking(false)}
-        />
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <h3 style={{ margin: 0, font: "var(--text-h3)", color: "var(--text-strong)" }}>{title}</h3>
-        {excerpt && (
-          <p style={{ margin: 0, font: "var(--text-body-role)", color: "var(--text-body)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {excerpt}
-          </p>
-        )}
-      </div>
-      <ThresholdBar current={current} threshold={threshold} basisLabel={basisLabel} />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, font: "var(--text-caption-role)", color: "var(--text-muted)" }}>
-          <span>{author}</span>
-          {date && <span>{date}</span>}
-          <span>댓글 {comments}</span>
-        </div>
-        <EmpathyButton
-          count={current}
-          active={voted}
-          size="sm"
-          onToggle={(e) => {
-            e.stopPropagation();
-            onToggleVote?.(e);
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+/* 피드 아이템은 여기 있던 PetitionCard(테두리 카드) 대신 components/web/FeedParts 의
+   PetitionRow(목록 행)다 — 제목을 <Link> 로 열어야 키보드로 접근되는데, 그 한 줄 때문에
+   DS 프리미티브에 라우터를 끌어들일 이유는 없다. 행은 피드 전용 조합이라 그쪽이 제자리다. */
