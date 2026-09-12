@@ -793,12 +793,16 @@ p {
 .petition-row-foot .reached {
   color: var(--status-answered-fg);
 }
+/* 폭을 고정한다. 요청을 누른 행은 버튼에 체크 아이콘이 하나 더 붙고(+26px), 요청 수
+   자릿수에 따라서도 폭이 달라져(+9.6px) 그냥 두면 행마다 버튼 왼쪽 끝이 세 군데로 흩어진다.
+   오른쪽 끝만 맞고 나머지가 흔들리던 문제다. 버튼은 block 으로 이 폭을 꽉 채운다. */
 .petition-row-action {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  min-width: var(--row-action-w);
 }
 .petition-row-action > span {
   font-size: var(--fs-caption);
@@ -1317,7 +1321,6 @@ p {
     right: 0;
     bottom: var(--space-5);
     gap: var(--space-1);
-    min-width: var(--row-action-w);
   }
   .feed-side {
     border-left: none;

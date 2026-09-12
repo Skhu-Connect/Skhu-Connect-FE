@@ -79,7 +79,9 @@ export function PetitionRow({ p, author, onReport, onBlock, onDelete }) {
         </div>
       </div>
       <div className="petition-row-action">
-        <EmpathyButton count={p.current} active={voted} onToggle={() => toggleVoteWithConfirm(vote, p.id, voted, p.mine)} />
+        {/* block: 버튼이 고정 폭 열(.petition-row-action)을 꽉 채운다 — 누름 상태의 체크
+            아이콘과 요청 수 자릿수 때문에 행마다 폭이 달라지던 것을 막는다. */}
+        <EmpathyButton block count={p.current} active={voted} onToggle={() => toggleVoteWithConfirm(vote, p.id, voted, p.mine)} />
         <span>기준 {p.threshold.toLocaleString()}명</span>
       </div>
       {blocking && (
