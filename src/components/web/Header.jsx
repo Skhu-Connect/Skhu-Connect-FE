@@ -13,14 +13,16 @@ import { Avatar, Button, Icon, IconButton } from "../ui";
 import SettingsModal from "./SettingsModal";
 import { pointOf } from "./notifMeta";
 
+/* 부제("성공회대학교")는 뺐다(사용자 피드백). 로고 옆 10.5px 한 줄이었는데 헤더 맥락상
+   학교 서비스라는 건 이미 드러나 정보를 더하지 않았고, 사이트에 남은 유일한 13px 미만
+   글자이기도 했다. 두 줄이 한 줄로 줄어 --fs-xl 로 올렸다 — 34px 로고 옆에서 무게를
+   유지하려는 것이고, 원래 18px 은 --fs-* 축에 없는 값이었다.
+   MobileShareHeader 도 이 컴포넌트를 쓴다 — 거기서도 같이 빠진다. */
 export function WordMark() {
   return (
     <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
       <img src="/logo.png" alt="" width={34} height={34} style={{ borderRadius: 10, display: "block" }} />
-      <div style={{ lineHeight: 1.05 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, color: "var(--indigo-600)", letterSpacing: "-.01em" }}>성공잇다</div>
-        <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>성공회대학교</div>
-      </div>
+      <span className="web-wordmark">성공잇다</span>
     </Link>
   );
 }

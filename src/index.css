@@ -470,6 +470,16 @@ p {
 .web-header-inner > a {
   flex-shrink: 0;
 }
+/* 브랜드 이름은 어떤 폭에서도 줄바꿈하지 않는다. 부제를 뺀 뒤 한 줄이 됐는데, 모바일에서는
+   헤더 첫 줄을 행동 버튼과 나눠 쓰기 때문에 그냥 두면 "성공 / 잇다" 로 깨진다. */
+.web-wordmark {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-extrabold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
 .web-header-nav {
   display: flex;
   align-items: center;
@@ -1219,6 +1229,9 @@ p {
   }
   .web-header-inner > a {
     grid-area: 1 / 1;
+  }
+  .web-wordmark {
+    font-size: var(--fs-lg);
   }
   .web-header-actions {
     grid-area: 1 / 2;
