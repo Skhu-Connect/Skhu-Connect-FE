@@ -1,7 +1,7 @@
 /* 임계치·필터·정렬 self-check. 실행: node src/selfcheck.ts */
 import assert from "node:assert/strict";
 import { NOTIF_POINTS, NOTIF_TYPE_TITLE, SEED, pointOf } from "./data.ts";
-import { basisFor, count, ddayLabel, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
+import { badgeStatus, basisFor, count, ddayLabel, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
 
 const none = {};
 const byId = (id: number) => SEED.find((p) => p.id === id)!;
@@ -60,6 +60,11 @@ assert.equal(ddayLabel(at("2026-08-04T12:00:00Z"), NOW), "D-28");
 assert.equal(ddayLabel(at("2026-07-08T12:00:00Z"), NOW), "D-1", "29일 경과");
 assert.equal(ddayLabel(at("2026-07-07T12:00:00Z"), NOW), "만료", "30일 경과");
 assert.equal(ddayLabel(at("2026-05-01T12:00:00Z"), NOW), "만료");
+
+/* 배지 상태는 시간에서 파생된다. 임계치 전이(statusOf)와 별개 함수인 이유가 이것이다.
+   답변 완료는 만료보다 우선한다 — 이미 결론이 난 건의에 "만료됨"을 얹지 않는다. */
+assert.equal(badgeStatus(at("2026-07-07T12:00:00Z"), NOW), "expired", "30일 경과면 만료됨");
+assert.equal(badgeStatus({ ...byId(4), createdAt: "2026-05-01T12:00:00Z" }, NOW), "answered", "답변 완료는 만료보다 우선");
 
 /* SEED 는 갓 등록된 것부터 2주 전까지라 전부 만료 전이다. */
 for (const p of SEED) assert.match(ddayLabel(p), /^D-(1[6-9]|2\d|30)$/, `SEED #${p.id} dday`);

@@ -73,3 +73,16 @@ export function statusOf(p: Petition, votes: Votes): StatusKey {
   if (p.status === "answered") return "answered";
   return count(p, votes) >= p.threshold ? "reviewing" : "received";
 }
+
+/** 배지에 보일 상태. 답변 완료 > 만료 > 진행 상태 순이다 — 이미 결론이 난 건의에 "만료됨"을
+    얹지 않는다(웹 components/ui/index.jsx 의 petitionStatus 와 같은 우선순위).
+
+    `statusOf()` 와 섞지 않는다: 그건 임계치 전이 규칙이고 만료는 시간에서 파생된다.
+    합치면 M0-7 의 결정("화면은 서버가 준 status 를 쓴다")과 selfcheck 의 전이 검증이 같이 흔들린다.
+    이 함수가 없으면 목록 한 줄에서 배지는 `진행중` 인데 D-day 는 `만료` 라고 말한다. */
+export type BadgeStatus = StatusKey | "expired";
+
+export function badgeStatus(p: Petition, now = Date.now()): BadgeStatus {
+  if (p.status === "answered") return "answered";
+  return daysLeft(p, now) <= 0 ? "expired" : p.status;
+}

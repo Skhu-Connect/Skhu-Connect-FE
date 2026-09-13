@@ -3,7 +3,7 @@
 import type { LinearGradientProps } from "expo-linear-gradient";
 import { colors, gradient as rawGradient } from "./tokens";
 
-export { colors, font, radius, shadow } from "./tokens";
+export { colors, font, fs, radius, shadow } from "./tokens";
 
 /* expo-linear-gradient 는 colors 를 최소 2색 튜플로 요구하는데, 순수 JS 객체는 string[] 로 추론된다. */
 export const gradient = rawGradient as unknown as Record<"hero" | "mileage", LinearGradientProps>;

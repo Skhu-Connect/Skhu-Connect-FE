@@ -209,6 +209,15 @@ export type NotifPoint = {
   iconFg: string;
 };
 
+/* 타일 색은 종류마다 다른 파스텔 6쌍이었다. 새 시각 규칙에서 걷어내 중립 한 쌍으로 모은다 —
+   종류는 바로 옆 아이콘과 제목이 이미 말해 준다(웹이 같은 자리에서 낸 결론).
+
+   **iconBg/iconFg 필드는 남긴다.** 이 값을 읽는 곳이 세 화면인데 그중 알림 설정 화면은 이번
+   범위 밖이다. 필드를 지우면 그 화면이 타입 오류로 이번 변경에 끌려오고, 값만 바꾸면 코드 한 줄
+   없이 함께 중립이 된다. */
+const NOTIF_TILE_BG = "#F5F5F6"; // --surface-sunken
+const NOTIF_TILE_FG = "#6E6E78"; // --text-muted
+
 export const NOTIF_POINTS = [
   {
     key: "agreement",
@@ -216,8 +225,8 @@ export const NOTIF_POINTS = [
     desc: "내 건의가 목표 요청의 60%·100%에 닿거나, 요청한 건의가 검토에 들어가면 알려드려요.",
     types: ["PETITION_AGREEMENT_60_PERCENT", "PETITION_AGREEMENT_100_PERCENT", "PETITION_UNDER_REVIEW"],
     icon: "trending",
-    iconBg: "#FCEFD6",
-    iconFg: "#B26A00",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
   {
     key: "answer",
@@ -225,8 +234,8 @@ export const NOTIF_POINTS = [
     desc: "내가 쓰거나 요청한 건의에 학교의 공식 답변이 올라오면 알려드려요.",
     types: ["PETITION_ANSWERED"],
     icon: "checkCircle",
-    iconBg: "#DDF3E7",
-    iconFg: "#22A06B",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
   {
     key: "reply",
@@ -234,8 +243,8 @@ export const NOTIF_POINTS = [
     desc: "내가 쓴 댓글에 다른 학생이 답글을 달면 알려드려요.",
     types: ["COMMENT_REPLY"],
     icon: "message",
-    iconBg: "#E4E7FC",
-    iconFg: "#4F5BD5",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
   {
     key: "like",
@@ -243,8 +252,8 @@ export const NOTIF_POINTS = [
     desc: "내가 쓴 댓글이나 답글에 공감이 눌리면 알려드려요.",
     types: ["COMMENT_LIKE", "REPLY_LIKE"],
     icon: "heart",
-    iconBg: "#FCE7E9",
-    iconFg: "#F0808A",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
   {
     key: "notice",
@@ -252,8 +261,8 @@ export const NOTIF_POINTS = [
     desc: "학생회·관리자가 새 공지를 올리면 알려드려요.",
     types: ["NOTICE"],
     icon: "fileText",
-    iconBg: "#E9EAF1",
-    iconFg: "#4C4D5C",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
   {
     key: "report",
@@ -261,8 +270,8 @@ export const NOTIF_POINTS = [
     desc: "내가 신고한 글·댓글의 처리 결과나, 내가 쓴 글·댓글이 숨김·계정 정지된 사실을 알려드려요.",
     types: ["REPORT_DISMISSED", "REPORT_ACTION_TAKEN", "CONTENT_HIDDEN", "ACCOUNT_LOGIN_BANNED"],
     icon: "flag",
-    iconBg: "#DFF5F1",
-    iconFg: "#128377",
+    iconBg: NOTIF_TILE_BG,
+    iconFg: NOTIF_TILE_FG,
   },
 ] satisfies NotifPoint[];
 
@@ -286,7 +295,7 @@ const NOTIF_POINT_BY_TYPE: Record<string, NotifPoint> = Object.fromEntries(
   NOTIF_POINTS.flatMap((point) => point.types.map((type) => [type, point])),
 );
 
-const UNKNOWN_POINT: NotifPoint = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", iconBg: "#E9EAF1", iconFg: "#4C4D5C" };
+const UNKNOWN_POINT: NotifPoint = { key: "etc", title: "알림", desc: "", types: [], icon: "bell", iconBg: NOTIF_TILE_BG, iconFg: NOTIF_TILE_FG };
 
 /** 모르는 종류(백엔드가 enum 을 늘린 경우)는 회색 기본값으로 떨어뜨린다. */
 export function pointOf(type: string): NotifPoint {
