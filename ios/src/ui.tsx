@@ -360,17 +360,8 @@ export function Textarea({
 
 type TagSize = "sm" | "md";
 
-/* 분류 칩(피드 필터)이 쓰는 아이콘. 태그 자체는 아래 CategoryTag 처럼 글자만 보인다. */
-export const CAT_ICON: Record<CategoryKey, IconName> = {
-  scholarship: "graduationCap",
-  facility: "facilityBuilding",
-  dorm: "dormHouse",
-  library: "bookOpen",
-  department: "peopleGroup",
-};
-
 /** 분류는 글자만 보인다 — 목록 행에서 아이콘까지 붙으면 상태 배지와 강조를 다툰다(웹과 같은 판단).
-    아이콘은 피드 필터 칩이 계속 쓴다(CAT_ICON). */
+    피드 필터도 밑줄 탭이 되면서 분류 아이콘(CAT_ICON)은 쓰는 곳이 없어져 함께 지웠다. */
 export function CategoryTag({ category, size = "md" }: { category: CategoryKey; size?: TagSize }) {
   const fontSize = size === "sm" ? fs.caption : fs.sm;
   return <Text style={[base, { fontSize, lineHeight: fontSize * 1.3, fontWeight: "600", color: colors.body }]}>{CAT_LABEL[category]}</Text>;

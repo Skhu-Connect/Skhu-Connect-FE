@@ -49,7 +49,7 @@ function TabItem({ icon, label, active, onPress }: { icon: IconName; label: stri
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: active }} style={{ flex: 1, alignItems: "center", gap: 3 }}>
       <Icon name={icon} size={21} color={color} />
-      <Text style={[t, { fontWeight: "700", fontSize: 10.5, color }]}>{label}</Text>
+      <Text style={[t, { fontWeight: "700", fontSize: fs.caption, color }]}>{label}</Text>
     </Pressable>
   );
 }
