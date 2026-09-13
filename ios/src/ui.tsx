@@ -58,9 +58,8 @@ export function LogoMark({ size = 66 }: { size?: number }) {
 /* ───────────────────────── core ───────────────────────── */
 
 /** 연보라 원·링은 뺐다 — 익명 서비스에서 아바타는 정보가 아니라 자리 표시다(웹과 같은 판단).
-    ponytail: `ring` 은 받기만 하고 그리지 않는다. 지금 지우면 아직 `ring` 을 넘기는 MY 화면이
-    타입 오류로 이 회차에 끌려온다 — MY 를 옮기는 회차에서 호출부와 함께 지운다. */
-export function Avatar({ name = "", size = 44, ring: _ring = false }: { name?: string; size?: number; ring?: boolean }) {
+    `ring` prop 은 MY 프로필 머리가 넘기던 것인데, 그 호출부가 사라져 함께 지웠다. */
+export function Avatar({ name = "", size = 44 }: { name?: string; size?: number }) {
   const initials = name.trim().slice(0, 2);
   return (
     <View

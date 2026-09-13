@@ -183,9 +183,9 @@ export type Notification = {
   body: string;
   date: string;
   read: boolean;
+  /* 타일 색은 안 들고 다닌다 — 알림 줄은 중립 면 한 종류라 종류를 구분하는 건 이 아이콘뿐이다.
+     NotifPoint 쪽 iconBg/iconFg 는 알림 설정 화면이 포인트에서 직접 읽으므로 그대로 둔다. */
   icon: IconName;
-  iconBg: string;
-  iconFg: string;
 };
 
 /* 알림 발생 지점. 백엔드 NotificationEventService 의 발생 지점을 그대로 옮겼다

@@ -6,7 +6,7 @@ import { colors, gradient as rawGradient } from "./tokens";
 export { colors, font, fs, radius, shadow } from "./tokens";
 
 /* expo-linear-gradient 는 colors 를 최소 2색 튜플로 요구하는데, 순수 JS 객체는 string[] 로 추론된다. */
-export const gradient = rawGradient as unknown as Record<"hero" | "mileage", LinearGradientProps>;
+export const gradient = rawGradient as unknown as Record<"mileage", LinearGradientProps>;
 
 /* 인증 화면(영상 배경) 전용 팔레트 — 웹 AuthLayout 의 LIGHT_ON_VIDEO 토큰 교체와 같다.
    ui.tsx(DS 프리미티브)와 authShell·Login·Signup(일반 텍스트)이 같은 값을 쓰도록 여기 하나에 둔다

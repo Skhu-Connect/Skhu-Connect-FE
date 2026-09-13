@@ -636,8 +636,6 @@ function adaptNotification(n: any): Notification {
     date: formatRelative(n.createdAt),
     read: n.read,
     icon: point.icon,
-    iconBg: point.iconBg,
-    iconFg: point.iconFg,
   };
 }
 
