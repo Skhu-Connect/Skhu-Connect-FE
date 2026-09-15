@@ -60,9 +60,9 @@ export default function SubmitScreen() {
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "var(--indigo-50)", borderRadius: "var(--radius-md)", padding: "14px 16px" }}>
           <span style={{ flexShrink: 0, marginTop: 1, color: "var(--indigo-600)", display: "inline-flex" }}><Icon name="shield" size={17} /></span>
           <span style={{ fontSize: 13.5, color: "var(--indigo-700)", lineHeight: 1.65 }}>
-            요청 도달률은 카테고리별 기준(학과 정원 또는 전체 학생 대비 %)에 따라 <b>관리자가 설정</b>합니다. 요청이 도달률 100%를 달성하면 담당 부서로 자동 전달됩니다.
+            건의 취지에 맞지 않는 글은 <b>숨김처리 및 사용제한될 수 있습니다.</b>
             <br />
-            등록 후 <b>10분 동안은 새 건의를 올릴 수 없습니다.</b> 이 시간은 등록한 건의를 삭제해도 줄어들지 않으니, 내용을 확인하고 등록해 주세요.
+            등록 후 <b>10분 동안은 새 건의를 올릴 수 없습니다.</b>
           </span>
         </div>
 

@@ -71,7 +71,6 @@ function FeedIntro() {
     <section className="feed-intro">
       <div className="feed-intro-copy">
         <h1>당신의 목소리를 들려주세요</h1>
-        <p>요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면 담당 부서로 자동 전달됩니다.</p>
       </div>
       <img src="/campus-hero.jpg" alt="성공회대학교 캠퍼스" width="360" height="176" />
     </section>
@@ -90,14 +89,6 @@ const PERIODS = [
   { key: "month", label: "월간", ms: 30 * 86400000 },
   { key: "all", label: "전체", ms: null },
 ];
-
-/* 부제는 기간마다 다른 문장을 쓴다 — "선택한 기간" 이라고만 하면 위 탭을 다시 봐야 뭘 세는지 안다. */
-const PERIOD_NOTE = {
-  day: "오늘 기준 새로운 활동을 보여드려요.",
-  week: "최근 7일 기준 새로운 활동을 보여드려요.",
-  month: "최근 30일 기준 새로운 활동을 보여드려요.",
-  all: "전체 기간의 활동을 보여드려요.",
-};
 
 /** 보조 열 — 급상승 TOP 5 와 기간 요약. 둘은 같은 period 를 공유한다.
     통계는 아이콘 타일·색 면 없이 숫자만 둔다. 목록이 본문이고 이쪽은 곁다리다. */
@@ -161,7 +152,6 @@ function FeedSide({ trending, newCount, newEmpathy, period, onPeriod, onMore }) 
             </dd>
           </div>
         </dl>
-        <p>{PERIOD_NOTE[period]}</p>
       </section>
     </aside>
   );
@@ -257,13 +247,6 @@ export default function FeedScreen({ nav = "feed" }) {
         <PageIntro
           title={needle ? `‘${q}’ 검색 결과` : nav === "answered" ? "답변 완료" : "내 건의"}
           count={needle ? list.length : base.length}
-          desc={
-            needle
-              ? undefined
-              : nav === "answered"
-                ? "학교가 공식 답변을 등록한 건의입니다."
-                : "내가 등록한 건의의 진행 상황입니다. 목록은 본인에게만 표시되며, 다른 학생에게는 익명으로 보입니다."
-          }
         />
       )}
 

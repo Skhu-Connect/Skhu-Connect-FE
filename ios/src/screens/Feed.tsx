@@ -341,19 +341,13 @@ function Banner({ tab, mineCount, answeredCount }: { tab: Tab; mineCount: number
         <Text style={[t, { fontSize: fs.xl, fontWeight: "700", color: colors.strong, letterSpacing: -0.4 }]}>
           {answered ? "답변 완료" : "내 건의"} <Text style={{ fontSize: fs.caption, fontWeight: "400", color: colors.muted }}>{answered ? answeredCount : mineCount}건</Text>
         </Text>
-        <Text style={[t, { fontSize: fs.caption, color: colors.muted, marginTop: 4, lineHeight: 19.5 }]}>
-          {answered ? "학교가 공식 답변을 등록한 건의입니다." : "이 목록은 본인에게만 보입니다. 다른 학생에게는 익명으로 표시됩니다."}
-        </Text>
       </View>
     );
   }
 
   return (
     <View style={{ backgroundColor: colors.sunken, borderBottomWidth: 1, borderBottomColor: colors.subtle, paddingTop: 18, paddingHorizontal: 16, paddingBottom: 18 }}>
-      <Text style={[t, { fontSize: fs.xl, fontWeight: "700", color: colors.strong, lineHeight: fs.xl * 1.3, letterSpacing: -0.4 }]}>당신의 목소리를 들려주세요</Text>
-      <Text style={[t, { fontSize: fs.caption, color: colors.muted, lineHeight: 19.5, marginTop: 6 }]}>
-        요청 수가 학과 정원 또는 전체 학생 대비 기준을 넘으면 담당 부서로 자동 전달됩니다.
-      </Text>
+      <Text style={[t, { fontSize: fs.title, fontWeight: "700", color: colors.strong, lineHeight: fs.title * 1.3, letterSpacing: -0.4 }]}>당신의 목소리를 들려주세요</Text>
       <Image
         source={require("../../assets/campus-hero.jpg")}
         style={{ width: "100%", height: 132, borderRadius: radius.md, marginTop: 14 }}
@@ -465,14 +459,6 @@ function TrendingSection({
   );
 }
 
-/* 부제는 기간마다 다른 문장을 쓴다 — "선택한 기간" 이라고만 하면 위 탭을 다시 봐야 뭘 세는지 안다. */
-const PERIOD_NOTE: Record<PeriodKey, string> = {
-  day: "오늘 기준 새로운 활동을 보여드려요.",
-  week: "최근 7일 기준 새로운 활동을 보여드려요.",
-  month: "최근 30일 기준 새로운 활동을 보여드려요.",
-  all: "전체 기간의 활동을 보여드려요.",
-};
-
 /** 기간 요약 — 급상승과 같은 period 를 공유해 같은 기간의 신규 건의/요청을 센다.
     분홍·인디고 파스텔 타일이던 자리 — 색 면 없이 숫자만 둔다(웹 .feed-summary). */
 function SummarySection({ newCount, newEmpathy, period }: { newCount: number; newEmpathy: number; period: PeriodKey }) {
@@ -495,7 +481,6 @@ function SummarySection({ newCount, newEmpathy, period }: { newCount: number; ne
         {/* 누적 요청이라 "새로 발생한" 이라고는 못 쓴다 — PERIODS 주석의 근사치 한계 참고. */}
         {stat("총 신규 요청 수", newEmpathy, "회")}
       </View>
-      <Text style={[t, { fontSize: fs.caption, lineHeight: fs.caption * 1.65, color: colors.muted }]}>{PERIOD_NOTE[period]}</Text>
     </View>
   );
 }
@@ -631,7 +616,15 @@ function PetitionRow({
 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.subtle }}>
-      <View style={{ flex: 1, minWidth: 0 }}>
+      {/* 행 왼쪽 면 전체가 상세로 가는 탭 영역이다. 웹은 제목만 링크지만(키보드 접근) 폰에서
+          제목 글자만 눌리면 행 여백을 눌렀을 때 아무 일도 일어나지 않는다 — 옛 카드처럼 면으로 받는다.
+          안쪽 ⋮ 메뉴는 자기 터치를 스스로 가져가므로 이 Pressable 로 새지 않는다. */}
+      <Pressable
+        onPress={() => onOpen(p.id)}
+        accessibilityRole="button"
+        accessibilityLabel={p.title}
+        style={{ flex: 1, minWidth: 0 }}
+      >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <CategoryTag category={p.category} size="sm" />
           {/* 만료된 건의는 진행중이 아니라 만료됨으로 보인다 — 바로 옆 D-day 와 어긋나던 것을 맞춘다. */}
@@ -644,9 +637,7 @@ function PetitionRow({
           </View>
         </View>
 
-        <Pressable onPress={() => onOpen(p.id)} accessibilityRole="button" style={{ marginVertical: 8 }}>
-          <Text style={[t, { fontSize: fs.lg, fontWeight: "600", color: colors.strong, lineHeight: fs.lg * 1.5, letterSpacing: -0.255 }]}>{p.title}</Text>
-        </Pressable>
+        <Text style={[t, { marginVertical: 8, fontSize: fs.lg, fontWeight: "600", color: colors.strong, lineHeight: fs.lg * 1.5, letterSpacing: -0.255 }]}>{p.title}</Text>
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 14, rowGap: 4 }}>
           <Text style={[t, { fontSize: fs.caption, color: colors.muted }]}>{p.author}</Text>
@@ -655,7 +646,7 @@ function PetitionRow({
             {reached ? "담당 부서 전달됨" : `${fmt(p.threshold - c)}명 남음`}
           </Text>
         </View>
-      </View>
+      </Pressable>
 
       {/* 폭을 고정한다. 누른 행은 체크 아이콘이 붙고 요청 수 자릿수도 달라져, 그냥 두면 행마다
           버튼 왼쪽 끝이 흩어진다. 버튼은 block 으로 이 폭을 꽉 채운다.
