@@ -9,7 +9,8 @@ import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
 import { Badge, Button, CategoryTag, StatusBadge } from "../ui";
 import AnswerModal from "./AnswerModal";
-import CommentModeration from "./CommentModeration";
+import HideReasonDialog from "./HideReasonDialog";
+import PetitionDrawer from "./PetitionDrawer";
 
 const COLS = [
   { label: "제목", style: { padding: "10px 16px" } },
@@ -19,14 +20,31 @@ const COLS = [
   { label: "처리", style: { padding: "10px 16px", textAlign: "right" } },
 ];
 
-function Row({ p, onAnswer, onHide, onRestore, onComments }) {
+/* 처리 순서대로 세운다. 관리자가 매번 목록을 훑어 "답변해야 할 게 뭐지" 를 눈으로 찾던 일을
+   없애는 게 목적이다 — 서버는 createdAt DESC 로만 주기 때문에 숨긴 글이 맨 위에 오기도 했다.
+   0 답변 필요(임계치 달성·미답변) → 1 진행 중 → 2 답변 완료 → 3 숨김.
+
+   Manage 의 내보내기가 같은 비교 함수를 쓴다 — 받은 파일의 순서가 화면과 다르면
+   "지금 보이는 목록 그대로" 라는 약속이 깨진다. */
+const rank = (p) => (p.hidden ? 3 : p.status === "answered" ? 2 : p.current >= p.threshold ? 0 : 1);
+export const byUrgency = (a, b) => rank(a) - rank(b) || b.current / b.threshold - a.current / a.threshold;
+
+function Row({ p, onAnswer, onHide, onRestore, onOpen }) {
   const reached = p.current >= p.threshold;
   const pct = Math.round((p.current / p.threshold) * 100);
   return (
     <tr style={{ borderTop: "1px solid var(--border-subtle)" }}>
       <td style={{ padding: "14px 16px", maxWidth: 300 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
+          {/* 제목이 상세 진입점이다. 행 전체를 누르게 하면 오른쪽 처리 버튼과 충돌한다. */}
+          <button
+            type="button"
+            onClick={() => onOpen(p)}
+            aria-haspopup="dialog"
+            style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 14, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}
+          >
+            {p.title}
+          </button>
           {p.hidden ? <Badge tone="danger" size="sm">숨김</Badge> : null}
         </div>
       </td>
@@ -52,7 +70,6 @@ function Row({ p, onAnswer, onHide, onRestore, onComments }) {
           ) : (
             <Button size="sm" variant="outline" disabled>대기중</Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => onComments(p)}>댓글</Button>
           {p.hidden ? (
             <Button size="sm" variant="outline" onClick={() => onRestore(p)}>복원</Button>
           ) : (
@@ -64,29 +81,24 @@ function Row({ p, onAnswer, onHide, onRestore, onComments }) {
   );
 }
 
-/** 답변 모달은 이 컴포넌트가 소유한다 — 「답변 작성」 버튼이 여기 있으므로
-    Dashboard·Manage 양쪽에 모달 상태를 복제할 이유가 없다. 열림 여부는 화면 useState.
+/** 답변 모달·상세 드로어는 이 컴포넌트가 소유한다 — 진입점이 여기 있으므로
+    Dashboard·Manage 양쪽에 상태를 복제할 이유가 없다. 열림 여부는 화면 useState.
+    「댓글」 버튼은 없앴다. 댓글은 드로어의 한 섹션이 됐다.
     @param {{title: string, list: object[], empty: string}} props */
 export default function PetitionTable({ title, list, empty }) {
   const submitAnswer = usePetitions((s) => s.submitAnswer);
   const hidePetition = usePetitions((s) => s.hidePetition);
   const restorePetition = usePetitions((s) => s.restorePetition);
   const [answering, setAnswering] = useState(null);
-  const [commenting, setCommenting] = useState(null);
+  const [hiding, setHiding] = useState(null);
+  const [detailId, setDetailId] = useState(null);
+
+  // 정렬은 사본에 한다 — Dashboard 는 스토어의 petitions 배열을 그대로 넘긴다.
+  const sorted = [...list].sort(byUrgency);
 
   const submit = async (id, body, answerSource, isEdit) => {
     await submitAnswer(id, body, answerSource, isEdit);
     setAnswering(null);
-  };
-
-  const hide = async (p) => {
-    const reason = window.prompt(`"${p.title}" 청원을 숨길 사유를 입력하세요.`);
-    if (!reason) return;
-    try {
-      await hidePetition(p.id, reason);
-    } catch (e) {
-      window.alert(e.message);
-    }
   };
 
   const restore = async (p) => {
@@ -101,7 +113,7 @@ export default function PetitionTable({ title, list, empty }) {
   return (
     <div style={{ background: "#fff", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)", overflow: "hidden", overflowX: "auto" }}>
       <div style={{ padding: "16px 20px", fontWeight: 700, fontSize: 15, color: "var(--text-strong)", borderBottom: "1px solid var(--border-subtle)" }}>{title}</div>
-      {list.length === 0 ? (
+      {sorted.length === 0 ? (
         <div style={{ padding: "48px 20px", textAlign: "center", fontSize: 14, color: "var(--text-muted)" }}>{empty}</div>
       ) : (
         <table style={{ width: "100%", minWidth: 880, borderCollapse: "collapse" }}>
@@ -113,14 +125,28 @@ export default function PetitionTable({ title, list, empty }) {
             </tr>
           </thead>
           <tbody>
-            {list.map((p) => (
-              <Row key={p.id} p={p} onAnswer={setAnswering} onHide={hide} onRestore={restore} onComments={setCommenting} />
+            {sorted.map((p) => (
+              <Row key={p.id} p={p} onAnswer={setAnswering} onHide={setHiding} onRestore={restore} onOpen={(x) => setDetailId(x.id)} />
             ))}
           </tbody>
         </table>
       )}
+      {detailId != null && (
+        <PetitionDrawer
+          id={detailId}
+          onClose={() => setDetailId(null)}
+          onAnswer={setAnswering}
+          escBlocked={!!answering || !!hiding}
+        />
+      )}
       {answering && <AnswerModal p={answering} onClose={() => setAnswering(null)} onSubmit={submit} />}
-      {commenting && <CommentModeration p={commenting} onClose={() => setCommenting(null)} />}
+      {hiding && (
+        <HideReasonDialog
+          title={`"${hiding.title}" 숨기기`}
+          onClose={() => setHiding(null)}
+          onSubmit={(reason) => hidePetition(hiding.id, reason)}
+        />
+      )}
     </div>
   );
 }

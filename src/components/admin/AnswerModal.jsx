@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePetitions } from "../../stores/petitions";
 import { Button, CategoryTag, Icon, IconButton, Select, StatusBadge, Textarea } from "../ui";
 
-const ANSWER_SOURCES = [
+/* PetitionDrawer 가 등록된 답변의 출처 라벨을 그릴 때 같은 표를 쓴다 — 두 벌로 두면 갈린다. */
+export const ANSWER_SOURCES = [
   { value: "OPERATION_TEAM", label: "운영팀 답변" },
   { value: "SCHOOL_OFFICIAL", label: "학교 공식 답변" },
 ];
@@ -94,7 +95,9 @@ export default function AnswerModal({ p, onClose, onSubmit }) {
           </IconButton>
         </div>
         <h2 id="answer-modal-title" style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 800, color: "var(--text-strong)" }}>{p.title}</h2>
-        <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: 14, fontSize: 14, color: "var(--text-body)", lineHeight: 1.7, marginBottom: 18 }}>{p.excerpt}</div>
+        {/* 본문 전문을 보여준다 — 120자 요약만 보고 답변을 쓰게 두면 민원의 뒷부분을 놓친다.
+            대신 1000자가 모달을 밀어내지 않게 높이를 묶고 안에서만 스크롤한다. */}
+        <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: 14, fontSize: 14, color: "var(--text-body)", lineHeight: 1.7, marginBottom: 18, maxHeight: 160, overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{p.content}</div>
         {loading ? (
           <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>기존 답변을 불러오는 중…</p>
         ) : loadError ? (
