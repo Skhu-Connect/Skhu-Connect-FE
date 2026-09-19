@@ -4,8 +4,7 @@
    교체했다. 계약 차이는 docs/api-spec.md, 결정 사항은 exec-plans/roadmap-web.md Phase 6 참고.
 
    admin 콘솔은 로그인·청원 목록·공식 답변(GET/POST/PUT)·콘텐츠 숨김복원·댓글 조회·
-   임계치 설정(GET/PUT)까지 실 백엔드로 연동됐다. listNotifLogs(알림 로그)는 대응 엔드포인트가
-   없어 여전히 mockDb.js 의 adminDb 로 동작한다.
+   임계치 설정(GET/PUT)까지 전부 실 백엔드로 연동됐다.
    알림 설정(NotificationSettingsScreen)은 NotificationEventService의 발생 지점 5곳을 보여주고
    PATCH /connect/users/me/notification-settings로 종류별 수신 설정을 저장한다.
 
@@ -19,7 +18,7 @@
    회원탈퇴(deleteAccount)는 /connect/users/me DELETE({password})로 연동 완료(2026-08-11, /v3/api-docs
    로 계약 재확인 — 204/400/401/404, 에러 title 필드까지 일치). */
 
-import { CATEGORY_META, adminDb } from "./mockDb.js";
+import { CATEGORY_META } from "./mockDb.js";
 import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
 
 /* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 백엔드로 프록시해 같은 오리진이 된다.
@@ -765,7 +764,7 @@ export async function adminLogout() {
   adminAccessToken = null;
 }
 
-/* ───────────────── 관리자 콘솔 (로그인·청원 목록·공식 답변은 실 백엔드 — 알림 로그만 mockDb.adminDb) ───────────────── */
+/* ───────────────── 관리자 콘솔 (전부 실 백엔드) ───────────────── */
 
 // basis(임계치 기준 문구)는 GET /connect/admin/petitions 응답에 없다 — 카테고리 단위
 // 고정값이라 CATEGORY_META 에서 읽는다. 담당자(팀·이름·연락처)는 지어낸 값이라 통째로
@@ -777,7 +776,11 @@ function adaptAdminPetition(raw) {
   return {
     id: raw.id,
     title: raw.title,
-    excerpt: (raw.content ?? "").slice(0, 120),
+    // 본문 전문. 관리자는 요약이 아니라 글 전체를 보고 판단한다(드로어·답변 모달·엑셀 공용).
+    content: raw.content ?? "",
+    // 경과일·엑셀 작성일용. 서버 LocalDateTime 은 타임존이 없는 UTC 라 Z 를 붙여 정규화한다 —
+    // 안 하면 화면이 9시간 밀려 "등록 N일째" 가 하루 어긋난다.
+    createdAt: raw.createdAt ? parseServerDate(raw.createdAt).toISOString() : null,
     category: key,
     status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
     current: raw.agreementCount ?? 0,
@@ -791,13 +794,12 @@ function adaptAdminPetition(raw) {
   };
 }
 
+/** 서버 MAX_PAGE_SIZE 가 100 이라 한 번에 최대 100건이다(createdAt DESC 정렬).
+    total 을 함께 돌려주는 이유: 101건째부터 관리자 화면에서 조용히 사라지면 목록·검색·엑셀이
+    전부 "전체"인 척하게 된다. 화면이 잘렸다는 사실을 표시할 수 있어야 한다. */
 export async function listAdminPetitions() {
   const data = await adminApiFetch("/connect/admin/petitions?size=100");
-  return (data?.content ?? []).map(adaptAdminPetition);
-}
-
-export async function listNotifLogs() {
-  return [...adminDb.notifLogs];
+  return { list: (data?.content ?? []).map(adaptAdminPetition), total: data?.totalElements ?? 0 };
 }
 
 function pickHiddenState(raw) {

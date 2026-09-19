@@ -20,9 +20,10 @@ const removeComment = (list, id) =>
 
 export const usePetitions = create((set, get) => ({
   petitions: [],
+  // 관리자 목록은 서버가 최대 100건만 준다. 화면이 "전체"인 척하지 않도록 서버가 센 전체 건수를 따로 들고 있는다.
+  petitionsTotal: 0,
   categories: [],
   notifications: [],
-  notifLogs: [],
   reports: [],
   commentsById: {},
   answersById: {},
@@ -57,17 +58,16 @@ export const usePetitions = create((set, get) => ({
     }
   },
 
-  /** 관리자 콘솔 로드. AdminLayout 이 부른다 — 알림 로그는 여기서만 온다. */
+  /** 관리자 콘솔 로드. AdminLayout 이 부른다. */
   loadAdmin: async () => {
     set({ loading: true });
     try {
-      const [petitions, categories, notifLogs, reports] = await Promise.all([
+      const [{ list, total }, categories, reports] = await Promise.all([
         api.listAdminPetitions(),
         api.listCategories(),
-        api.listNotifLogs(),
         api.listAdminReports(),
       ]);
-      set({ petitions, categories, notifLogs, reports, answersById: answers(petitions) });
+      set({ petitions: list, petitionsTotal: total, categories, reports, answersById: answers(list) });
     } finally {
       set({ loading: false });
     }
