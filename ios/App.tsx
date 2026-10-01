@@ -92,6 +92,7 @@ export default function App() {
   const [formBody, setFormBody] = useState("");
   /* 유사 청원 찾기의 마지막 결과·사용량. 폼과 같이 여기 둬서 상세로 갔다 와도 남고, 등록 성공 시 비운다. */
   const [similar, setSimilar] = useState<Petition[] | null>(null);
+  const [similarIdx, setSimilarIdx] = useState(0);
   const [similarUsage, setSimilarUsage] = useState<SimilarUsage | null>(null);
   /* 등록 화면에서 연 유사 청원. 목록(최근 100건) 밖이거나 만료된 청원일 수 있는데 petitions 에 넣으면
      피드·통계에 끼어든다 — 상세를 띄우는 용도로만 따로 들고 있는다. submitOrigin 은 그 상세의 뒤로가기를
@@ -817,6 +818,8 @@ export default function App() {
               onSubmit={submitPetition}
               onBack={() => setScreen("feed")}
               similar={similar}
+              similarIdx={similarIdx}
+              onSimilarIdx={setSimilarIdx}
               usage={similarUsage}
               votes={votes}
               onSimilar={setSimilar}

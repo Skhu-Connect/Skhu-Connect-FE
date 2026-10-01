@@ -31,6 +31,9 @@ export type SubmitProps = {
   onBack: () => void;
   /* 마지막 유사 청원 결과(null = 아직 안 찾음)와 서버 사용량. 상세로 갔다 와도 남도록 App 이 들고 있다. */
   similar: Petition[] | null;
+  /* 결과는 한 장씩 보이고 화살표로 넘긴다. 상세로 갔다 와도 같은 장이 보이도록 App 이 들고 있다. */
+  similarIdx: number;
+  onSimilarIdx: (v: number) => void;
   usage: SimilarUsage | null;
   votes: Votes;
   onSimilar: (v: Petition[]) => void;
@@ -73,6 +76,7 @@ export function SubmitScreen(p: SubmitProps) {
     try {
       const { results, remaining } = await api.findSimilarPetitions(p.title, p.body);
       p.onSimilar(results);
+      p.onSimilarIdx(0);
       AccessibilityInfo.announceForAccessibility(results.length ? `비슷한 청원 ${results.length}건` : "비슷한 청원이 없습니다");
       if (remaining === 0) api.getSimilarUsage().then(onUsage).catch(() => onUsage((u) => (u ? { ...u, remaining: 0 } : u)));
       else if (remaining != null) onUsage((u) => (u ? { ...u, remaining } : u));
@@ -132,21 +136,35 @@ export function SubmitScreen(p: SubmitProps) {
             ) : null}
             {searchError ? <Text style={[t, note, { color: colors.danger }]}>{searchError}</Text> : null}
             {p.similar && p.similar.length === 0 ? <Text style={[t, note, { color: colors.muted }]}>비슷한 청원이 없습니다</Text> : null}
-            {p.similar?.map((s) => (
-              <Pressable
-                key={s.id}
-                onPress={() => p.onOpenSimilar(s.id)}
-                accessibilityRole="button"
-                style={{ gap: 6, backgroundColor: colors.sunken, borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14 }}
-              >
-                <Text style={[t, { fontSize: 14.5, fontWeight: "700", color: colors.strong }]}>{s.title}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <CategoryTag category={s.category} size="sm" />
-                  <StatusBadge status={badgeStatus(s)} size="sm" />
-                  <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>공감 {count(s, p.votes)}</Text>
+            {p.similar && p.similar.length > 0 ? (() => {
+              const n = p.similar.length;
+              const i = p.similarIdx % n;
+              const s = p.similar[i];
+              return (
+                <View style={{ flexDirection: "row", alignItems: "stretch", backgroundColor: colors.sunken, borderRadius: radius.md }}>
+                  <Pressable onPress={() => p.onOpenSimilar(s.id)} accessibilityRole="button" style={{ flex: 1, gap: 6, paddingVertical: 12, paddingHorizontal: 14 }}>
+                    <Text style={[t, { fontSize: 14.5, fontWeight: "700", color: colors.strong }]}>{s.title}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <CategoryTag category={s.category} size="sm" />
+                      <StatusBadge status={badgeStatus(s)} size="sm" />
+                      <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>공감 {count(s, p.votes)}</Text>
+                    </View>
+                  </Pressable>
+                  {/* 2건 이상이면 오른쪽 끝 화살표로 다음 유사 청원. 마지막 다음은 처음으로 돈다. */}
+                  {n > 1 ? (
+                    <Pressable
+                      onPress={() => p.onSimilarIdx((i + 1) % n)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`다음 유사 청원 (${i + 1}/${n})`}
+                      style={{ width: 52, alignItems: "center", justifyContent: "center", gap: 2, borderLeftWidth: 1, borderLeftColor: colors.subtle }}
+                    >
+                      <Icon name="chevronRight" size={20} color={colors.body} />
+                      <Text style={[t, { fontSize: 11.5, color: colors.muted }]}>{i + 1}/{n}</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
-              </Pressable>
-            ))}
+              );
+            })() : null}
           </View>
 
           {key && basis ? (
