@@ -28,6 +28,7 @@ export default function SubmitScreen() {
   const [saving, setSaving] = useState(false);
   // similar: null(아직 안 찾음) | 결과 배열. usage: 서버가 준 { limit, windowSeconds, remaining, retryAt }.
   const [similar, setSimilar] = useState(saved?.similar ?? null);
+  const [idx, setIdx] = useState(saved?.idx ?? 0); // 결과는 한 장씩 보이고 화살표로 넘긴다
   const [usage, setUsage] = useState(saved?.usage ?? null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -38,7 +39,7 @@ export default function SubmitScreen() {
   // 등록 성공 뒤에는 저장하지 않는다 — navigate 가 트랜지션이라 언마운트 전에 한 번 더 렌더된다.
   const submitted = useRef(false);
   useEffect(() => {
-    if (!submitted.current) draft = { owner, cat, title, body, similar, usage };
+    if (!submitted.current) draft = { owner, cat, title, body, similar, idx, usage };
   });
 
   // 막혀 있으면 풀리는 시각에 사용량을 한 번 더 물어 버튼을 다시 연다. 시각을 모르면 1분마다 — deps 가 usage
@@ -66,6 +67,7 @@ export default function SubmitScreen() {
     try {
       const { results, remaining } = await api.findSimilarPetitions({ title, content: body });
       setSimilar(results);
+      setIdx(0);
       if (remaining === 0) api.getSimilarUsage().then(setUsage).catch(() => setUsage((u) => (u ? { ...u, remaining: 0 } : u)));
       else if (remaining != null) setUsage((u) => (u ? { ...u, remaining } : u));
     } catch (err) {
@@ -139,26 +141,37 @@ export default function SubmitScreen() {
             )}
             {searchError && <p style={{ margin: 0, fontSize: 13.5, color: "var(--danger-500)" }}>{searchError}</p>}
             {similar && similar.length === 0 && <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-muted)" }}>비슷한 청원이 없습니다</p>}
-            {similar && similar.length > 0 && (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                {similar.map((p) => (
-                  <li key={p.id}>
+            {similar && similar.length > 0 && (() => {
+              const p = similar[idx % similar.length];
+              return (
+                <div style={{ display: "flex", alignItems: "stretch", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/p/${p.id}`)}
+                    style={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", flexDirection: "column", gap: 6, background: "none", border: "none", padding: "12px 14px", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                  >
+                    <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)", overflowWrap: "anywhere" }}>{p.title}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-muted)" }}>
+                      <CategoryTag category={p.category} size="sm" />
+                      <StatusBadge status={petitionStatus(p)} size="sm" />
+                      공감 {p.current}
+                    </span>
+                  </button>
+                  {/* 2건 이상이면 오른쪽 끝 화살표로 다음 유사 청원. 마지막 다음은 처음으로 돈다. */}
+                  {similar.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => navigate(`/p/${p.id}`)}
-                      style={{ width: "100%", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, background: "var(--surface-sunken)", border: "none", borderRadius: "var(--radius-md)", padding: "12px 14px", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                      onClick={() => setIdx((i) => (i + 1) % similar.length)}
+                      aria-label={`다음 유사 청원 (${(idx % similar.length) + 1}/${similar.length})`}
+                      style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, minWidth: 52, background: "none", border: "none", borderLeft: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-body)", fontFamily: "var(--font-sans)" }}
                     >
-                      <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)" }}>{p.title}</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-muted)" }}>
-                        <CategoryTag category={p.category} size="sm" />
-                        <StatusBadge status={petitionStatus(p)} size="sm" />
-                        공감 {p.current}
-                      </span>
+                      <Icon name="chevronRight" size={20} />
+                      <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{(idx % similar.length) + 1}/{similar.length}</span>
                     </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
