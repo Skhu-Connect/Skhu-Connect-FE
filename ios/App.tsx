@@ -19,7 +19,7 @@ import { SubmitScreen, categoryOf } from "./src/screens/Submit";
 import { ShareSheet, TabBar, Toast } from "./src/shell";
 import { colors } from "./src/theme";
 import * as api from "./src/api";
-import type { Me, ReportReasonType } from "./src/api";
+import type { Me, ReportReasonType, SimilarUsage } from "./src/api";
 import * as push from "./src/push";
 
 type Screen = "feed" | "detail" | "submit" | "my" | "notifSettings";
@@ -90,7 +90,14 @@ export default function App() {
   const [formCat, setFormCat] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
-
+  /* 유사 청원 찾기의 마지막 결과·사용량. 폼과 같이 여기 둬서 상세로 갔다 와도 남고, 등록 성공 시 비운다. */
+  const [similar, setSimilar] = useState<Petition[] | null>(null);
+  const [similarUsage, setSimilarUsage] = useState<SimilarUsage | null>(null);
+  /* 등록 화면에서 연 유사 청원. 목록(최근 100건) 밖이거나 만료된 청원일 수 있는데 petitions 에 넣으면
+     피드·통계에 끼어든다 — 상세를 띄우는 용도로만 따로 들고 있는다. submitOrigin 은 그 상세의 뒤로가기를
+     등록 화면으로 돌리려고 연 청원 id 를 기억한다. */
+  const [similarDetail, setSimilarDetail] = useState<Petition | null>(null);
+  const [submitOrigin, setSubmitOrigin] = useState<number | null>(null);
 
   /* 공유 링크로 들어왔는지. 들어왔고 아직 공감을 안 눌렀으면 상세 상단에 안내가 뜬다. */
   const [deepId, setDeepId] = useState<number | null>(null);
@@ -236,7 +243,10 @@ export default function App() {
     return push.onNotificationTapped(arrive);
   }, []);
 
-  const detail = useMemo(() => petitions.find((p) => p.id === openId), [petitions, openId]);
+  const detail = useMemo(
+    () => petitions.find((p) => p.id === openId) ?? (similarDetail?.id === openId ? similarDetail : undefined),
+    [petitions, openId, similarDetail],
+  );
   const deepPetition = useMemo(() => (deepId == null ? null : (petitions.find((p) => p.id === deepId) ?? null)), [petitions, deepId]);
 
   /* 목록에 없는 청원을 연 상태(만료된 딥링크, 최근 100건 밖의 청원)로 남으면 빈 화면에
@@ -280,7 +290,7 @@ export default function App() {
   const vote = useCallback(
     (id: number) => {
       const wasVoted = !!votes[id];
-      if (!wasVoted && petitions.find((p) => p.id === id)?.mine) {
+      if (!wasVoted && (petitions.find((p) => p.id === id) ?? (similarDetail?.id === id ? similarDetail : undefined))?.mine) {
         flash("본인 청원에는 요청할 수 없습니다");
         return;
       }
@@ -293,7 +303,7 @@ export default function App() {
         { text: "확인", onPress: () => doVote(id, wasVoted) },
       ]);
     },
-    [votes, petitions, doVote, flash],
+    [votes, petitions, similarDetail, doVote, flash],
   );
 
   /* 실 백엔드 POST /connect/users/me/blocks 를 쓴다: 서버가 영구 차단을 기억하고 이후
@@ -314,6 +324,7 @@ export default function App() {
                 .blockPetitionAuthor(id)
                 .then(() => {
                   setPetitions((prev) => prev.filter((p) => p.id !== id));
+                  setSimilarDetail((d) => (d?.id === id ? null : d));
                   flash("작성자를 차단했습니다");
                   /* 차단은 작성자 단위라 그 사람이 쓴 다른 글도 사라져야 한다. 청원 응답에 작성자
                      정보가 없어 로컬에서는 형제 글을 못 고른다 — 서버가 걸러준 목록으로 갈아끼운다.
@@ -363,15 +374,19 @@ export default function App() {
 
   const toggleBookmark = useCallback(
     (id: number) => {
-      const wasBookmarked = !!petitions.find((p) => p.id === id)?.bookmarked;
-      setPetitions((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked: !wasBookmarked } : p)));
+      const wasBookmarked = !!(petitions.find((p) => p.id === id) ?? (similarDetail?.id === id ? similarDetail : undefined))?.bookmarked;
+      const mark = (bookmarked: boolean) => {
+        setPetitions((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked } : p)));
+        setSimilarDetail((d) => (d?.id === id ? { ...d, bookmarked } : d));
+      };
+      mark(!wasBookmarked);
       flash(wasBookmarked ? "북마크를 해제했습니다" : "북마크에 저장했습니다");
       api.toggleBookmark(id, wasBookmarked).catch(() => {
-        setPetitions((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked: wasBookmarked } : p)));
+        mark(wasBookmarked);
         flash("북마크 처리에 실패했습니다");
       });
     },
-    [petitions, flash],
+    [petitions, similarDetail, flash],
   );
 
   const reportPetition = useCallback(async (id: number, reasonType: ReportReasonType, reasonDetail: string) => {
@@ -395,9 +410,29 @@ export default function App() {
   }, [flash]);
 
   const openPetition = useCallback((id: number) => {
+    setSubmitOrigin(null);
     setOpenId(id);
     setScreen("detail");
   }, []);
+
+  /* 목록에 없으면 먼저 받아 둔다 — 안 그러면 아래 "건의를 찾을 수 없습니다" 가드가 피드로 튕긴다.
+     못 받으면(삭제·차단 404 등) 등록 화면에 그대로 남는다. */
+  const openSimilar = useCallback(
+    async (id: number) => {
+      if (!petitions.some((p) => p.id === id)) {
+        try {
+          setSimilarDetail(await api.getPetition(id));
+        } catch (e) {
+          flash(e instanceof api.ApiError && e.status === 404 ? "건의를 찾을 수 없습니다." : "건의를 불러오지 못했습니다.");
+          return;
+        }
+      }
+      setSubmitOrigin(id);
+      setOpenId(id);
+      setScreen("detail");
+    },
+    [petitions, flash],
+  );
 
   const onOpenNotification = useCallback(
     (n: Notification) => {
@@ -464,6 +499,8 @@ export default function App() {
         setFormCat("");
         setFormTitle("");
         setFormBody("");
+        setSimilar(null);
+        setSimilarUsage(null);
         flash("건의가 익명으로 등록되었습니다");
       })
       .catch((e) => flash(e instanceof Error ? e.message : "건의 등록에 실패했습니다"));
@@ -556,7 +593,9 @@ export default function App() {
                 .deletePetition(id)
                 .then(() => {
                   setPetitions((prev) => prev.filter((x) => x.id !== id));
-                  setScreen(tab === "my" ? "my" : "feed");
+                  setSimilar((r) => r?.filter((x) => x.id !== id) ?? r);
+                  setScreen(submitOrigin === id ? "submit" : tab === "my" ? "my" : "feed");
+                  setSubmitOrigin(null);
                   flash("건의를 삭제했습니다");
                 })
                 .catch((e) => flash(e instanceof Error ? e.message : "건의 삭제에 실패했습니다"));
@@ -565,7 +604,7 @@ export default function App() {
         ],
       );
     },
-    [tab, flash],
+    [tab, submitOrigin, flash],
   );
 
   const onToggleCommentLike = useCallback(
@@ -621,6 +660,14 @@ export default function App() {
     setNotifications([]);
     setMyComments([]);
     setNotices([]);
+    setSimilar(null);
+    setSimilarUsage(null);
+    setSimilarDetail(null);
+    setSubmitOrigin(null);
+    // 같은 기기에서 다른 계정으로 로그인했을 때 앞 사람의 초안이 보이지 않게 한다.
+    setFormCat("");
+    setFormTitle("");
+    setFormBody("");
     setNoticeClosed(false); // 안 지우면 다시 로그인했을 때 배너 없이 헤더 확성기만 남는다
   }, []);
 
@@ -738,7 +785,11 @@ export default function App() {
               draft={draft}
               onDraft={setDraft}
               onAddComment={addComment}
-              onBack={() => setScreen(tab === "my" ? "my" : "feed")}
+              onBack={() => {
+                // 한 번 쓰고 비운다 — 남겨 두면 딥링크·푸시로 같은 글을 다시 열었을 때도 등록 화면으로 돌아간다.
+                setScreen(submitOrigin === detail.id ? "submit" : tab === "my" ? "my" : "feed");
+                setSubmitOrigin(null);
+              }}
               onVote={() => vote(detail.id)}
               onOpenShare={() => {
                 setShareOpen(true);
@@ -765,6 +816,12 @@ export default function App() {
               onBody={setFormBody}
               onSubmit={submitPetition}
               onBack={() => setScreen("feed")}
+              similar={similar}
+              usage={similarUsage}
+              votes={votes}
+              onSimilar={setSimilar}
+              onUsage={setSimilarUsage}
+              onOpenSimilar={openSimilar}
             />
           ) : null}
 

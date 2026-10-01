@@ -422,9 +422,15 @@ function cooldownMessage(retryAfterSeconds: unknown): string {
   const total = Number(retryAfterSeconds);
   const suffix = "마지막 등록 후 10분이 지나야 하며, 삭제한 건의도 이 시간에 포함됩니다.";
   if (!Number.isFinite(total) || total <= 0) return `새 건의는 아직 올릴 수 없습니다. ${suffix}`;
+  return `${formatWait(total)} 후에 새 건의를 올릴 수 있습니다. ${suffix}`;
+}
+
+/** 남은 초를 "3분 42초"(1분 미만이면 "42초")로. 등록 쿨다운과 유사 청원 검색 제한 안내가 같이 쓴다(웹 formatWait 와 같다). */
+export function formatWait(seconds: number): string {
+  const total = Math.max(0, Math.ceil(Number(seconds) || 0));
   const min = Math.floor(total / 60);
   const sec = total % 60;
-  return `${min ? `${min}분 ${sec}초` : `${sec}초`} 후에 새 건의를 올릴 수 있습니다. ${suffix}`;
+  return min ? `${min}분 ${sec}초` : `${sec}초`;
 }
 
 export async function createPetition(args: { category: CategoryKey; title: string; body: string }): Promise<Petition> {
@@ -444,6 +450,41 @@ export async function createPetition(args: { category: CategoryKey; title: strin
   const p = adaptPetition(raw);
   p.comments = 0;
   return p;
+}
+
+/* ───────────────── 유사 청원 찾기 ─────────────────
+   검색 횟수(사용자별 10분 슬라이딩 창에 3회)는 서버가 세고 강제한다. 같은 제목+본문을 10분 안에 다시
+   찾으면 캐시 히트라 횟수가 줄지 않으므로 클라이언트는 세지 않고 서버 값만 옮긴다(웹 src/api/index.js 와 같다).
+   retryAt 은 다시 찾을 수 있는 시각(ms) — 초 단위 응답을 받은 순간 시각으로 바꿔 둬야 화면을 나갔다 와도 맞는다. */
+export type SimilarUsage = { limit: number; windowSeconds: number; remaining: number; retryAt: number | null };
+
+function adaptSimilarUsage(u: any): SimilarUsage {
+  const retryAt = u.retryAfterSeconds != null ? Date.now() + u.retryAfterSeconds * 1000
+    : u.nextAvailableAt ? parseServerDate(u.nextAvailableAt).getTime() : null;
+  return { limit: u.limit, windowSeconds: u.windowSeconds, remaining: u.remaining, retryAt };
+}
+
+export async function getSimilarUsage(): Promise<SimilarUsage> {
+  return adaptSimilarUsage(await apiFetch<any>("/connect/petitions/similar/usage"));
+}
+
+/** 결과 항목은 청원 목록과 같은 필드라 adaptPetition 을 그대로 쓴다(similarity 는 버린다 — 정렬 순서로 충분).
+    429 는 ApiError(status 429, body.retryAt)로, 그 밖의 실패는 한국어 문구로 던진다. 호출부는 어떤 실패든 초안·직전 결과를 지우지 않는다. */
+export async function findSimilarPetitions(title: string, content: string): Promise<{ results: Petition[]; remaining: number | null }> {
+  try {
+    const data = await apiFetch<any>("/connect/petitions/similar", { method: "POST", body: { title: title.trim(), content: content.trim() } });
+    return { results: (data?.results ?? []).map(adaptPetition), remaining: data?.remainingSearches ?? null };
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw new Error("네트워크 연결을 확인한 뒤 다시 시도해 주세요.");
+    if (e.status === 429) {
+      const sec = Number(e.body?.retryAfterSeconds);
+      const ok = Number.isFinite(sec) && sec > 0;
+      throw new ApiError(ok ? `검색 횟수를 모두 사용했습니다. ${formatWait(sec)} 후 다시 찾을 수 있습니다.` : "검색 횟수를 모두 사용했습니다. 잠시 후 다시 찾을 수 있습니다.", 429, { retryAt: ok ? Date.now() + sec * 1000 : null });
+    }
+    if (e.status === 503) throw new Error("지금은 유사 청원을 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    if (e.status === 400) throw new Error("제목은 100자 이하로, 내용은 1자 이상 입력해 주세요.");
+    throw e;
+  }
 }
 
 export type ReportReasonType = "SPAM" | "ABUSE" | "INAPPROPRIATE" | "FALSE_INFORMATION" | "OTHER";
