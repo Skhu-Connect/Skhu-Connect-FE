@@ -137,6 +137,23 @@
   없어 **게시된 공지만 보인다** — 숨긴(HIDDEN) 공지는 콘솔에서 다시 찾을 수 없고, 그래서 `/republish` 는
   진입점이 없어 프론트에 구현하지 않았다(숨김은 사실상 되돌릴 수 없는 동작 — 확인 창에 명시).
 
+## 유사 청원 (2026-10-01 확인)
+
+- Swagger 태그 "Petition Similarity". 둘 다 **bearer 인증 필요**.
+- `POST /connect/petitions/similar` `{title(≤100, 필수), content(1자 이상, 필수)}` → `{threshold, totalElements,
+  cached, remainingSearches, results[]}`. `results[]` 항목은 `id category status title content agreementCount
+  targetAgreementCount expiresAt createdAt updatedAt similarity` — 청원 목록 항목과 같은 필드라 웹은
+  `adaptPetition` 을 그대로 쓴다. 유사도 0.75 이상만 내림차순으로 온다. **결과가 없으면 빈 `results` 의 `200`**
+  (404 아님) — 화면은 "비슷한 청원이 없습니다".
+- `GET /connect/petitions/similar/usage` → `{limit, used, remaining, windowSeconds, retryAfterSeconds?,
+  nextAvailableAt?}`. `nextAvailableAt` 은 타임존 없는 UTC 라 `parseServerDate` 로 읽는다.
+- **횟수 제한은 서버가 강제한다**(사용자별 10분 슬라이딩 창에 3회). 같은 제목+본문으로 10분 안에 다시 찾으면
+  캐시 히트(`cached: true`)라 **횟수가 줄지 않는다** — 그래서 클라이언트는 횟수를 세지 않는다: 진입 시
+  `usage` 로 초기값, 검색 응답의 `remainingSearches` 로 갱신한다.
+- 에러: `400`(제목 100자 초과 등)·`401`·`404`·`429`·`503`. **`429` 는 ProblemDetail 에 `retryAfterSeconds`**
+  를 실어 준다 — 남은 횟수를 0 으로 두고 "N분 N초 후 다시 찾을 수 있습니다"로 안내한다. `503` 은 AI 임베딩
+  장애 — "지금은 유사 청원을 찾을 수 없습니다". 어느 에러든 작성 중인 글과 직전 결과는 지우지 않는다.
+
 ## 차단 (2026-08-18 추가 확인)
 
 - `POST /connect/users/me/blocks` `{targetType: "PETITION"|"COMMENT", contentId}` → 201
