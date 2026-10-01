@@ -207,9 +207,8 @@ export default function FeedScreen({ nav = "feed" }) {
   const q = query.trim();
   const needle = q.toLowerCase();
   if (needle) list = list.filter((p) => `${p.title} ${p.excerpt}`.toLowerCase().includes(needle));
-  // 만료(30일 경과) 청원은 기본 피드에서 뺀다. 검색 결과와 /mine(마이페이지 진입 지점)에는 남긴다.
-  else if (nav !== "mine") list = list.filter((p) => !p.expired);
-  list = [...list].sort((a, b) => (sort === "hot" ? b.current - a.current : b.id - a.id));
+  // 만료(30일 경과) 청원도 피드에 보이되, 진행 중인 청원 뒤로 보낸다(카드엔 "만료됨" 배지가 붙는다).
+  list = [...list].sort((a, b) => a.expired - b.expired || (sort === "hot" ? b.current - a.current : b.id - a.id));
 
   // 급상승·기간요약은 카테고리/정렬 선택과 무관하게 항상 선택된 기간 전체를 본다.
   const periodDef = PERIODS.find((p) => p.key === period) ?? PERIODS[0];
