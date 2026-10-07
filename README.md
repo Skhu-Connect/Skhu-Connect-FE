@@ -1,4 +1,6 @@
-<img src="assets/brand-logo.png" alt="성공잇다 로고" width="72" />
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/Skhu-Connect/.github/main/profile/assets/logo.png" width="96" alt="성공잇다" />
 
 # 성공잇다 프론트엔드
 
