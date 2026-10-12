@@ -90,8 +90,9 @@ export async function unregisterFromPush(): Promise<void> {
   }
 }
 
-/** 앱이 열려 있는 동안 푸시가 오면 호출된다(시스템 배너 없음) — App.tsx 가 토스트 + 알림
-    재조회로 반응한다. */
+/** 앱이 열려 있는 동안 푸시가 오면 호출된다 — App.tsx 가 알림을 재조회한다. 배너는 iOS 가 띄운다:
+    firebase.json 의 messaging_ios_foreground_presentation_options 가 없으면 RNFirebase 는 포그라운드
+    알림을 조용히 버린다. 그 값은 빌드 때 Info.plist 로 들어가므로 바꾸면 네이티브 리빌드가 필요하다. */
 export function onForegroundMessage(cb: (message: RemoteMessage) => void): () => void {
   return onMessage(getMessaging(), cb);
 }
