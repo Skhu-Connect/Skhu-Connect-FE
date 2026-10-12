@@ -100,9 +100,8 @@ export default function App() {
   const [similarDetail, setSimilarDetail] = useState<Petition | null>(null);
   const [submitOrigin, setSubmitOrigin] = useState<number | null>(null);
 
-  /* 공유 링크로 들어왔는지. 들어왔고 아직 공감을 안 눌렀으면 상세 상단에 안내가 뜬다. */
+  /* 공유 링크·푸시 알림으로 들어온 건의. 로그인 전에 도착하면 인증이 끝난 뒤 그 상세로 간다. */
   const [deepId, setDeepId] = useState<number | null>(null);
-  const [deepUsed, setDeepUsed] = useState(false);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flash = useCallback((msg: string) => {
@@ -150,7 +149,6 @@ export default function App() {
       const id = petitionIdFromUrl(url);
       if (id == null) return;
       setDeepId(id);
-      setDeepUsed(false);
       setOpenId(id);
       setAuthed((was) => {
         if (was) setScreen("detail");
@@ -217,14 +215,14 @@ export default function App() {
     api.listNotices().then(setNotices).catch(() => {});
   }, [authed]);
 
-  /* 앱이 열려 있는 동안 FCM 이 오면(시스템 배너 없음) 알림 목록을 바로 갱신하고 토스트로 알린다. */
+  /* 앱이 열려 있는 동안 FCM 이 오면 알림 목록을 바로 갱신한다. 알리는 일은 시스템 배너가 한다
+     (firebase.json messaging_ios_foreground_presentation_options) — 토스트를 또 띄우면 두 번 알린다. */
   useEffect(() => {
     if (!authed) return;
     return push.onForegroundMessage(() => {
       api.listNotifications().then(setNotifications).catch(() => {});
-      flash("새 알림이 도착했습니다");
     });
-  }, [authed, flash]);
+  }, [authed]);
 
   /* 푸시 알림을 탭해서 열린 경우 — URL 딥링크와 같은 경로(deepId/openId)를 탄다.
      킬 상태 콜드 스타트와 백그라운드 탭 둘 다 여기로 모인다. */
@@ -233,7 +231,6 @@ export default function App() {
     const arrive = (petitionId: number | null) => {
       if (petitionId == null) return;
       setDeepId(petitionId);
-      setDeepUsed(false);
       setOpenId(petitionId);
       setAuthed((was) => {
         if (was) setScreen("detail");
@@ -243,6 +240,14 @@ export default function App() {
     push.getTappedNotificationPetitionId().then(arrive).catch(() => {});
     return push.onNotificationTapped(arrive);
   }, []);
+
+  /* 종료 상태에서 알림·링크로 열리면 세션 복구가 끝나기 전에 딥링크가 먼저 도착한다 — 그때는 위
+     arrive 가 화면을 못 바꾸므로, 인증이 끝난 순간 기다리던 건의로 보낸다. */
+  useEffect(() => {
+    if (!authed || deepId == null) return;
+    setOpenId(deepId);
+    setScreen("detail");
+  }, [authed, deepId]);
 
   const detail = useMemo(
     () => petitions.find((p) => p.id === openId) ?? (similarDetail?.id === openId ? similarDetail : undefined),
@@ -273,7 +278,6 @@ export default function App() {
   const doVote = useCallback(
     (id: number, wasVoted: boolean) => {
       setVotes((v) => ({ ...v, [id]: !wasVoted }));
-      if (!wasVoted) setDeepUsed(true);
       flash(!wasVoted ? "요청했습니다" : "요청을 취소했습니다");
       api.toggleEmpathy(id, wasVoted).catch((e) => {
         setVotes((v) => ({ ...v, [id]: wasVoted }));
@@ -803,7 +807,6 @@ export default function App() {
               onDeletePetition={deletePetitionAt}
               bookmarked={!!detail.bookmarked}
               onToggleBookmark={() => toggleBookmark(detail.id)}
-              deepPrompt={deepId === detail.id && !deepUsed}
             />
           ) : null}
 

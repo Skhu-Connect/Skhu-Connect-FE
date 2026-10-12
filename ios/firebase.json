@@ -1,5 +1,6 @@
 {
   "react-native": {
-    "messaging_ios_auto_register_for_remote_messages": false
+    "messaging_ios_auto_register_for_remote_messages": false,
+    "messaging_ios_foreground_presentation_options": ["banner", "list", "sound", "badge"]
   }
 }

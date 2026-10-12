@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../icons";
 import { BASIS_NOTE, CAT_LABEL, type Comment, type Petition } from "../data";
 import { count, ddayLabel, ymd } from "../logic";
 import type { Votes } from "../logic";
 import { ActionMenu, Avatar, Button, Card, CategoryTag, EmpathyButton, StatusBadge, ThresholdBar } from "../ui";
-import { colors, font, gradient, radius } from "../theme";
+import { colors, font, radius } from "../theme";
 import type { ReportReasonType } from "../api";
 import { ReportSheet } from "../reportSheet";
 
@@ -36,8 +35,6 @@ export type DetailProps = {
   onDeletePetition: (petitionId: number) => void;
   bookmarked: boolean;
   onToggleBookmark: () => void;
-  /** 공유 링크로 들어와 아직 공감하지 않은 상태에서만 뜬다. */
-  deepPrompt: boolean;
 };
 
 
@@ -207,13 +204,6 @@ export function DetailScreen(p: DetailProps) {
 
       <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={insets.top + 52} className="flex-1">
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {p.deepPrompt ? (
-            <LinearGradient {...gradient.mileage} style={{ paddingVertical: 12, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Icon name="heartSolid" size={15} color="#fff" />
-              <Text style={[t, { fontSize: 12.5, fontWeight: "700", color: "#fff" }]}>에타에서 오셨네요. 아래에서 바로 요청해 주세요.</Text>
-            </LinearGradient>
-          ) : null}
-
           <View className="bg-card" style={{ paddingTop: 18, paddingHorizontal: 18, paddingBottom: 22, gap: 13 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <CategoryTag category={d.category} size="sm" />
