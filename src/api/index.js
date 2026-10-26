@@ -355,6 +355,9 @@ function adaptPetition(raw) {
   const deadline = raw.agreementDeadline ?? raw.expiresAt;
   const daysLeft = deadline ? Math.ceil((parseServerDate(deadline).getTime() - Date.now()) / 86400000) : null;
   const expired = raw.status === "EXPIRED";
+  // 서버 Petition.isAgreementOpenAt 과 같은 규칙 — 기한이 지난 OPEN 도 서버는 409 로 거절한다.
+  // ponytail: 클라이언트 시계 기준이라 경계 몇 초는 toggleEmpathy 의 409 처리가 받아 낸다.
+  const agreeable = raw.status === "OPEN" && deadline != null && parseServerDate(deadline).getTime() > Date.now();
   return {
     id: raw.id,
     title: raw.title,
@@ -376,6 +379,7 @@ function adaptPetition(raw) {
     voted: votedIds.has(raw.id),
     bookmarked: bookmarkedIds.has(raw.id),
     expired,
+    agreeable,
     answered: raw.status === "ANSWERED",
     answer: adaptOfficialAnswer(raw.officialAnswer),
   };
@@ -575,6 +579,10 @@ export async function toggleEmpathy(id) {
     // (toggleVoteWithConfirm) 을 우회한 stale 상태에 대비한 마지막 방어선이다.
     if (e.status === 409 && e.body?.title === "Cannot agree to own petition") {
       throw new Error("본인 청원에는 요청할 수 없습니다");
+    }
+    // 기한·상태로 요청이 닫힌 글은 동의·취소 모두 거절된다 — 로컬 집합을 뒤집으면 가짜 성공이 된다.
+    if (e.status === 409 && e.body?.title === "Petition is not agreeable") {
+      throw new Error("요청 기간이 끝난 건의입니다");
     }
     if (e.status !== 409 && e.status !== 404) throw e;
   }

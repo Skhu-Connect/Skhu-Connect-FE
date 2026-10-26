@@ -413,6 +413,8 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
+            disabled={!p.agreeable}
+            title={p.agreeable ? undefined : "요청 기간이 끝난 건의입니다"}
             onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted, p.mine) : requireAuth())}
           />
           <IconButton
