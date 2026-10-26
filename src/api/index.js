@@ -777,10 +777,20 @@ async function adminApiFetch(path, opts = {}) {
       /* 재발급 실패 — 아래에서 원래 401 을 던진다 */
     }
   }
-  if (!res.ok) throw await parseError(res);
+  if (!res.ok) {
+    const err = await parseError(res);
+    // 역할 밖 카테고리 쓰기(docs/admin-roles-backend-request.md 3절). 화면별 catch 가 이 문구를 그대로 보인다.
+    if (err.body?.title === "ADMIN_FORBIDDEN") err.message = "이 카테고리를 처리할 권한이 없습니다.";
+    throw err;
+  }
   if (res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+/** 로그인한 관리자 { id, loginId, role: "EMERGENCY_COMMITTEE" | "STUDENT_COUNCIL" }. */
+export async function getAdminMe() {
+  return adminApiFetch("/connect/admin/me");
 }
 
 /** AdminLayout 이 마운트 시 호출한다: adminRefreshToken 쿠키가 살아있으면 세션을 복구한다. */
