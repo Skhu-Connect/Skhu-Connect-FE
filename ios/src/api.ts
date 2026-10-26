@@ -25,6 +25,7 @@ const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
   dorm: "DORMITORY",
   library: "LIBRARY",
   department: "DEPARTMENT",
+  software: "SOFTWARE_CONVERGENCE",
 };
 const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
   Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k as CategoryKey]),
@@ -379,6 +380,7 @@ function adaptPetition(raw: any): Petition {
 
 const BASIS_LABEL: Record<CategoryKey, Petition["basis"]> = {
   department: "학과 정원",
+  software: "학과 정원",
   dorm: "기숙사 정원",
   scholarship: "전체 학생",
   facility: "전체 학생",

@@ -57,7 +57,7 @@ export function ymd(iso: string): string {
 
 /** 카테고리마다 임계치 산정 기준이 다르다. */
 export function basisFor(category: CategoryKey): BasisLabel {
-  if (category === "department") return "학과 정원";
+  if (category === "department" || category === "software") return "학과 정원";
   if (category === "dorm") return "기숙사 정원";
   return "전체 학생";
 }

@@ -49,6 +49,7 @@ assert.equal(visibleList(SEED, { tab: "home", category: "all", query: "없는말
 
 /* 카테고리마다 임계치 기준이 다르다. */
 assert.equal(thresholdFor(basisFor("department")), 180);
+assert.equal(thresholdFor(basisFor("software")), 180);
 assert.equal(thresholdFor(basisFor("dorm")), 240);
 assert.equal(thresholdFor(basisFor("library")), 480);
 
