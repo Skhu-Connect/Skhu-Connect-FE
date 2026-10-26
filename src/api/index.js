@@ -434,6 +434,18 @@ export function formatWait(seconds) {
   return min ? `${min}분 ${sec}초` : `${sec}초`;
 }
 
+/** 내 학부가 작성할 수 있는 카테고리 키(GET /connect/petitions/categories, 로그인 필수). 모르는 enum 은 버린다.
+    실패하면(서버 미배포 404·5xx·네트워크) null — 등록 화면이 전체 목록으로 돌아가고 최종 판정은 서버가 한다.
+    학부를 바꾸면 결과가 달라지므로 캐시하지 않는다. 피드 필터·배지는 이 목록과 무관하게 전체다. */
+export async function listWritableCategories() {
+  try {
+    const rows = await apiFetch("/connect/petitions/categories");
+    return (rows ?? []).map((e) => CATEGORY_ENUM_TO_KEY[e]).filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
 export async function createPetition({ category: categoryKey, title, body }) {
   const t = String(title ?? "").trim();
   const b = String(body ?? "").trim();
@@ -447,6 +459,8 @@ export async function createPetition({ category: categoryKey, title, body }) {
     raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
   } catch (e) {
     if (e.status === 429) throw new Error(cooldownMessage(e.body?.retryAfterSeconds));
+    if (e.status === 403 && e.body?.title === "Petition category is not available for your department") throw new Error("소속 학부 학생만 이 카테고리로 건의할 수 있습니다.");
+    if (e.status === 404 && e.body?.title === "Threshold setting not found") throw new Error("이 카테고리는 아직 기준 인원이 정해지지 않아 등록할 수 없습니다.");
     throw e;
   }
   myPetitionIds.add(raw.id);
