@@ -15,6 +15,9 @@ export type Petition = {
   body: string;
   category: CategoryKey;
   status: StatusKey;
+  /** 지금 요청·취소를 받는가 — 서버 `isAgreementOpenAt` 과 같은 규칙(`logic.ts` 의 `isAgreeable`).
+      status 키로는 못 정한다: EXPIRED 도 received 로 바뀌고, 기한 지난 OPEN 도 있다. */
+  agreeable: boolean;
   current: number;
   threshold: number;
   basis: BasisLabel;
@@ -77,6 +80,7 @@ export const SEED: Petition[] = [
     body: "시험기간만이라도 열람실을 24시간 운영해 주세요. 밤 12시에 문을 닫으면 자리 경쟁이 너무 심하고, 인근 카페로 이동하는 학생이 많습니다. 인근 대학은 이미 시행 중이며 안전 문제는 최소 인력 배치로 해결할 수 있다고 생각합니다.",
     category: "library",
     status: "reviewing",
+    agreeable: false,
     current: 512,
     threshold: 480,
     basis: "전체 학생",
@@ -92,6 +96,7 @@ export const SEED: Petition[] = [
     body: "세탁기 대수가 부족해 주말마다 1시간 이상 기다립니다. 층당 최소 2대씩 증설이 필요하고, 건조기도 함께 고려해 주시면 좋겠습니다.",
     category: "dorm",
     status: "reviewing",
+    agreeable: false,
     current: 243,
     threshold: 240,
     basis: "기숙사 정원",
@@ -107,6 +112,7 @@ export const SEED: Petition[] = [
     body: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족해 강의실을 전전하고 있습니다.",
     category: "department",
     status: "received",
+    agreeable: true,
     current: 88,
     threshold: 180,
     basis: "학과 정원",
@@ -123,6 +129,7 @@ export const SEED: Petition[] = [
     body: "매 학기 동일한 서류를 반복 제출합니다. 종합정보시스템에 이미 있는 정보는 자동으로 불러오도록 개선해 주세요.",
     category: "scholarship",
     status: "answered",
+    agreeable: false,
     current: 631,
     threshold: 480,
     basis: "전체 학생",
@@ -139,6 +146,7 @@ export const SEED: Petition[] = [
     body: "노후된 학생회관 화장실 위생 상태가 심각합니다. 환기와 배수 문제가 반복되고 있어 전면 보수를 요청합니다.",
     category: "facility",
     status: "received",
+    agreeable: true,
     current: 268,
     threshold: 480,
     basis: "전체 학생",
@@ -154,6 +162,7 @@ export const SEED: Petition[] = [
     body: "노트북 대여가 오전 중 전부 소진됩니다. 최소 20대 추가 확보와 대여 시간 연장을 함께 검토해 주세요.",
     category: "library",
     status: "received",
+    agreeable: true,
     current: 96,
     threshold: 480,
     basis: "전체 학생",

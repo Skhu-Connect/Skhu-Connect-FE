@@ -403,7 +403,14 @@ export default function DetailScreen() {
         <p style={{ margin: 0, fontSize: 15.5, color: "var(--text-body)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{p.body}</p>
 
         <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: 18 }}>
-          <ThresholdBar current={p.current} threshold={p.threshold} basisLabel={p.basis} size="lg" />
+          <ThresholdBar
+            current={p.current}
+            threshold={p.threshold}
+            basisLabel={p.basis}
+            size="lg"
+            // 기준을 넘긴 글(검토중·답변완료)은 "담당 부서로 전달되었습니다" 가 더 정확하다 — 마감 문구는 못 넘기고 끝난 글에만.
+            note={p.agreeable || p.current >= p.threshold ? undefined : "요청이 마감된 건의입니다 — 더 이상 요청하거나 취소할 수 없습니다."}
+          />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -413,6 +420,8 @@ export default function DetailScreen() {
             size="lg"
             block
             style={{ flex: 1 }}
+            disabled={!p.agreeable}
+            title={p.agreeable ? undefined : "요청이 마감된 건의입니다"}
             onToggle={() => (authed ? toggleVoteWithConfirm(vote, p.id, voted, p.mine) : requireAuth())}
           />
           <IconButton

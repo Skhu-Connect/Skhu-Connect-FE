@@ -20,6 +20,7 @@
 
 import { CATEGORY_META } from "./mockDb.js";
 import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
+import { isAgreeable, parseServerDate } from "../utils/serverDate.js";
 
 /* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 백엔드로 프록시해 같은 오리진이 된다.
    (백엔드 CorsConfig 허용 오리진에 서비스 도메인이 없어 CORS preflight 403 나던 것을 우회)
@@ -111,12 +112,6 @@ async function apiFetch(path, opts = {}) {
   if (res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
-}
-
-// 서버가 타임존 없는 UTC LocalDateTime을 내려준다 — 그대로 new Date()에 넣으면 브라우저가 로컬시간(KST)으로
-// 오인해 9시간 밀린다. 타임존 표기가 없을 때만 'Z'를 붙여 UTC로 명시한다.
-function parseServerDate(iso) {
-  return new Date(/[Zz]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
 }
 
 function formatRelative(iso) {
@@ -355,6 +350,8 @@ function adaptPetition(raw) {
   const deadline = raw.agreementDeadline ?? raw.expiresAt;
   const daysLeft = deadline ? Math.ceil((parseServerDate(deadline).getTime() - Date.now()) / 86400000) : null;
   const expired = raw.status === "EXPIRED";
+  // 기한이 지난 OPEN 도 서버는 409 로 거절한다 — 상태 키가 아니라 원본 status 와 기한으로 판정한다.
+  const agreeable = isAgreeable(raw.status, deadline);
   return {
     id: raw.id,
     title: raw.title,
@@ -376,6 +373,7 @@ function adaptPetition(raw) {
     voted: votedIds.has(raw.id),
     bookmarked: bookmarkedIds.has(raw.id),
     expired,
+    agreeable,
     answered: raw.status === "ANSWERED",
     answer: adaptOfficialAnswer(raw.officialAnswer),
   };
@@ -589,6 +587,10 @@ export async function toggleEmpathy(id) {
     // (toggleVoteWithConfirm) 을 우회한 stale 상태에 대비한 마지막 방어선이다.
     if (e.status === 409 && e.body?.title === "Cannot agree to own petition") {
       throw new Error("본인 청원에는 요청할 수 없습니다");
+    }
+    // 기한·상태로 요청이 닫힌 글은 동의·취소 모두 거절된다 — 로컬 집합을 뒤집으면 가짜 성공이 된다.
+    if (e.status === 409 && e.body?.title === "Petition is not agreeable") {
+      throw new Error("요청 기간이 끝난 건의입니다");
     }
     if (e.status !== 409 && e.status !== 404) throw e;
   }
@@ -895,6 +897,8 @@ function adaptAdminReport(raw) {
     status: REPORT_STATUS_TO_KEY[raw.status] ?? "pending",
     targetType: REPORT_TARGET_TO_KEY[raw.targetType] ?? "petition",
     petitionId: raw.petitionId,
+    // 신고 대상 청원의 카테고리(댓글 신고면 그 댓글의 청원). 옛 서버엔 없다 → null 이면 처리 버튼이 막힌다.
+    petitionCategory: CATEGORY_ENUM_TO_KEY[raw.petitionCategory] ?? null,
     commentId: raw.commentId ?? null,
     reasonType: raw.reasonType,
     reasonDetail: raw.reasonDetail,

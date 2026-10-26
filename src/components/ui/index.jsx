@@ -363,7 +363,8 @@ export function petitionStatus(p) {
    보인다 — 회색 트랙 위 채움 막대는 대시보드 템플릿으로 읽혔다(이슈 #100). 호출부 때문에 이름은 둔다.
    size="lg" 는 상세용 두 줄, 나머지는 목록용 한 줄이다.
    주의: Admin 테이블의 진행바는 이것을 쓰지 않는다(ROADMAP 의존 E). */
-export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학과 정원", reached, size = "md", style, ...rest }) {
+/* note: lg 아래 줄 문구를 바꾼다 — 요청이 마감된 글에 "N명 더 요청하면" 을 띄우지 않으려고. */
+export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학과 정원", reached, size = "md", note, style, ...rest }) {
   const isReached = reached != null ? reached : current >= threshold;
   const left = Math.max(0, threshold - current).toLocaleString();
   const num = { fontVariantNumeric: "tabular-nums", fontWeight: "var(--fw-bold)", color: "var(--text-strong)" };
@@ -378,7 +379,7 @@ export function ThresholdBar({ current = 0, threshold = 100, basisLabel = "학�
           <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", marginLeft: 6 }}>{basisLabel} 기준</span>
         </div>
         <p style={{ margin: 0, fontSize: "var(--fs-sm)", lineHeight: 1.5, fontWeight: isReached ? "var(--fw-semibold)" : undefined, color: doneColor ?? "var(--text-body)" }}>
-          {isReached ? "기준 인원을 넘어 담당 부서로 전달되었습니다." : `${left}명 더 요청하면 담당 부서로 전달됩니다.`}
+          {note ?? (isReached ? "기준 인원을 넘어 담당 부서로 전달되었습니다." : `${left}명 더 요청하면 담당 부서로 전달됩니다.`)}
         </p>
       </div>
     );
