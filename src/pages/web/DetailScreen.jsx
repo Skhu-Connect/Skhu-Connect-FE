@@ -408,7 +408,8 @@ export default function DetailScreen() {
             threshold={p.threshold}
             basisLabel={p.basis}
             size="lg"
-            note={p.agreeable ? undefined : "요청이 마감된 건의입니다 — 더 이상 요청하거나 취소할 수 없습니다."}
+            // 기준을 넘긴 글(검토중·답변완료)은 "담당 부서로 전달되었습니다" 가 더 정확하다 — 마감 문구는 못 넘기고 끝난 글에만.
+            note={p.agreeable || p.current >= p.threshold ? undefined : "요청이 마감된 건의입니다 — 더 이상 요청하거나 취소할 수 없습니다."}
           />
         </div>
 
