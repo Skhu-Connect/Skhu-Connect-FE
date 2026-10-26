@@ -21,6 +21,7 @@ export default function SubmitScreen() {
   const submit = usePetitions((s) => s.submit);
   const navigate = useNavigate();
   const owner = useSession((s) => s.user?.loginId ?? null);
+  const dept = useSession((s) => s.user?.dept ?? null);
   const [saved] = useState(() => (draft && draft.owner === owner ? draft : null));
   const [cat, setCat] = useState(saved?.cat ?? "");
   const [title, setTitle] = useState(saved?.title ?? "");
@@ -32,6 +33,20 @@ export default function SubmitScreen() {
   const [usage, setUsage] = useState(saved?.usage ?? null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+
+  // 작성 가능 카테고리는 학부마다 다르다. 진입할 때·학부가 바뀔 때마다 다시 묻고, 고른 값이 빠졌으면 비운다.
+  // null(조회 실패)이면 전체 목록 — 서버가 403 으로 최종 판정한다.
+  const [writable, setWritable] = useState(null);
+  useEffect(() => {
+    let live = true;
+    api.listWritableCategories().then((keys) => {
+      if (!live) return;
+      setWritable(keys);
+      if (keys) setCat((c) => (keys.includes(c) ? c : ""));
+    });
+    return () => { live = false; };
+  }, [dept]);
+  const options = writable ? categories.filter((c) => writable.includes(c.key)) : categories;
 
   const selected = categories.find((c) => c.key === cat);
   const exhausted = usage?.remaining === 0;
@@ -111,7 +126,7 @@ export default function SubmitScreen() {
       <Card padding="var(--pad-card-lg)" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <Select
           label="카테고리"
-          options={categories.map((c) => ({ value: c.key, label: c.label }))}
+          options={options.map((c) => ({ value: c.key, label: c.label }))}
           value={cat}
           onChange={(e) => setCat(e.target.value)}
           placeholder="카테고리를 선택하세요"
