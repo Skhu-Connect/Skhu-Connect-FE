@@ -88,10 +88,8 @@ export default function AdminLayout() {
             {role ? (
               <>
                 <div style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loginId}</div>
-                <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>
-                  {ROLE_LABEL[role]}
-                  {role === "EMERGENCY_COMMITTEE" && <> · 소프트웨어융합학부 담당</>}
-                </div>
+                <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>{ROLE_LABEL[role]}</div>
+                {role === "EMERGENCY_COMMITTEE" && <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>소프트웨어융합학부 담당</div>}
               </>
             ) : (
               <div role="status" style={{ color: "rgba(255,255,255,.75)", fontSize: 11, lineHeight: 1.4 }}>권한 정보를 불러오지 못해 조회만 가능합니다</div>
