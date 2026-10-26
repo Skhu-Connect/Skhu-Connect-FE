@@ -881,6 +881,8 @@ function adaptAdminReport(raw) {
     status: REPORT_STATUS_TO_KEY[raw.status] ?? "pending",
     targetType: REPORT_TARGET_TO_KEY[raw.targetType] ?? "petition",
     petitionId: raw.petitionId,
+    // 신고 대상 청원의 카테고리(댓글 신고면 그 댓글의 청원). 옛 서버엔 없다 → null 이면 처리 버튼이 막힌다.
+    petitionCategory: CATEGORY_ENUM_TO_KEY[raw.petitionCategory] ?? null,
     commentId: raw.commentId ?? null,
     reasonType: raw.reasonType,
     reasonDetail: raw.reasonDetail,
