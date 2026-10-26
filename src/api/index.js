@@ -20,6 +20,7 @@
 
 import { CATEGORY_META } from "./mockDb.js";
 import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
+import { isAgreeable, parseServerDate } from "../utils/serverDate.js";
 
 /* 배포에서는 상대경로 — vercel.json 의 /connect/* rewrite 가 백엔드로 프록시해 같은 오리진이 된다.
    (백엔드 CorsConfig 허용 오리진에 서비스 도메인이 없어 CORS preflight 403 나던 것을 우회)
@@ -111,12 +112,6 @@ async function apiFetch(path, opts = {}) {
   if (res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
-}
-
-// 서버가 타임존 없는 UTC LocalDateTime을 내려준다 — 그대로 new Date()에 넣으면 브라우저가 로컬시간(KST)으로
-// 오인해 9시간 밀린다. 타임존 표기가 없을 때만 'Z'를 붙여 UTC로 명시한다.
-function parseServerDate(iso) {
-  return new Date(/[Zz]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
 }
 
 function formatRelative(iso) {
@@ -355,9 +350,8 @@ function adaptPetition(raw) {
   const deadline = raw.agreementDeadline ?? raw.expiresAt;
   const daysLeft = deadline ? Math.ceil((parseServerDate(deadline).getTime() - Date.now()) / 86400000) : null;
   const expired = raw.status === "EXPIRED";
-  // 서버 Petition.isAgreementOpenAt 과 같은 규칙 — 기한이 지난 OPEN 도 서버는 409 로 거절한다.
-  // ponytail: 클라이언트 시계 기준이라 경계 몇 초는 toggleEmpathy 의 409 처리가 받아 낸다.
-  const agreeable = raw.status === "OPEN" && deadline != null && parseServerDate(deadline).getTime() > Date.now();
+  // 기한이 지난 OPEN 도 서버는 409 로 거절한다 — 상태 키가 아니라 원본 status 와 기한으로 판정한다.
+  const agreeable = isAgreeable(raw.status, deadline);
   return {
     id: raw.id,
     title: raw.title,

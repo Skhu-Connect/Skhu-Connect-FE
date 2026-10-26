@@ -92,9 +92,9 @@ export function PetitionRow({ p, author, onReport, onBlock, onDelete }) {
           count={p.current}
           active={voted}
           disabled={!p.agreeable}
-          title={p.agreeable ? undefined : "요청 기간이 끝난 건의입니다"}
+          title={p.agreeable ? undefined : "요청이 마감된 건의입니다"}
           onToggle={() => toggleVoteWithConfirm(vote, p.id, voted, p.mine)} />
-        <span>기준 {p.threshold.toLocaleString()}명</span>
+        <span>{p.agreeable ? `기준 ${p.threshold.toLocaleString()}명` : "요청 마감"}</span>
       </div>
       {blocking && (
         <ConfirmDialog
