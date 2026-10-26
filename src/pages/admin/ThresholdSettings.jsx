@@ -62,11 +62,11 @@ function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
         <CategoryTag category={setting.category} size="sm" />
         <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-strong)" }}>{label}</span>
         {!editing && (
-          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }} {...lock}>수정</Button>
+          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }} {...lock}>{setting.unset ? "초기 설정" : "수정"}</Button>
         )}
       </div>
       {setting.unset ? (
-        <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-muted)" }}>아직 설정되지 않음 — 처음 저장하면 이 카테고리의 기준이 만들어집니다.</p>
+        <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-muted)" }}>아직 설정되지 않음 — 운영 시작 전에 전체 학생 수·동의 비율·최소 인원을 저장해 주세요. 설정 전에는 이 카테고리로 건의를 등록할 수 없습니다.</p>
       ) : (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16, fontSize: 13 }}>
         <div>

@@ -426,7 +426,7 @@ export function formatWait(seconds: number): string {
   return min ? `${min}분 ${sec}초` : `${sec}초`;
 }
 
-/** 내 학부가 작성할 수 있는 카테고리. 실패하면(서버 미배포 404·5xx·네트워크) null — 화면은 정적 전체 목록을 쓰고 최종 판정은 서버가 한다. */
+/** 내 학부가 작성할 수 있는 카테고리. 실패하면 null — 화면에서 재시도하며 카테고리 선택·등록을 막는다. */
 export async function listWritableCategories(): Promise<CategoryKey[] | null> {
   try {
     return categoryKeysOf(await apiFetch("/connect/petitions/categories"));

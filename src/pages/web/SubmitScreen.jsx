@@ -35,18 +35,23 @@ export default function SubmitScreen() {
   const [searchError, setSearchError] = useState("");
 
   // 작성 가능 카테고리는 학부마다 다르다. 진입할 때·학부가 바뀔 때마다 다시 묻고, 고른 값이 빠졌으면 비운다.
-  // null(조회 실패)이면 전체 목록 — 서버가 403 으로 최종 판정한다.
+  // 목록 확인 전·실패 시에는 카테고리를 열지 않는다.
   const [writable, setWritable] = useState(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [categoryRetry, setCategoryRetry] = useState(0);
   useEffect(() => {
     let live = true;
+    setWritable(null);
+    setCategoriesLoaded(false);
     api.listWritableCategories().then((keys) => {
       if (!live) return;
       setWritable(keys);
-      if (keys) setCat((c) => (keys.includes(c) ? c : ""));
+      setCategoriesLoaded(true);
+      setCat((c) => (keys?.includes(c) ? c : ""));
     });
     return () => { live = false; };
-  }, [dept]);
-  const options = writable ? categories.filter((c) => writable.includes(c.key)) : categories;
+  }, [owner, dept, categoryRetry]);
+  const options = categories.filter((c) => writable?.includes(c.key));
 
   const selected = categories.find((c) => c.key === cat);
   const exhausted = usage?.remaining === 0;
@@ -95,6 +100,7 @@ export default function SubmitScreen() {
   };
 
   const done = async () => {
+    if (!writable?.includes(cat)) return;
     setSaving(true);
     try {
       await submit({ category: cat, title, body });
@@ -129,8 +135,15 @@ export default function SubmitScreen() {
           options={options.map((c) => ({ value: c.key, label: c.label }))}
           value={cat}
           onChange={(e) => setCat(e.target.value)}
-          placeholder="카테고리를 선택하세요"
+          disabled={!writable}
+          placeholder={categoriesLoaded ? "카테고리를 선택하세요" : "카테고리를 불러오는 중…"}
         />
+        {categoriesLoaded && writable === null && (
+          <div role="alert">
+            <p>작성 가능한 카테고리를 불러오지 못했습니다. 다시 시도해 주세요.</p>
+            <Button size="sm" variant="outline" onClick={() => setCategoryRetry((n) => n + 1)}>카테고리 다시 불러오기</Button>
+          </div>
+        )}
         <Input label="제목" placeholder="핵심을 담은 한 문장으로 작성해 주세요" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea label="건의 내용" maxLength={1000} value={body} onChange={(e) => setBody(e.target.value)} placeholder="현재 상황과 개선이 필요한 이유를 구체적으로 적어 주세요." />
 
@@ -210,7 +223,7 @@ export default function SubmitScreen() {
 
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
           <Button variant="outline" onClick={() => navigate("/")}>취소</Button>
-          <Button variant="primary" disabled={!title.trim() || !body.trim() || !cat || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
+          <Button variant="primary" disabled={!title.trim() || !body.trim() || !writable?.includes(cat) || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
         </div>
       </Card>
     </div>

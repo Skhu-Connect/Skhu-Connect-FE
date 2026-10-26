@@ -66,7 +66,7 @@ export const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntr
   Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k as CategoryKey]),
 ) as Record<string, CategoryKey>;
 
-/** GET /connect/petitions/categories 응답(enum 배열) → 키 목록. 모르는 값은 버린다. 배열이 아니면 null(정적 전체 목록으로). */
+/** GET /connect/petitions/categories 응답(enum 배열) → 키 목록. 모르는 값은 버린다. 배열이 아니면 null(조회 실패). */
 export function categoryKeysOf(raw: unknown): CategoryKey[] | null {
   if (!Array.isArray(raw)) return null;
   return raw.flatMap((v) => (typeof v === "string" && CATEGORY_ENUM_TO_KEY[v] ? [CATEGORY_ENUM_TO_KEY[v]] : []));
