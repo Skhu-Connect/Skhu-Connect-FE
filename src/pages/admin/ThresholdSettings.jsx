@@ -1,5 +1,5 @@
 /* 관리자 임계치 설정 (#49). GET/PUT /connect/admin/threshold-settings.
-   카테고리 5개 고정이라 스토어에 안 넣고 화면 로컬 상태로 조회·수정한다(SignupScreen·
+   카테고리 수가 고정이라 스토어에 안 넣고 화면 로컬 상태로 조회·수정한다(SignupScreen·
    MyPageScreen 이 이미 쓰는, 화면이 api 를 직접 부르는 패턴). 카테고리 라벨은 petitions
    스토어가 AdminLayout 마운트 시 이미 불러온 categories 를 그대로 읽어 재조회하지 않는다. */
 
@@ -12,7 +12,7 @@ import { Button, CategoryTag, Input, Textarea } from "../../components/ui";
 
 function EditForm({ setting, onCancel, onSave }) {
   const [totalStudentCount, setTotalStudentCount] = useState(String(setting.totalStudentCount ?? ""));
-  const [thresholdRate, setThresholdRate] = useState(String(Math.round((setting.thresholdRate ?? 0) * 100)));
+  const [thresholdRate, setThresholdRate] = useState(setting.thresholdRate == null ? "" : String(Math.round(setting.thresholdRate * 100)));
   const [minimumCount, setMinimumCount] = useState(String(setting.minimumCount ?? ""));
   const [changeReason, setChangeReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,6 +65,9 @@ function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
           <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }} {...lock}>수정</Button>
         )}
       </div>
+      {setting.unset ? (
+        <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-muted)" }}>아직 설정되지 않음 — 처음 저장하면 이 카테고리의 기준이 만들어집니다.</p>
+      ) : (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16, fontSize: 13 }}>
         <div>
           <div style={{ color: "var(--text-muted)", fontSize: 11.5 }}>전체 학생 수</div>
@@ -83,6 +86,7 @@ function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
           <div style={{ fontWeight: 700, color: "var(--indigo-600)", marginTop: 2 }}>{setting.targetAgreementCount.toLocaleString()}명</div>
         </div>
       </div>
+      )}
       {setting.changeReason && (
         <div style={{ marginTop: 12, fontSize: 11.5, color: "var(--text-muted)" }}>
           최근 변경: {setting.changeReason}
@@ -110,11 +114,14 @@ export default function ThresholdSettings() {
 
   const save = async (category, patch) => {
     const updated = await api.updateAdminThresholdSetting(category, patch);
-    setSettings((list) => list.map((s) => (s.category === category ? updated : s)));
+    // 소프트웨어융합학부의 첫 저장은 행을 새로 만든다 — 목록에 없으면 추가한다.
+    setSettings((list) => (list.some((s) => s.category === category) ? list.map((s) => (s.category === category ? updated : s)) : [...list, updated]));
     setEditingKey(null);
   };
 
   const labelOf = (key) => categories.find((c) => c.key === key)?.label ?? key;
+  // 소프트웨어융합학부 행은 서버에 미리 없다(첫 PUT 이 만든다). 그 자리만 빈 카드로 채운다 — 다른 카테고리 누락은 그대로 둔다.
+  const rows = settings.some((s) => s.category === "software") ? settings : [...settings, { category: "software", unset: true }];
 
   return (
     <div style={{ padding: "26px 30px", overflowY: "auto", flex: 1 }}>
@@ -128,7 +135,7 @@ export default function ThresholdSettings() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
-          {settings.map((s) => (
+          {rows.map((s) => (
             <SettingCard
               key={s.category}
               setting={s}
