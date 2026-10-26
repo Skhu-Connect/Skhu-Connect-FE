@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { usePetitions } from "../../stores/petitions";
+import { canManage, useAdminSession } from "../../stores/adminSession";
 import * as api from "../../api";
 import PageHead from "../../components/admin/PageHead";
 import { Button, CategoryTag, Input, Textarea } from "../../components/ui";
@@ -52,13 +53,16 @@ function EditForm({ setting, onCancel, onSave }) {
 }
 
 function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
+  const role = useAdminSession((s) => s.role);
+  // 역할 밖 카테고리는 수정 버튼을 비활성 + 사유로 둔다. 서버가 최종 판정한다(403 은 편집 칸 오류로 뜬다).
+  const lock = canManage(role, setting.category) ? {} : { disabled: true, title: role ? "이 카테고리를 처리할 권한이 없습니다." : "권한 정보를 불러오지 못해 조회만 가능합니다." };
   return (
     <div style={{ background: "#fff", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)", padding: 22 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <CategoryTag category={setting.category} size="sm" />
         <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-strong)" }}>{label}</span>
         {!editing && (
-          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }}>수정</Button>
+          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }} {...lock}>수정</Button>
         )}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16, fontSize: 13 }}>
