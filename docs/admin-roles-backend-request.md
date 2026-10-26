@@ -21,8 +21,11 @@
   `petitions.category`·`threshold_settings.category` 는 `@Enumerated(STRING)` 이라 Hibernate 가 CHECK 제약을 만들었을 수 있다.
   `SHOW CREATE TABLE petitions;`·`SHOW CREATE TABLE threshold_settings;` 로 확인하고, 있으면 DROP 하거나 새 값을 넣어 다시 만든다.
   `category` 를 가진 다른 테이블(유사 청원 임베딩 등)이 있으면 같이 확인한다.
-- `threshold_settings` 에 `SOFTWARE_CONVERGENCE` 행을 넣는다. 행이 없으면 그 카테고리로 청원을 만들 때 실패한다.
-  `total_student_count`·`threshold_rate`·`minimum_count` 초기값은 **비대위와 정해야 한다** (확정 전까지는 `DEPARTMENT` 행 값을 복사하자고 제안).
+- **임계치 행 (2026-10-26 백엔드 확정)**: 행을 미리 넣지 않는다. 비대위가 처음 보내는
+  `PUT /connect/admin/threshold-settings/SOFTWARE_CONVERGENCE` 가 요청 값(인원·비율·최소 인원·사유)으로 행을 만든다.
+  그 뒤로는 기존처럼 수정된다. 기존 카테고리에 행이 없으면 지금처럼 404 다.
+  그래서 비대위가 처음 설정하기 전까지 그 카테고리로 등록하면 `THRESHOLD_SETTING_NOT_FOUND` 가 난다.
+  콘솔은 행이 없으면 "아직 설정되지 않음" 카드를 보여 준다.
 
 ## 2. 관리자 역할
 
@@ -53,10 +56,16 @@
 - **`ReportResponse` 에 `petitionCategory` 필드 추가** — 신고 대상 청원의 카테고리(댓글 신고면 그 댓글의 청원).
   신고 목록에서 처리 버튼을 역할별로 막으려면 필요하다. 지금은 `petitionId` 만 있다.
 
+- **작성 가능 카테고리 (2026-10-26 백엔드 추가)**: `GET /connect/petitions/categories` 는 USER 토큰이 필요하고 enum 문자열 배열을 준다.
+  소프트웨어융합학부 학생이면 `["SCHOLARSHIP","FACILITY","DORMITORY","LIBRARY","DEPARTMENT","SOFTWARE_CONVERGENCE"]`, 다른 학부는 마지막 항목만 빠진다.
+  비로그인이면 401 `Unauthorized`. 다른 학부가 그 카테고리로 등록하면 403 `Petition category is not available for your department`.
+  학부를 바꾼 뒤 같은 토큰으로 다시 부르면 바뀐 결과가 나온다. 웹·iOS 는 등록 화면의 선택창만 이 목록으로 거르고, 학부를 바꾼 뒤 다시 읽는다.
+  API 가 실패하면 정적 전체 목록으로 돌아간다(최종 판정은 서버). 피드 조회·검색·필터는 학부와 무관하게 전체다.
+
 ## 5. 배포 순서
 
-1. 운영 DB: CHECK 제약 확인·정리 → `threshold_settings` 행 추가
-2. 백엔드 배포 (`admins.role` 은 `ddl-auto=update` 가 추가) → 기존 관리자 `role` 채우기 → 비대위 계정 생성
+1. 운영 DB: CHECK 제약 확인·정리 (임계치 행은 넣지 않는다 — 비대위의 첫 설정이 만든다)
+2. 백엔드 배포 (`admins.role` 은 `ddl-auto=update` 가 추가) → 기존 관리자 `role` 채우기 → 비대위 계정 생성 → 비대위가 콘솔에서 임계치 첫 설정
 3. 프론트 배포 (웹·관리자 콘솔은 Vercel, iOS 는 앱 심사)
 
 구버전 iOS 앱은 모르는 카테고리를 "학부"로 표시한다(`CATEGORY_ENUM_TO_KEY[...] ?? "department"`). 깨지지는 않지만 새 앱이 나오기 전까지는 표시명이 틀리게 나온다.
