@@ -15,7 +15,7 @@
 
 import { NOTIF_TYPE_TITLE, pointOf } from "./data";
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notice, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
-import { basisFor, thresholdFor } from "./logic";
+import { basisFor, isAgreeable, thresholdFor } from "./logic";
 
 const BASE_URL = "https://i1000u.hueeng.com";
 
@@ -363,6 +363,7 @@ function adaptPetition(raw: any): Petition {
     body: raw.content,
     category: key,
     status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
+    agreeable: isAgreeable(raw.status, raw.agreementDeadline ? parseServerDate(raw.agreementDeadline).getTime() : NaN),
     current: (raw.agreementCount ?? 0) - (iVoted ? 1 : 0),
     threshold: raw.targetAgreementCount ?? currentThreshold(key),
     basis: BASIS_LABEL[key],
@@ -549,6 +550,11 @@ export async function toggleEmpathy(petitionId: number, wasVoted: boolean): Prom
     // (App.tsx 의 vote())을 우회한 stale 상태에 대비한 마지막 방어선이다.
     if (e instanceof ApiError && e.status === 409 && e.body?.title === "Cannot agree to own petition") {
       throw new Error("본인 청원에는 요청할 수 없습니다");
+    }
+    // 만료·검토중·답변완료(또는 기한 지난 OPEN)는 동의·취소 모두 거절된다 — 이것도 진짜 실패라
+    // 아래처럼 성공으로 삼키면 색·숫자만 바뀌었다가 새로고침에 되돌아온다.
+    if (e instanceof ApiError && e.status === 409 && e.body?.title === "Petition is not agreeable") {
+      throw new Error("요청 기간이 끝난 건의입니다");
     }
     if (e instanceof ApiError && (e.status === 409 || e.status === 404)) {
       // 서버 상태가 이미 원하는 쪽이다 — 로컬 캐시만 맞추고 성공 취급.
