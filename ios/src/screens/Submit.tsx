@@ -12,7 +12,6 @@ import { colors, font, radius } from "../theme";
 const t = { fontFamily: font };
 
 const MAX_LEN = 1000;
-const OPTIONS = CAT_CHIPS.filter((c) => c.key !== "all").map((c) => c.label);
 
 /** 라벨("장학") → 키("scholarship"). Select 가 라벨을 돌려주므로 되짚는다. */
 export function categoryOf(label: string): CategoryKey | null {
@@ -50,6 +49,20 @@ export function SubmitScreen(p: SubmitProps) {
   const exhausted = usage?.remaining === 0;
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  /* 내 학부가 쓸 수 있는 카테고리(null = 모름 → 전체). 이 화면은 들어올 때마다 마운트되므로 MY 에서 학부를 바꾸고 와도 다시 받는다. */
+  const [allowed, setAllowed] = useState<CategoryKey[] | null>(null);
+  const options = CAT_CHIPS.filter((c) => c.key !== "all" && (!allowed || allowed.includes(c.key))).map((c) => c.label);
+
+  useEffect(() => {
+    let alive = true;
+    api.listWritableCategories().then((keys) => alive && setAllowed(keys));
+    return () => void (alive = false);
+  }, []);
+  // 고른 카테고리가 새 목록에서 빠졌으면 선택을 비운다.
+  const { onCategory } = p;
+  useEffect(() => {
+    if (allowed && key && !allowed.includes(key)) onCategory("");
+  }, [allowed, key, onCategory]);
 
   // 진입할 때마다 서버 사용량으로 맞춘다(나갔다 와도 막힌 상태가 유지되고, 그 사이 풀렸으면 풀린다).
   useEffect(() => {
@@ -112,7 +125,7 @@ export function SubmitScreen(p: SubmitProps) {
             </Text>
           </View>
 
-          <Select label="카테고리" options={OPTIONS} value={p.category} onChange={p.onCategory} placeholder="카테고리를 선택하세요" />
+          <Select label="카테고리" options={options} value={p.category} onChange={p.onCategory} placeholder="카테고리를 선택하세요" />
           <Input label="제목" value={p.title} onChangeText={p.onTitle} placeholder="핵심을 담은 한 문장으로 작성해 주세요" />
           <Textarea label="건의 내용" value={p.body} onChangeText={p.onBody} maxLength={MAX_LEN} placeholder="현재 상황과 개선이 필요한 이유를 구체적으로 적어 주세요." />
 

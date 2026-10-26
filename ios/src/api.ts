@@ -13,23 +13,12 @@
    deleteAccount 는 DELETE /connect/users/me({password})로, updateDepartment 는
    PATCH /connect/users/me/department({departmentId})로 연동한다. */
 
-import { NOTIF_TYPE_TITLE, pointOf } from "./data";
+import { CATEGORY_ENUM_TO_KEY, CATEGORY_KEY_TO_ENUM, NOTIF_TYPE_TITLE, categoryKeysOf, pointOf } from "./data";
 import type { AdminAnswer, CategoryKey, Comment, MyComment, Notice, Notification, NotificationSettingKey, Petition, StatusKey } from "./data";
 import { basisFor, thresholdFor } from "./logic";
 
 const BASE_URL = "https://i1000u.hueeng.com";
 
-const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
-  scholarship: "SCHOLARSHIP",
-  facility: "FACILITY",
-  dorm: "DORMITORY",
-  library: "LIBRARY",
-  department: "DEPARTMENT",
-  software: "SOFTWARE_CONVERGENCE",
-};
-const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
-  Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k as CategoryKey]),
-) as Record<string, CategoryKey>;
 const STATUS_ENUM_TO_KEY: Record<string, StatusKey> = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
 /* ───────────────── fetch 기반 ───────────────── */
@@ -435,6 +424,15 @@ export function formatWait(seconds: number): string {
   return min ? `${min}분 ${sec}초` : `${sec}초`;
 }
 
+/** 내 학부가 작성할 수 있는 카테고리. 실패하면(서버 미배포 404·5xx·네트워크) null — 화면은 정적 전체 목록을 쓰고 최종 판정은 서버가 한다. */
+export async function listWritableCategories(): Promise<CategoryKey[] | null> {
+  try {
+    return categoryKeysOf(await apiFetch("/connect/petitions/categories"));
+  } catch {
+    return null;
+  }
+}
+
 export async function createPetition(args: { category: CategoryKey; title: string; body: string }): Promise<Petition> {
   const title = args.title.trim();
   const body = args.body.trim();
@@ -446,6 +444,11 @@ export async function createPetition(args: { category: CategoryKey; title: strin
   } catch (e) {
     // 429 는 서버가 영문 title 로 준다 - 그대로 토스트에 뜨면 안 된다.
     if (e instanceof ApiError && e.status === 429) throw new Error(cooldownMessage(e.body?.retryAfterSeconds));
+    if (e instanceof ApiError && e.status === 403 && e.body?.title === "Petition category is not available for your department")
+      throw new Error("소속 학부 학생만 이 카테고리로 건의할 수 있습니다.");
+    // 새 카테고리의 임계치 행은 관리자가 처음 설정하기 전까지 서버에 없다(PetitionExceptionHandler: 404).
+    if (e instanceof ApiError && e.status === 404 && e.body?.title === "Threshold setting not found")
+      throw new Error("이 카테고리는 아직 기준 인원이 정해지지 않아 등록할 수 없습니다.");
     throw e;
   }
   myPetitionIds.add(raw.id);

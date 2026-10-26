@@ -50,6 +50,25 @@ export const CAT_LABEL: Record<CategoryKey, string> = {
   software: "소프트웨어융합학부",
 };
 
+/* 서버 enum ↔ 앱 키. api.ts 가 쓰고, 순수 함수라 selfcheck 가 돌릴 수 있게 여기 둔다. */
+export const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
+  scholarship: "SCHOLARSHIP",
+  facility: "FACILITY",
+  dorm: "DORMITORY",
+  library: "LIBRARY",
+  department: "DEPARTMENT",
+  software: "SOFTWARE_CONVERGENCE",
+};
+export const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
+  Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k as CategoryKey]),
+) as Record<string, CategoryKey>;
+
+/** GET /connect/petitions/categories 응답(enum 배열) → 키 목록. 모르는 값은 버린다. 배열이 아니면 null(정적 전체 목록으로). */
+export function categoryKeysOf(raw: unknown): CategoryKey[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw.flatMap((v) => (typeof v === "string" && CATEGORY_ENUM_TO_KEY[v] ? [CATEGORY_ENUM_TO_KEY[v]] : []));
+}
+
 /** 필터 칩 순서 — "전체" 를 앞에 둔다. */
 export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "all", label: "전체" },

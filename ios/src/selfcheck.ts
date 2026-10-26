@@ -1,6 +1,6 @@
 /* 임계치·필터·정렬 self-check. 실행: node src/selfcheck.ts */
 import assert from "node:assert/strict";
-import { NOTIF_POINTS, NOTIF_TYPE_TITLE, SEED, pointOf } from "./data.ts";
+import { NOTIF_POINTS, NOTIF_TYPE_TITLE, SEED, categoryKeysOf, pointOf } from "./data.ts";
 import { badgeStatus, basisFor, count, ddayLabel, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
 
 const none = {};
@@ -50,6 +50,11 @@ assert.equal(visibleList(SEED, { tab: "home", category: "all", query: "없는말
 /* 카테고리마다 임계치 기준이 다르다. */
 assert.equal(thresholdFor(basisFor("department")), 180);
 assert.equal(thresholdFor(basisFor("software")), 180);
+
+/* 작성 가능 카테고리 응답 → 키. 모르는 값·문자열 아닌 값은 버리고, 배열이 아니면 null(정적 전체 목록). */
+assert.deepEqual(categoryKeysOf(["SCHOLARSHIP", "DORMITORY", "SOFTWARE_CONVERGENCE", "NEW_THING", 3]), ["scholarship", "dorm", "software"]);
+assert.deepEqual(categoryKeysOf([]), []);
+assert.equal(categoryKeysOf({ error: 1 }), null);
 assert.equal(thresholdFor(basisFor("dorm")), 240);
 assert.equal(thresholdFor(basisFor("library")), 480);
 
