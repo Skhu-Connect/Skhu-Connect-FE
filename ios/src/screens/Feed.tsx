@@ -654,9 +654,10 @@ function PetitionRow({
           바로 넣으면 버튼이 위아래로 늘어난다. */}
       <View style={{ width: ACTION_W, alignItems: "center", gap: 8 }}>
         <View style={{ flexDirection: "row", alignSelf: "stretch" }}>
-          <EmpathyButton count={c} active={!!votes[p.id]} size="sm" block onToggle={() => onVote(p.id)} />
+          <EmpathyButton count={c} active={!!votes[p.id]} size="sm" block disabled={!p.agreeable} onToggle={() => onVote(p.id)} />
         </View>
-        <Text style={[t, { fontSize: fs.caption, color: colors.muted, fontVariant: ["tabular-nums"] }]}>기준 {fmt(p.threshold)}명</Text>
+        {/* 요청을 못 받는 행은 기준 자리에 사유를 쓴다 — 남은 인원은 왼쪽에 그대로 보인다. */}
+        <Text style={[t, { fontSize: fs.caption, color: colors.muted, fontVariant: ["tabular-nums"] }]}>{p.agreeable ? `기준 ${fmt(p.threshold)}명` : "요청 마감"}</Text>
       </View>
     </View>
   );

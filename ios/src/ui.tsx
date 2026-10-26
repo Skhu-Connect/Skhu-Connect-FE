@@ -398,23 +398,28 @@ export function EmpathyButton({
   onToggle,
   size = "md",
   block = false,
+  disabled = false,
 }: {
   count: number;
   active: boolean;
   onToggle: () => void;
   size?: ButtonSize;
   block?: boolean;
+  /** 요청을 받지 않는 건의(Petition.agreeable 거짓). 누른 상태의 체크는 남기고 면은 Button 비활성과 같은 회색이다. */
+  disabled?: boolean;
 }) {
   const s = BUTTON_SIZES[size];
   const { pressed, ...press } = usePressed();
-  const fg = active ? "#fff" : colors.strong;
+  const fg = disabled ? colors.muted : active ? "#fff" : colors.strong;
 
   return (
     <Pressable
-      onPress={onToggle}
+      onPress={disabled ? undefined : onToggle}
+      disabled={disabled}
       accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: active, disabled }}
       accessibilityLabel={`요청 ${fmt(count)}`}
+      accessibilityHint={disabled ? "요청이 마감된 건의입니다" : undefined}
       {...press}
       style={[
         {
@@ -426,12 +431,12 @@ export function EmpathyButton({
           paddingHorizontal: s.padH,
           borderRadius: radius.md,
           borderWidth: 1,
-          backgroundColor: active ? colors.indigo[600] : colors.card,
-          borderColor: active ? colors.indigo[600] : colors.line,
+          backgroundColor: disabled ? colors.sunken : active ? colors.indigo[600] : colors.card,
+          borderColor: disabled ? colors.subtle : active ? colors.indigo[600] : colors.line,
           alignSelf: block ? "stretch" : "flex-start",
           flex: block ? 1 : undefined,
         },
-        pressed ? PRESS_95 : null,
+        pressed && !disabled ? PRESS_95 : null,
       ]}
     >
       {active ? <Icon name="check" size={size === "sm" ? 15 : 18} color={fg} /> : null}

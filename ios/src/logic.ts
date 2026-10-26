@@ -42,6 +42,12 @@ export function daysLeft(p: Petition, now = Date.now()): number {
   return EXPIRY_DAYS - Math.floor((now - new Date(p.createdAt).getTime()) / DAY_MS);
 }
 
+/** 서버 `Petition.isAgreementOpenAt` 과 같은 규칙 — 원본 status 가 OPEN 이고 기한 전일 때만 요청·취소를 받는다.
+    기한을 못 읽으면(NaN) 거짓이다. 시계 차이로 경계에서 어긋나면 api.ts toggleEmpathy 의 409 처리가 받는다. */
+export function isAgreeable(rawStatus: string, deadlineMs: number, now = Date.now()): boolean {
+  return rawStatus === "OPEN" && deadlineMs > now;
+}
+
 /** 게시 시각 자리에 들어가는 문구. */
 export function ddayLabel(p: Petition, now = Date.now()): string {
   const left = daysLeft(p, now);

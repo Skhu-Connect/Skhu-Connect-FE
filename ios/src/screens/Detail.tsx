@@ -221,6 +221,7 @@ export function DetailScreen(p: DetailProps) {
           <View style={{ paddingVertical: 14, paddingHorizontal: 16, gap: 13 }}>
             <Card style={{ gap: 12 }}>
               <ThresholdBar current={c} threshold={d.threshold} basisLabel={d.basis} size="lg" />
+              {!d.agreeable ? <Text style={[t, { fontSize: 12.5, color: colors.muted }]}>요청이 마감된 건의입니다 — 더 이상 요청하거나 취소할 수 없습니다.</Text> : null}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.sunken, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 13 }}>
                 <Text style={[t, { fontSize: 11.5, fontWeight: "800", color: colors.indigo[600] }]}>도달률 기준</Text>
                 <Text style={[t, { flex: 1, fontSize: 12, color: colors.body, lineHeight: 18 }]}>{BASIS_NOTE[d.basis]}</Text>
@@ -367,7 +368,7 @@ export function DetailScreen(p: DetailProps) {
           alignItems: "center",
         }}
       >
-        <EmpathyButton count={c} active={!!p.votes[d.id]} size="lg" block onToggle={p.onVote} />
+        <EmpathyButton count={c} active={!!p.votes[d.id]} size="lg" block disabled={!d.agreeable} onToggle={p.onVote} />
         <Pressable
           onPress={p.onToggleBookmark}
           accessibilityRole="button"

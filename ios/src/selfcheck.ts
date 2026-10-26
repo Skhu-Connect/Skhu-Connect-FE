@@ -1,7 +1,7 @@
 /* 임계치·필터·정렬 self-check. 실행: node src/selfcheck.ts */
 import assert from "node:assert/strict";
 import { NOTIF_POINTS, NOTIF_TYPE_TITLE, SEED, pointOf } from "./data.ts";
-import { badgeStatus, basisFor, count, ddayLabel, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
+import { badgeStatus, basisFor, count, ddayLabel, isAgreeable, statusOf, thresholdFor, visibleList, ymd } from "./logic.ts";
 
 const none = {};
 const byId = (id: number) => SEED.find((p) => p.id === id)!;
@@ -46,6 +46,16 @@ assert.deepEqual(
   [2],
 );
 assert.equal(visibleList(SEED, { tab: "home", category: "all", query: "없는말", sort: "hot" }, none).length, 0);
+
+/* 요청 가능 여부는 서버 isAgreementOpenAt 과 같다 — OPEN 이고 기한 전일 때만. */
+{
+  const now = Date.parse("2026-10-26T12:00:00Z");
+  assert.equal(isAgreeable("OPEN", now + 1000, now), true);
+  assert.equal(isAgreeable("OPEN", now, now), false, "기한 당일 그 시각이면 마감");
+  assert.equal(isAgreeable("OPEN", now - 1000, now), false, "기한 지난 OPEN");
+  assert.equal(isAgreeable("OPEN", NaN, now), false, "기한을 못 읽으면 마감");
+  for (const s of ["EXPIRED", "UNDER_REVIEW", "ANSWERED"]) assert.equal(isAgreeable(s, now + 86400000, now), false, s);
+}
 
 /* 카테고리마다 임계치 기준이 다르다. */
 assert.equal(thresholdFor(basisFor("department")), 180);
