@@ -363,7 +363,8 @@ function adaptPetition(raw: any): Petition {
     body: raw.content,
     category: key,
     status: STATUS_ENUM_TO_KEY[raw.status] ?? "received",
-    agreeable: isAgreeable(raw.status, raw.agreementDeadline ? parseServerDate(raw.agreementDeadline).getTime() : NaN),
+    // 목록·상세(PetitionQueryResponse)는 기한을 expiresAt 으로, 등록 응답(PetitionResponse)은 agreementDeadline 으로 준다.
+    agreeable: isAgreeable(raw.status, (raw.agreementDeadline ?? raw.expiresAt) ? parseServerDate(raw.agreementDeadline ?? raw.expiresAt).getTime() : NaN),
     current: (raw.agreementCount ?? 0) - (iVoted ? 1 : 0),
     threshold: raw.targetAgreementCount ?? currentThreshold(key),
     basis: BASIS_LABEL[key],
