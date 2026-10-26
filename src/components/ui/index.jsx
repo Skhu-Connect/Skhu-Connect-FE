@@ -258,7 +258,7 @@ export function Textarea({ label, hint, error, maxLength, value, id, style, wrap
 
 /* ───────────────────────── petition ───────────────────────── */
 
-/* 다섯 카테고리. 태그는 이제 글자만 보인다(CategoryTag) — icon 은 피드 필터 칩이 아직 쓴다.
+/* 여섯 카테고리. 태그는 이제 글자만 보인다(CategoryTag) — icon 은 피드 필터 칩이 아직 쓴다.
    임계치·담당자는 src/api 에 있다. */
 export const CATEGORIES = {
   scholarship: { label: "장학", icon: "graduationCap" },
@@ -266,6 +266,7 @@ export const CATEGORIES = {
   dorm: { label: "기숙사", icon: "dormHouse" },
   library: { label: "도서관", icon: "bookOpen" },
   department: { label: "학부", icon: "peopleGroup" },
+  software: { label: "소프트웨어융합학부", icon: "sparkles" },
 };
 
 export function CategoryTag({ category = "facility", size = "md", style, ...rest }) {

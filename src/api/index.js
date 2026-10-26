@@ -26,7 +26,7 @@ import { NOTIF_TYPE_TITLE } from "../components/web/notifMeta.js";
    dev 서버는 rewrite 가 없지만 localhost:5173 은 백엔드가 이미 허용하므로 절대경로 그대로 쓴다. */
 const BASE_URL = import.meta.env.DEV ? "https://i1000u.hueeng.com" : "";
 
-const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT" };
+const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT", software: "SOFTWARE_CONVERGENCE" };
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
 const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
