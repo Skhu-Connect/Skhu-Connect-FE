@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api";
 import { usePetitions } from "../../stores/petitions";
+import { canManage, useAdminSession } from "../../stores/adminSession";
 import { Badge, Button, CategoryTag, Icon, IconButton, StatusBadge } from "../ui";
 import { ANSWER_SOURCES } from "./AnswerModal";
 import HideReasonDialog from "./HideReasonDialog";
@@ -44,6 +45,7 @@ export default function PetitionDrawer({ id, onClose, onAnswer, escBlocked }) {
   const getAnswer = usePetitions((s) => s.getAnswer);
   const hidePetition = usePetitions((s) => s.hidePetition);
   const restorePetition = usePetitions((s) => s.restorePetition);
+  const role = useAdminSession((s) => s.role);
 
   const [fetchedAnswer, setFetchedAnswer] = useState(null);
   const [comments, setComments] = useState([]);
@@ -80,6 +82,8 @@ export default function PetitionDrawer({ id, onClose, onAnswer, escBlocked }) {
 
   if (!p) return null;
 
+  // PetitionTable 과 같은 규칙 — 읽기는 다 열고 쓰기 버튼만 비활성 + 사유.
+  const lock = canManage(role, p.category) ? {} : { disabled: true, title: role ? "이 카테고리를 처리할 권한이 없습니다." : "권한 정보를 불러오지 못해 조회만 가능합니다." };
   const reached = p.current >= p.threshold;
   const pct = Math.round((p.current / p.threshold) * 100);
 
@@ -155,9 +159,9 @@ export default function PetitionDrawer({ id, onClose, onAnswer, escBlocked }) {
           {/* 본문을 읽고 내린 판단을 여기서 바로 실행한다 — 숨기려고 드로어를 닫고 행을 다시 찾게 하지 않는다. */}
           <div style={{ marginTop: 12 }}>
             {p.hidden ? (
-              <Button size="sm" variant="outline" onClick={restore}>숨김 해제</Button>
+              <Button size="sm" variant="outline" onClick={restore} {...lock}>숨김 해제</Button>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => setHidingPetition(true)}>이 청원 숨기기</Button>
+              <Button size="sm" variant="outline" onClick={() => setHidingPetition(true)} {...lock}>이 청원 숨기기</Button>
             )}
           </div>
         </div>
@@ -177,14 +181,14 @@ export default function PetitionDrawer({ id, onClose, onAnswer, escBlocked }) {
                 {ANSWER_SOURCES.find((s) => s.value === answer.answerSource)?.label ?? "공식 답변"}
               </div>
               <p style={{ margin: "0 0 12px", fontSize: 14, lineHeight: 1.75, color: "var(--text-body)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{answer.content}</p>
-              <Button size="sm" variant="outline" onClick={() => onAnswer(p)}>답변 수정</Button>
+              <Button size="sm" variant="outline" onClick={() => onAnswer(p)} {...lock}>답변 수정</Button>
             </>
           ) : answered ? (
             <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-muted)" }}>답변을 불러오는 중입니다.</p>
           ) : reached ? (
             <>
               <p style={{ margin: "0 0 12px", fontSize: 13.5, color: "var(--text-body)" }}>임계치를 넘어 답변을 기다리고 있습니다.</p>
-              <Button size="sm" variant="primary" onClick={() => onAnswer(p)}>답변 작성</Button>
+              <Button size="sm" variant="primary" onClick={() => onAnswer(p)} {...lock}>답변 작성</Button>
             </>
           ) : (
             <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-muted)" }}>임계치에 도달하면 답변을 등록할 수 있습니다.</p>
@@ -220,7 +224,7 @@ export default function PetitionDrawer({ id, onClose, onAnswer, escBlocked }) {
                     <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "var(--danger-500)" }}>숨김 사유: {c.hiddenReason}</p>
                   ) : null}
                 </div>
-                <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => (c.hidden ? restoreComment(c) : setHiding(c))}>
+                <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => (c.hidden ? restoreComment(c) : setHiding(c))} {...lock}>
                   {c.hidden ? "복원" : "숨김"}
                 </Button>
               </div>

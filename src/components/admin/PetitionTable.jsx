@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
+import { canManage, useAdminSession } from "../../stores/adminSession";
 import { Badge, Button, CategoryTag, StatusBadge } from "../ui";
 import AnswerModal from "./AnswerModal";
 import HideReasonDialog from "./HideReasonDialog";
@@ -29,7 +30,10 @@ const COLS = [
 const rank = (p) => (p.hidden ? 3 : p.status === "answered" ? 2 : p.current >= p.threshold ? 0 : 1);
 export const byUrgency = (a, b) => rank(a) - rank(b) || b.current / b.threshold - a.current / a.threshold;
 
-function Row({ p, onAnswer, onHide, onRestore, onOpen }) {
+/* 역할 밖 행은 버튼을 숨기지 않고 비활성 + 사유(title)로 둔다 — 열이 흔들리지 않게. 제목(드로어)은 늘 열린다. */
+function Row({ p, role, onAnswer, onHide, onRestore, onOpen }) {
+  const locked = !canManage(role, p.category);
+  const lock = locked ? { disabled: true, title: role ? "이 카테고리를 처리할 권한이 없습니다." : "권한 정보를 불러오지 못해 조회만 가능합니다." } : {};
   const reached = p.current >= p.threshold;
   const pct = Math.round((p.current / p.threshold) * 100);
   return (
@@ -64,16 +68,16 @@ function Row({ p, onAnswer, onHide, onRestore, onOpen }) {
       <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
           {p.status === "answered" ? (
-            <Button size="sm" variant="outline" onClick={() => onAnswer(p)}>답변 완료 · 보기</Button>
+            <Button size="sm" variant="outline" onClick={() => onAnswer(p)} {...lock}>답변 완료 · 보기</Button>
           ) : reached ? (
-            <Button size="sm" variant="primary" onClick={() => onAnswer(p)}>답변 작성</Button>
+            <Button size="sm" variant="primary" onClick={() => onAnswer(p)} {...lock}>답변 작성</Button>
           ) : (
             <Button size="sm" variant="outline" disabled>대기중</Button>
           )}
           {p.hidden ? (
-            <Button size="sm" variant="outline" onClick={() => onRestore(p)}>복원</Button>
+            <Button size="sm" variant="outline" onClick={() => onRestore(p)} {...lock}>복원</Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => onHide(p)}>숨김</Button>
+            <Button size="sm" variant="outline" onClick={() => onHide(p)} {...lock}>숨김</Button>
           )}
         </div>
       </td>
@@ -89,6 +93,7 @@ export default function PetitionTable({ title, list, empty }) {
   const submitAnswer = usePetitions((s) => s.submitAnswer);
   const hidePetition = usePetitions((s) => s.hidePetition);
   const restorePetition = usePetitions((s) => s.restorePetition);
+  const role = useAdminSession((s) => s.role);
   const [answering, setAnswering] = useState(null);
   const [hiding, setHiding] = useState(null);
   const [detailId, setDetailId] = useState(null);
@@ -126,7 +131,7 @@ export default function PetitionTable({ title, list, empty }) {
           </thead>
           <tbody>
             {sorted.map((p) => (
-              <Row key={p.id} p={p} onAnswer={setAnswering} onHide={setHiding} onRestore={restore} onOpen={(x) => setDetailId(x.id)} />
+              <Row key={p.id} p={p} role={role} onAnswer={setAnswering} onHide={setHiding} onRestore={restore} onOpen={(x) => setDetailId(x.id)} />
             ))}
           </tbody>
         </table>
