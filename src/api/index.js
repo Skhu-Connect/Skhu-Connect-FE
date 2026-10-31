@@ -433,7 +433,7 @@ export function formatWait(seconds) {
 }
 
 /** 내 학부가 작성할 수 있는 카테고리 키(GET /connect/petitions/categories, 로그인 필수). 모르는 enum 은 버린다.
-    실패하면 null — 등록 화면에서 재시도하며, 확인되지 않은 카테고리로 등록하지 않는다.
+    실패하면 null — 등록 화면에서 재시도하며, 확인되지 않은 카테고리로 등록하지 않는다(화면 편의다 — 학부 제한의 최종 판정은 서버 403).
     학부를 바꾸면 결과가 달라지므로 캐시하지 않는다. 피드 필터·배지는 이 목록과 무관하게 전체다. */
 export async function listWritableCategories() {
   try {

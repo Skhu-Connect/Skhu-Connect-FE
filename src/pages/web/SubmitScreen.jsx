@@ -47,7 +47,8 @@ export default function SubmitScreen() {
       if (!live) return;
       setWritable(keys);
       setCategoriesLoaded(true);
-      setCat((c) => (keys?.includes(c) ? c : ""));
+      // 목록을 받았을 때만 빠진 선택을 비운다 — 조회 실패(null)로 초안의 카테고리를 지우면 재시도 성공 뒤에도 돌아오지 않는다.
+      if (keys) setCat((c) => (keys.includes(c) ? c : ""));
     });
     return () => { live = false; };
   }, [owner, dept, categoryRetry]);

@@ -120,7 +120,8 @@ export default function ThresholdSettings() {
       // 첫 설정을 두 사람이 동시에 저장하면 늦은 쪽이 409 다. 먼저 저장된 값을 다시 읽어 카드에 보이고,
       // 편집 칸은 열어 둔 채(입력값 유지) 사유를 띄운다 — loading 을 켜면 폼이 내려가 문구가 사라진다.
       if (e.status === 409) {
-        api.listAdminThresholdSettings().then(setSettings, () => {});
+        // 다시 읽기를 기다린 뒤 던진다 — 안 기다리면 그 사이 다시 저장한 값을 늦게 온 목록이 덮어쓴다(저장 버튼은 이 동안 막혀 있다).
+        await api.listAdminThresholdSettings().then(setSettings, () => {});
         throw new Error("다른 관리자가 먼저 기준을 저장했습니다. 다시 불러온 값을 확인한 뒤 수정해 주세요.");
       }
       throw e;
