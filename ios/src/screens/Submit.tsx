@@ -12,7 +12,6 @@ import { colors, font, radius } from "../theme";
 const t = { fontFamily: font };
 
 const MAX_LEN = 1000;
-const OPTIONS = CAT_CHIPS.filter((c) => c.key !== "all").map((c) => c.label);
 
 /** 라벨("장학") → 키("scholarship"). Select 가 라벨을 돌려주므로 되짚는다. */
 export function categoryOf(label: string): CategoryKey | null {
@@ -45,11 +44,33 @@ export function SubmitScreen(p: SubmitProps) {
   const insets = useSafeAreaInsets();
   const key = categoryOf(p.category);
   const basis = key ? basisFor(key) : null;
-  const disabled = !p.category || !p.title.trim();
   const { usage, onUsage } = p;
   const exhausted = usage?.remaining === 0;
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  /* 내 학부가 쓸 수 있는 카테고리. MY 에서 학부를 바꾸고 돌아오면 다시 받는다. */
+  const [allowed, setAllowed] = useState<CategoryKey[] | null>(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [categoryRetry, setCategoryRetry] = useState(0);
+  const options = CAT_CHIPS.filter((c) => c.key !== "all" && allowed?.includes(c.key)).map((c) => c.label);
+  const disabled = !key || !allowed?.includes(key) || !p.title.trim() || !p.body.trim();
+
+  useEffect(() => {
+    let alive = true;
+    setAllowed(null);
+    setCategoriesLoaded(false);
+    api.listWritableCategories().then((keys) => {
+      if (!alive) return;
+      setAllowed(keys);
+      setCategoriesLoaded(true);
+    });
+    return () => void (alive = false);
+  }, [categoryRetry]);
+  // 고른 카테고리가 새 목록에서 빠졌으면 선택을 비운다.
+  const { onCategory } = p;
+  useEffect(() => {
+    if (allowed && key && !allowed.includes(key)) onCategory("");
+  }, [allowed, key, onCategory]);
 
   // 진입할 때마다 서버 사용량으로 맞춘다(나갔다 와도 막힌 상태가 유지되고, 그 사이 풀렸으면 풀린다).
   useEffect(() => {
@@ -112,7 +133,14 @@ export function SubmitScreen(p: SubmitProps) {
             </Text>
           </View>
 
-          <Select label="카테고리" options={OPTIONS} value={p.category} onChange={p.onCategory} placeholder="카테고리를 선택하세요" />
+          {allowed ? (
+            <Select label="카테고리" options={options} value={p.category} onChange={p.onCategory} placeholder="카테고리를 선택하세요" />
+          ) : categoriesLoaded ? (
+            <View style={{ gap: 8 }}>
+              <Text accessibilityRole="alert" style={[t, { color: colors.muted }]}>작성 가능한 카테고리를 불러오지 못했습니다. 다시 시도해 주세요.</Text>
+              <Button variant="outline" size="sm" onPress={() => setCategoryRetry((n) => n + 1)}>카테고리 다시 불러오기</Button>
+            </View>
+          ) : <Text style={[t, { color: colors.muted }]}>카테고리를 불러오는 중…</Text>}
           <Input label="제목" value={p.title} onChangeText={p.onTitle} placeholder="핵심을 담은 한 문장으로 작성해 주세요" />
           <Textarea label="건의 내용" value={p.body} onChangeText={p.onBody} maxLength={MAX_LEN} placeholder="현재 상황과 개선이 필요한 이유를 구체적으로 적어 주세요." />
 

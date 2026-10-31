@@ -4,8 +4,9 @@
 
 import { useState } from "react";
 import { usePetitions } from "../../stores/petitions";
+import { canManage, useAdminSession } from "../../stores/adminSession";
 import PageHead from "../../components/admin/PageHead";
-import { Badge, Button, Icon } from "../../components/ui";
+import { Badge, Button, CategoryTag, Icon } from "../../components/ui";
 
 const STATUS = [["all", "전체"], ["pending", "대기"], ["actionTaken", "조치 완료"], ["dismissed", "기각"]];
 const TARGET = [["all", "전체"], ["petition", "글"], ["comment", "댓글"]];
@@ -25,6 +26,7 @@ export default function Reports() {
   const reports = usePetitions((s) => s.reports);
   const loading = usePetitions((s) => s.loading);
   const processReport = usePetitions((s) => s.processReport);
+  const role = useAdminSession((s) => s.role);
   const [status, setStatus] = useState("all");
   const [target, setTarget] = useState("all");
   const [q, setQ] = useState("");
@@ -73,11 +75,15 @@ export default function Reports() {
             <thead><tr style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "left" }}><th style={{ padding: "10px 16px" }}>대상</th><th style={{ padding: "10px 12px" }}>신고 사유</th><th style={{ padding: "10px 12px" }}>상태</th><th style={{ padding: "10px 16px", textAlign: "right" }}>처리</th></tr></thead>
             <tbody>{list.map((r) => {
               const meta = STATUS_META[r.status];
+              // 역할 밖이거나 카테고리를 모르면(옛 응답) 비활성 + 사유. 서버가 최종 판정한다.
+              const lock = canManage(role, r.petitionCategory) ? {} : { title: role ? "이 카테고리를 처리할 권한이 없습니다." : "권한 정보를 불러오지 못해 조회만 가능합니다." };
+              const off = busy === r.id || !!lock.title;
               const heading = r.targetTitle ?? (r.targetType === "comment" ? `댓글 #${r.commentId}` : `청원 #${r.petitionId}`);
               return <tr key={r.id} style={{ borderTop: "1px solid var(--border-subtle)" }}>
                 <td style={{ padding: "14px 16px", maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, color: "var(--text-strong)" }}><Icon name={r.targetType === "petition" ? "fileText" : "message"} size={16} />{heading}</div>
                   <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12, color: "var(--text-muted)" }}>
+                    {r.petitionCategory && <CategoryTag category={r.petitionCategory} size="sm" />}
                     {r.targetType === "petition" ? "글 신고" : `댓글 #${r.commentId} 신고 · 청원 #${r.petitionId}`}
                     {r.targetDeleted && <Badge tone="danger" size="sm">작성자 삭제</Badge>}
                     {r.targetHidden && <Badge tone="warning" size="sm">숨김</Badge>}
@@ -88,9 +94,9 @@ export default function Reports() {
                 <td style={{ padding: "14px 12px" }}><Badge tone={meta.tone} size="sm">{meta.label}</Badge></td>
                 <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>{r.status === "pending" ? (
                   <>
-                    <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken", "HIDE")}>글 숨김</Button>
-                    <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => process(r, "actionTaken", "USER_LOGIN_BAN")} style={{ marginLeft: 6 }}>로그인 금지</Button>
-                    <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => process(r, "dismissed")} style={{ marginLeft: 6 }}>기각</Button>
+                    <Button size="sm" variant="danger" disabled={off} {...lock} onClick={() => process(r, "actionTaken", "HIDE")}>글 숨김</Button>
+                    <Button size="sm" variant="danger" disabled={off} {...lock} onClick={() => process(r, "actionTaken", "USER_LOGIN_BAN")} style={{ marginLeft: 6 }}>로그인 금지</Button>
+                    <Button size="sm" variant="outline" disabled={off} {...lock} onClick={() => process(r, "dismissed")} style={{ marginLeft: 6 }}>기각</Button>
                   </>
                 ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>처리됨</span>}</td>
               </tr>;

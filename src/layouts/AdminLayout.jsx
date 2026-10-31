@@ -8,7 +8,7 @@
 import { useEffect } from "react";
 import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { usePetitions } from "../stores/petitions";
-import { useAdminSession } from "../stores/adminSession";
+import { ROLE_LABEL, canManageNotices, useAdminSession } from "../stores/adminSession";
 import { Avatar, Icon } from "../components/ui";
 
 const NAV = [
@@ -25,6 +25,8 @@ export default function AdminLayout() {
   const restored = useAdminSession((s) => s.restored);
   const restore = useAdminSession((s) => s.restore);
   const logout = useAdminSession((s) => s.logout);
+  const loginId = useAdminSession((s) => s.loginId);
+  const role = useAdminSession((s) => s.role);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function AdminLayout() {
           </div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV.map((n) => (
+          {NAV.filter((n) => n.to !== "/admin/notices" || canManageNotices(role)).map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -81,12 +83,17 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 8px", borderTop: "1px solid rgba(255,255,255,.1)" }}>
-          <Avatar name="관리" size={34} />
-          {/* 관리자 프로필 조회 API 가 없어 이름·이메일은 여전히 자리표시자다 — 로그인 자체는
-              실 세션이므로 로그아웃만 실제로 동작한다. */}
+          <Avatar name={loginId ?? "관리"} size={34} />
           <div style={{ fontSize: 12.5, flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700 }}>총괄 관리자</div>
-            <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>admin@example.com</div>
+            {role ? (
+              <>
+                <div style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loginId}</div>
+                <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>{ROLE_LABEL[role]}</div>
+                {role === "EMERGENCY_COMMITTEE" && <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11 }}>소프트웨어융합학부 담당</div>}
+              </>
+            ) : (
+              <div role="status" style={{ color: "rgba(255,255,255,.75)", fontSize: 11, lineHeight: 1.4 }}>권한 정보를 불러오지 못해 조회만 가능합니다</div>
+            )}
           </div>
           <button
             type="button"

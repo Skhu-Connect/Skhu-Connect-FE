@@ -7,11 +7,23 @@ import { useEffect, useState } from "react";
 import * as api from "../../api";
 import PageHead from "../../components/admin/PageHead";
 import { Button, ConfirmDialog, Input, Textarea } from "../../components/ui";
+import { canManageNotices, useAdminSession } from "../../stores/adminSession";
 
 const TITLE_MAX = 100; // 서버 제약(docs/api-spec.md 공지 절)
 const CONTENT_MAX = 5000;
 
+/* 사이드바에서 메뉴를 빼도 주소창으로 들어올 수 있다 — 작성 폼 대신 안내만 보인다(서버도 403 으로 막는다). */
 export default function Notices() {
+  const role = useAdminSession((s) => s.role);
+  if (canManageNotices(role)) return <NoticesEditor />;
+  return (
+    <div style={{ padding: "26px 30px", overflowY: "auto", flex: 1 }}>
+      <PageHead title="공지사항" desc="공지사항은 학생회 계정만 작성할 수 있습니다." />
+    </div>
+  );
+}
+
+function NoticesEditor() {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);

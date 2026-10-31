@@ -27,7 +27,7 @@ import { isAgreeable, parseServerDate } from "../utils/serverDate.js";
    dev 서버는 rewrite 가 없지만 localhost:5173 은 백엔드가 이미 허용하므로 절대경로 그대로 쓴다. */
 const BASE_URL = import.meta.env.DEV ? "https://i1000u.hueeng.com" : "";
 
-const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT" };
+const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT", software: "SOFTWARE_CONVERGENCE" };
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
 const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
@@ -432,6 +432,18 @@ export function formatWait(seconds) {
   return min ? `${min}분 ${sec}초` : `${sec}초`;
 }
 
+/** 내 학부가 작성할 수 있는 카테고리 키(GET /connect/petitions/categories, 로그인 필수). 모르는 enum 은 버린다.
+    실패하면 null — 등록 화면에서 재시도하며, 확인되지 않은 카테고리로 등록하지 않는다(화면 편의다 — 학부 제한의 최종 판정은 서버 403).
+    학부를 바꾸면 결과가 달라지므로 캐시하지 않는다. 피드 필터·배지는 이 목록과 무관하게 전체다. */
+export async function listWritableCategories() {
+  try {
+    const rows = await apiFetch("/connect/petitions/categories");
+    return (rows ?? []).map((e) => CATEGORY_ENUM_TO_KEY[e]).filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
 export async function createPetition({ category: categoryKey, title, body }) {
   const t = String(title ?? "").trim();
   const b = String(body ?? "").trim();
@@ -445,6 +457,8 @@ export async function createPetition({ category: categoryKey, title, body }) {
     raw = await apiFetch("/connect/petitions", { method: "POST", body: { category: CATEGORY_KEY_TO_ENUM[categoryKey], title: t, content: b } });
   } catch (e) {
     if (e.status === 429) throw new Error(cooldownMessage(e.body?.retryAfterSeconds));
+    if (e.status === 403 && e.body?.title === "Petition category is not available for your department") throw new Error("소속 학부 학생만 이 카테고리로 건의할 수 있습니다.");
+    if (e.status === 404 && e.body?.title === "Threshold setting not found") throw new Error("이 카테고리는 아직 기준 인원이 정해지지 않아 등록할 수 없습니다.");
     throw e;
   }
   myPetitionIds.add(raw.id);
@@ -779,10 +793,20 @@ async function adminApiFetch(path, opts = {}) {
       /* 재발급 실패 — 아래에서 원래 401 을 던진다 */
     }
   }
-  if (!res.ok) throw await parseError(res);
+  if (!res.ok) {
+    const err = await parseError(res);
+    // 역할 밖 카테고리 쓰기(docs/admin-roles-backend-request.md 3절). 화면별 catch 가 이 문구를 그대로 보인다.
+    if (err.body?.title === "ADMIN_FORBIDDEN") err.message = "이 카테고리를 처리할 권한이 없습니다.";
+    throw err;
+  }
   if (res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+/** 로그인한 관리자 { id, loginId, role: "EMERGENCY_COMMITTEE" | "STUDENT_COUNCIL" }. */
+export async function getAdminMe() {
+  return adminApiFetch("/connect/admin/me");
 }
 
 /** AdminLayout 이 마운트 시 호출한다: adminRefreshToken 쿠키가 살아있으면 세션을 복구한다. */
@@ -873,6 +897,8 @@ function adaptAdminReport(raw) {
     status: REPORT_STATUS_TO_KEY[raw.status] ?? "pending",
     targetType: REPORT_TARGET_TO_KEY[raw.targetType] ?? "petition",
     petitionId: raw.petitionId,
+    // 신고 대상 청원의 카테고리(댓글 신고면 그 댓글의 청원). 옛 서버엔 없다 → null 이면 처리 버튼이 막힌다.
+    petitionCategory: CATEGORY_ENUM_TO_KEY[raw.petitionCategory] ?? null,
     commentId: raw.commentId ?? null,
     reasonType: raw.reasonType,
     reasonDetail: raw.reasonDetail,

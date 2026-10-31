@@ -21,6 +21,7 @@ export default function SubmitScreen() {
   const submit = usePetitions((s) => s.submit);
   const navigate = useNavigate();
   const owner = useSession((s) => s.user?.loginId ?? null);
+  const dept = useSession((s) => s.user?.dept ?? null);
   const [saved] = useState(() => (draft && draft.owner === owner ? draft : null));
   const [cat, setCat] = useState(saved?.cat ?? "");
   const [title, setTitle] = useState(saved?.title ?? "");
@@ -33,7 +34,28 @@ export default function SubmitScreen() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
-  const selected = categories.find((c) => c.key === cat);
+  // 작성 가능 카테고리는 학부마다 다르다. 진입할 때·학부가 바뀔 때마다 다시 묻고, 고른 값이 빠졌으면 비운다.
+  // 목록 확인 전·실패 시에는 카테고리를 열지 않는다.
+  const [writable, setWritable] = useState(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [categoryRetry, setCategoryRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setWritable(null);
+    setCategoriesLoaded(false);
+    api.listWritableCategories().then((keys) => {
+      if (!live) return;
+      setWritable(keys);
+      setCategoriesLoaded(true);
+      // 목록을 받았을 때만 빠진 선택을 비운다 — 조회 실패(null)로 초안의 카테고리를 지우면 재시도 성공 뒤에도 돌아오지 않는다.
+      if (keys) setCat((c) => (keys.includes(c) ? c : ""));
+    });
+    return () => { live = false; };
+  }, [owner, dept, categoryRetry]);
+  const options = categories.filter((c) => writable?.includes(c.key));
+
+  // 미리보기는 지금 쓸 수 있는 카테고리일 때만 — 조회 실패로 선택만 남은 상태에서 태그가 뜨면 빈 선택칸과 어긋난다.
+  const selected = writable?.includes(cat) ? categories.find((c) => c.key === cat) : undefined;
   const exhausted = usage?.remaining === 0;
 
   // 등록 성공 뒤에는 저장하지 않는다 — navigate 가 트랜지션이라 언마운트 전에 한 번 더 렌더된다.
@@ -80,6 +102,7 @@ export default function SubmitScreen() {
   };
 
   const done = async () => {
+    if (!writable?.includes(cat)) return;
     setSaving(true);
     try {
       await submit({ category: cat, title, body });
@@ -111,11 +134,18 @@ export default function SubmitScreen() {
       <Card padding="var(--pad-card-lg)" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <Select
           label="카테고리"
-          options={categories.map((c) => ({ value: c.key, label: c.label }))}
+          options={options.map((c) => ({ value: c.key, label: c.label }))}
           value={cat}
           onChange={(e) => setCat(e.target.value)}
-          placeholder="카테고리를 선택하세요"
+          disabled={!writable}
+          placeholder={categoriesLoaded ? "카테고리를 선택하세요" : "카테고리를 불러오는 중…"}
         />
+        {categoriesLoaded && writable === null && (
+          <div role="alert">
+            <p>작성 가능한 카테고리를 불러오지 못했습니다. 다시 시도해 주세요.</p>
+            <Button size="sm" variant="outline" onClick={() => setCategoryRetry((n) => n + 1)}>카테고리 다시 불러오기</Button>
+          </div>
+        )}
         <Input label="제목" placeholder="핵심을 담은 한 문장으로 작성해 주세요" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea label="건의 내용" maxLength={1000} value={body} onChange={(e) => setBody(e.target.value)} placeholder="현재 상황과 개선이 필요한 이유를 구체적으로 적어 주세요." />
 
@@ -195,7 +225,7 @@ export default function SubmitScreen() {
 
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
           <Button variant="outline" onClick={() => navigate("/")}>취소</Button>
-          <Button variant="primary" disabled={!title.trim() || !body.trim() || !cat || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
+          <Button variant="primary" disabled={!title.trim() || !body.trim() || !writable?.includes(cat) || saving} onClick={done} leadingIcon={<Icon name="check" size={16} />}>익명으로 등록</Button>
         </div>
       </Card>
     </div>

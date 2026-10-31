@@ -3,7 +3,7 @@
 
 import type { IconName } from "./icons";
 
-export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department";
+export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department" | "software";
 export type StatusKey = "received" | "reviewing" | "answered";
 export type BasisLabel = "전체 학생" | "학과 정원" | "기숙사 정원";
 export type NotificationSettingKey = "agreement" | "answer" | "reply" | "like" | "notice" | "report";
@@ -50,7 +50,27 @@ export const CAT_LABEL: Record<CategoryKey, string> = {
   dorm: "기숙사",
   library: "도서관",
   department: "학부",
+  software: "소프트웨어융합학부",
 };
+
+/* 서버 enum ↔ 앱 키. api.ts 가 쓰고, 순수 함수라 selfcheck 가 돌릴 수 있게 여기 둔다. */
+export const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
+  scholarship: "SCHOLARSHIP",
+  facility: "FACILITY",
+  dorm: "DORMITORY",
+  library: "LIBRARY",
+  department: "DEPARTMENT",
+  software: "SOFTWARE_CONVERGENCE",
+};
+export const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
+  Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k as CategoryKey]),
+) as Record<string, CategoryKey>;
+
+/** GET /connect/petitions/categories 응답(enum 배열) → 키 목록. 모르는 값은 버린다. 배열이 아니면 null(조회 실패). */
+export function categoryKeysOf(raw: unknown): CategoryKey[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw.flatMap((v) => (typeof v === "string" && CATEGORY_ENUM_TO_KEY[v] ? [CATEGORY_ENUM_TO_KEY[v]] : []));
+}
 
 /** 필터 칩 순서 — "전체" 를 앞에 둔다. */
 export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
@@ -60,6 +80,7 @@ export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "dorm", label: "기숙사" },
   { key: "library", label: "도서관" },
   { key: "department", label: "학부" },
+  { key: "software", label: "소프트웨어융합학부" },
 ];
 
 export const BASIS_NOTE: Record<BasisLabel, string> = {

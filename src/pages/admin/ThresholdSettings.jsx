@@ -1,17 +1,18 @@
 /* 관리자 임계치 설정 (#49). GET/PUT /connect/admin/threshold-settings.
-   카테고리 5개 고정이라 스토어에 안 넣고 화면 로컬 상태로 조회·수정한다(SignupScreen·
+   카테고리 수가 고정이라 스토어에 안 넣고 화면 로컬 상태로 조회·수정한다(SignupScreen·
    MyPageScreen 이 이미 쓰는, 화면이 api 를 직접 부르는 패턴). 카테고리 라벨은 petitions
    스토어가 AdminLayout 마운트 시 이미 불러온 categories 를 그대로 읽어 재조회하지 않는다. */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePetitions } from "../../stores/petitions";
+import { canManage, useAdminSession } from "../../stores/adminSession";
 import * as api from "../../api";
 import PageHead from "../../components/admin/PageHead";
 import { Button, CategoryTag, Input, Textarea } from "../../components/ui";
 
 function EditForm({ setting, onCancel, onSave }) {
   const [totalStudentCount, setTotalStudentCount] = useState(String(setting.totalStudentCount ?? ""));
-  const [thresholdRate, setThresholdRate] = useState(String(Math.round((setting.thresholdRate ?? 0) * 100)));
+  const [thresholdRate, setThresholdRate] = useState(setting.thresholdRate == null ? "" : String(Math.round(setting.thresholdRate * 100)));
   const [minimumCount, setMinimumCount] = useState(String(setting.minimumCount ?? ""));
   const [changeReason, setChangeReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,15 +53,21 @@ function EditForm({ setting, onCancel, onSave }) {
 }
 
 function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
+  const role = useAdminSession((s) => s.role);
+  // 역할 밖 카테고리는 수정 버튼을 비활성 + 사유로 둔다. 서버가 최종 판정한다(403 은 편집 칸 오류로 뜬다).
+  const lock = canManage(role, setting.category) ? {} : { disabled: true, title: role ? "이 카테고리를 처리할 권한이 없습니다." : "권한 정보를 불러오지 못해 조회만 가능합니다." };
   return (
     <div style={{ background: "#fff", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)", padding: 22 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <CategoryTag category={setting.category} size="sm" />
         <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-strong)" }}>{label}</span>
         {!editing && (
-          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }}>수정</Button>
+          <Button size="sm" variant="outline" onClick={onEdit} style={{ marginLeft: "auto" }} {...lock}>{setting.unset ? "초기 설정" : "수정"}</Button>
         )}
       </div>
+      {setting.unset ? (
+        <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-muted)" }}>아직 설정되지 않음 — 운영 시작 전에 전체 학생 수·동의 비율·최소 인원을 저장해 주세요. 설정 전에는 이 카테고리로 건의를 등록할 수 없습니다.</p>
+      ) : (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16, fontSize: 13 }}>
         <div>
           <div style={{ color: "var(--text-muted)", fontSize: 11.5 }}>전체 학생 수</div>
@@ -79,6 +86,7 @@ function SettingCard({ setting, label, editing, onEdit, onCancel, onSave }) {
           <div style={{ fontWeight: 700, color: "var(--indigo-600)", marginTop: 2 }}>{setting.targetAgreementCount.toLocaleString()}명</div>
         </div>
       </div>
+      )}
       {setting.changeReason && (
         <div style={{ marginTop: 12, fontSize: 11.5, color: "var(--text-muted)" }}>
           최근 변경: {setting.changeReason}
@@ -104,13 +112,33 @@ export default function ThresholdSettings() {
 
   useEffect(load, []);
 
+  // 저장할 때마다 늘린다. 409 뒤 다시 읽은 목록은 그 사이 새 저장이 시작됐으면 버린다 — 취소 후 다시 열어
+  // 저장한 값을 늦게 온 목록이 덮어쓰지 않게(저장 버튼만 막아서는 이 경로를 못 막는다).
+  const saveSeq = useRef(0);
+
   const save = async (category, patch) => {
-    const updated = await api.updateAdminThresholdSetting(category, patch);
-    setSettings((list) => list.map((s) => (s.category === category ? updated : s)));
+    const seq = ++saveSeq.current;
+    let updated;
+    try {
+      updated = await api.updateAdminThresholdSetting(category, patch);
+    } catch (e) {
+      // 첫 설정을 두 사람이 동시에 저장하면 늦은 쪽이 409 다. 먼저 저장된 값을 다시 읽어 카드에 보이고,
+      // 편집 칸은 열어 둔 채(입력값 유지) 사유를 띄운다 — loading 을 켜면 폼이 내려가 문구가 사라진다.
+      if (e.status === 409) {
+        const list = await api.listAdminThresholdSettings().catch(() => null);
+        if (list && saveSeq.current === seq) setSettings(list);
+        throw new Error("다른 관리자가 먼저 기준을 저장했습니다. 다시 불러온 값을 확인한 뒤 수정해 주세요.");
+      }
+      throw e;
+    }
+    // 소프트웨어융합학부의 첫 저장은 행을 새로 만든다 — 목록에 없으면 추가한다.
+    setSettings((list) => (list.some((s) => s.category === category) ? list.map((s) => (s.category === category ? updated : s)) : [...list, updated]));
     setEditingKey(null);
   };
 
   const labelOf = (key) => categories.find((c) => c.key === key)?.label ?? key;
+  // 소프트웨어융합학부 행은 서버에 미리 없다(첫 PUT 이 만든다). 그 자리만 빈 카드로 채운다 — 다른 카테고리 누락은 그대로 둔다.
+  const rows = settings.some((s) => s.category === "software") ? settings : [...settings, { category: "software", unset: true }];
 
   return (
     <div style={{ padding: "26px 30px", overflowY: "auto", flex: 1 }}>
@@ -124,7 +152,7 @@ export default function ThresholdSettings() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
-          {settings.map((s) => (
+          {rows.map((s) => (
             <SettingCard
               key={s.category}
               setting={s}
