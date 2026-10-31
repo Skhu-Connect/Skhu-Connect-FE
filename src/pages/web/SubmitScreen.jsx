@@ -54,7 +54,8 @@ export default function SubmitScreen() {
   }, [owner, dept, categoryRetry]);
   const options = categories.filter((c) => writable?.includes(c.key));
 
-  const selected = categories.find((c) => c.key === cat);
+  // 미리보기는 지금 쓸 수 있는 카테고리일 때만 — 조회 실패로 선택만 남은 상태에서 태그가 뜨면 빈 선택칸과 어긋난다.
+  const selected = writable?.includes(cat) ? categories.find((c) => c.key === cat) : undefined;
   const exhausted = usage?.remaining === 0;
 
   // 등록 성공 뒤에는 저장하지 않는다 — navigate 가 트랜지션이라 언마운트 전에 한 번 더 렌더된다.
