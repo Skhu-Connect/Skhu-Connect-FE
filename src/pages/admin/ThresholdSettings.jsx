@@ -113,7 +113,18 @@ export default function ThresholdSettings() {
   useEffect(load, []);
 
   const save = async (category, patch) => {
-    const updated = await api.updateAdminThresholdSetting(category, patch);
+    let updated;
+    try {
+      updated = await api.updateAdminThresholdSetting(category, patch);
+    } catch (e) {
+      // 첫 설정을 두 사람이 동시에 저장하면 늦은 쪽이 409 다. 먼저 저장된 값을 다시 읽어 카드에 보이고,
+      // 편집 칸은 열어 둔 채(입력값 유지) 사유를 띄운다 — loading 을 켜면 폼이 내려가 문구가 사라진다.
+      if (e.status === 409) {
+        api.listAdminThresholdSettings().then(setSettings, () => {});
+        throw new Error("다른 관리자가 먼저 기준을 저장했습니다. 다시 불러온 값을 확인한 뒤 수정해 주세요.");
+      }
+      throw e;
+    }
     // 소프트웨어융합학부의 첫 저장은 행을 새로 만든다 — 목록에 없으면 추가한다.
     setSettings((list) => (list.some((s) => s.category === category) ? list.map((s) => (s.category === category ? updated : s)) : [...list, updated]));
     setEditingKey(null);
