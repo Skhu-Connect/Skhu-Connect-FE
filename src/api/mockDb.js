@@ -28,10 +28,10 @@ export const CATEGORY_META = {
     threshold: 480,
     basis: "전체 학생",
   },
-  department: {
-    label: "학부",
-    threshold: 180,
-    basis: "학과 정원",
+  other: {
+    label: "기타",
+    threshold: 480,
+    basis: "전체 학생",
   },
   // 서버 threshold_settings 행 초기값 제안(DEPARTMENT 복사)과 맞춘 폴백 — 실제 값은 서버가 덮어쓴다.
   software: {

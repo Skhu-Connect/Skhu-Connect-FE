@@ -27,7 +27,8 @@ import { isAgreeable, parseServerDate } from "../utils/serverDate.js";
    dev 서버는 rewrite 가 없지만 localhost:5173 은 백엔드가 이미 허용하므로 절대경로 그대로 쓴다. */
 const BASE_URL = import.meta.env.DEV ? "https://i1000u.hueeng.com" : "";
 
-const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", department: "DEPARTMENT", software: "SOFTWARE_CONVERGENCE" };
+// 학부(DEPARTMENT)는 2026-11-07 기타(OTHER)로 바뀌었다 — 서버가 더는 받지도 주지도 않는다. 모르는 값은 어댑터가 other 로 읽는다.
+const CATEGORY_KEY_TO_ENUM = { scholarship: "SCHOLARSHIP", facility: "FACILITY", dorm: "DORMITORY", library: "LIBRARY", other: "OTHER", software: "SOFTWARE_CONVERGENCE" };
 const CATEGORY_ENUM_TO_KEY = Object.fromEntries(Object.entries(CATEGORY_KEY_TO_ENUM).map(([k, v]) => [v, k]));
 const STATUS_ENUM_TO_KEY = { OPEN: "received", UNDER_REVIEW: "reviewing", ANSWERED: "answered", EXPIRED: "received" };
 
@@ -345,7 +346,7 @@ function adaptOfficialAnswer(raw) {
 }
 
 function adaptPetition(raw) {
-  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "other";
   const meta = CATEGORY_META[key];
   const deadline = raw.agreementDeadline ?? raw.expiresAt;
   const daysLeft = deadline ? Math.ceil((parseServerDate(deadline).getTime() - Date.now()) / 86400000) : null;
@@ -843,7 +844,7 @@ export async function adminLogout() {
 // 뺐다 — 서버에 담당자 개념이 생기면 그때 응답에서 받는다. threshold 는 청원마다 다를 수
 // 있어 응답의 targetAgreementCount 를 우선하고, 없을 때만 CATEGORY_META 폴백을 쓴다.
 function adaptAdminPetition(raw) {
-  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "other";
   const meta = CATEGORY_META[key];
   return {
     id: raw.id,
@@ -979,10 +980,11 @@ export async function updateAdminAnswer(petitionId, content, answerSource) {
   return adaptAdminAnswer(raw);
 }
 
+/* 쓰기 경로라 모르는 값을 기타로 폴백하지 않는다 — 폴백하면 새 카테고리 행을 고칠 때 PUT 이 /OTHER 로 나가
+   기타 임계치를 덮는다. 모르는 행은 목록에서 버린다(서버가 새 카테고리를 먼저 낸 적이 있다 — 소프트웨어융합학부). */
 function adaptThresholdSetting(raw) {
-  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
   return {
-    category: key,
+    category: CATEGORY_ENUM_TO_KEY[raw.category],
     totalStudentCount: raw.totalStudentCount,
     thresholdRate: raw.thresholdRate,
     minimumCount: raw.minimumCount,
@@ -994,7 +996,7 @@ function adaptThresholdSetting(raw) {
 
 export async function listAdminThresholdSettings() {
   const data = await adminApiFetch("/connect/admin/threshold-settings");
-  return (data ?? []).map(adaptThresholdSetting);
+  return (data ?? []).filter((row) => CATEGORY_ENUM_TO_KEY[row.category]).map(adaptThresholdSetting);
 }
 
 /** targetAgreementCount(실제 목표 공감 수)는 서버가 totalStudentCount·thresholdRate·
@@ -1003,6 +1005,7 @@ export async function updateAdminThresholdSetting(category, { totalStudentCount,
   const reason = String(changeReason ?? "").trim();
   if (!reason) throw new Error("변경 사유를 입력해 주세요.");
   const enumCategory = CATEGORY_KEY_TO_ENUM[category];
+  if (!enumCategory) throw new Error("알 수 없는 카테고리입니다.");
   const raw = await adminApiFetch(`/connect/admin/threshold-settings/${enumCategory}`, {
     method: "PUT",
     body: { totalStudentCount, thresholdRate, minimumCount, changeReason: reason },

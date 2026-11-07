@@ -265,7 +265,7 @@ export const CATEGORIES = {
   facility: { label: "시설", icon: "facilityBuilding" },
   dorm: { label: "기숙사", icon: "dormHouse" },
   library: { label: "도서관", icon: "bookOpen" },
-  department: { label: "학부", icon: "peopleGroup" },
+  other: { label: "기타", icon: "more" },
   software: { label: "소프트웨어융합학부", icon: "sparkles" },
 };
 

@@ -43,8 +43,9 @@
 
 - `GET /connect/petitions?keyword&category&status&page&size&sort` → `PetitionPageResponse`
   (`{content[], page, size, totalElements, totalPages, first, last}`). **인증 불필요.**
-- `category` enum: `SCHOLARSHIP FACILITY DORMITORY LIBRARY DEPARTMENT` (mock 키:
-  `scholarship facility dorm library department` — `dorm`→`DORMITORY`만 이름이 다르다).
+- `category` enum: `SCHOLARSHIP FACILITY DORMITORY LIBRARY OTHER SOFTWARE_CONVERGENCE` (클라이언트 키:
+  `scholarship facility dorm library other software` — `dorm`→`DORMITORY`, `software`→`SOFTWARE_CONVERGENCE` 만
+  이름이 다르다). 학부(`DEPARTMENT`)는 2026-11-07 기타(`OTHER`)로 바뀌어 요청에 쓰면 `400` 이다.
 - `status` enum: `OPEN UNDER_REVIEW ANSWERED EXPIRED` (mock: `received reviewing answered` + 클라이언트가
   30일 경과로 계산하던 `expired` 가 이제 **서버 값**이다).
 - `PetitionQueryResponse`/`PetitionResponse` 필드: `id category status title content agreementCount
