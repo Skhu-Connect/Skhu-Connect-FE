@@ -344,7 +344,7 @@ function adaptOfficialAnswer(raw: any): AdminAnswer | null {
 }
 
 function adaptPetition(raw: any): Petition {
-  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "department";
+  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "other";
   const iVoted = votedIds.has(raw.id);
   return {
     id: raw.id,
@@ -370,7 +370,7 @@ function adaptPetition(raw: any): Petition {
 }
 
 const BASIS_LABEL: Record<CategoryKey, Petition["basis"]> = {
-  department: "학과 정원",
+  other: "전체 학생",
   software: "학과 정원",
   dorm: "기숙사 정원",
   scholarship: "전체 학생",
