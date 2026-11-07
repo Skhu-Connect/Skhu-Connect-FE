@@ -25,7 +25,7 @@ try {
       { id: 4, petitionCategory: "OTHER" },
     ] });
     // 서버 정렬이 바뀌어도 코드로 매핑하는지 보려고 일부러 enum 순서와 다르게 준다.
-    if (path === "/connect/admin/threshold-settings") return json([{ category: "SOFTWARE_CONVERGENCE" }, { category: "OTHER" }]);
+    if (path === "/connect/admin/threshold-settings") return json([{ category: "SOFTWARE_CONVERGENCE" }, { category: "NEW_CATEGORY" }, { category: "OTHER" }]);
     if (path === "/connect/threshold-settings") return json([{ category: "OTHER", targetAgreementCount: 40 }]);
     const put = path.match(/^\/connect\/admin\/threshold-settings\/(\w+)$/);
     if (put) {
@@ -57,7 +57,8 @@ try {
 
   const reports = await api.listAdminReports();
   assert.deepEqual(reports.map((r) => r.petitionCategory), ["software", "facility", null, "other"]);
-  assert.deepEqual((await api.listAdminThresholdSettings()).map((s) => s.category), ["software", "other"]);
+  assert.deepEqual((await api.listAdminThresholdSettings()).map((s) => s.category), ["software", "other"], "모르는 행은 기타로 뭉개지 않고 버린다");
+  await assert.rejects(() => api.updateAdminThresholdSetting(undefined, { changeReason: "x" }), { message: "알 수 없는 카테고리입니다." });
   const patch = { totalStudentCount: 100, thresholdRate: 0.1, minimumCount: 5, changeReason: "최초 설정" };
   assert.equal((await api.updateAdminThresholdSetting("software", patch)).category, "software");
   assert.equal(calls.at(-1).method, "PUT");

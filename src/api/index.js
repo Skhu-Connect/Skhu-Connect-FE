@@ -980,10 +980,11 @@ export async function updateAdminAnswer(petitionId, content, answerSource) {
   return adaptAdminAnswer(raw);
 }
 
+/* 쓰기 경로라 모르는 값을 기타로 폴백하지 않는다 — 폴백하면 새 카테고리 행을 고칠 때 PUT 이 /OTHER 로 나가
+   기타 임계치를 덮는다. 모르는 행은 목록에서 버린다(서버가 새 카테고리를 먼저 낸 적이 있다 — 소프트웨어융합학부). */
 function adaptThresholdSetting(raw) {
-  const key = CATEGORY_ENUM_TO_KEY[raw.category] ?? "other";
   return {
-    category: key,
+    category: CATEGORY_ENUM_TO_KEY[raw.category],
     totalStudentCount: raw.totalStudentCount,
     thresholdRate: raw.thresholdRate,
     minimumCount: raw.minimumCount,
@@ -995,7 +996,7 @@ function adaptThresholdSetting(raw) {
 
 export async function listAdminThresholdSettings() {
   const data = await adminApiFetch("/connect/admin/threshold-settings");
-  return (data ?? []).map(adaptThresholdSetting);
+  return (data ?? []).filter((row) => CATEGORY_ENUM_TO_KEY[row.category]).map(adaptThresholdSetting);
 }
 
 /** targetAgreementCount(실제 목표 공감 수)는 서버가 totalStudentCount·thresholdRate·
@@ -1004,6 +1005,7 @@ export async function updateAdminThresholdSetting(category, { totalStudentCount,
   const reason = String(changeReason ?? "").trim();
   if (!reason) throw new Error("변경 사유를 입력해 주세요.");
   const enumCategory = CATEGORY_KEY_TO_ENUM[category];
+  if (!enumCategory) throw new Error("알 수 없는 카테고리입니다.");
   const raw = await adminApiFetch(`/connect/admin/threshold-settings/${enumCategory}`, {
     method: "PUT",
     body: { totalStudentCount, thresholdRate, minimumCount, changeReason: reason },
