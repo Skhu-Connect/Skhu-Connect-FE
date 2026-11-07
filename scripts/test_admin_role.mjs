@@ -9,7 +9,7 @@ try {
   const { canManage, canManageNotices } = await server.ssrLoadModule("/src/stores/adminSession.js");
   const api = await server.ssrLoadModule("/src/api/index.js");
 
-  for (const cat of ["scholarship", "facility", "dorm", "library", "department"]) {
+  for (const cat of ["scholarship", "facility", "dorm", "library", "other"]) {
     assert.equal(canManage("EMERGENCY_COMMITTEE", cat), false, cat);
     assert.equal(canManage("STUDENT_COUNCIL", cat), true, cat);
   }
