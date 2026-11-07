@@ -3,7 +3,7 @@
 
 import type { IconName } from "./icons";
 
-export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "department" | "software";
+export type CategoryKey = "scholarship" | "facility" | "dorm" | "library" | "other" | "software";
 export type StatusKey = "received" | "reviewing" | "answered";
 export type BasisLabel = "전체 학생" | "학과 정원" | "기숙사 정원";
 export type NotificationSettingKey = "agreement" | "answer" | "reply" | "like" | "notice" | "report";
@@ -49,17 +49,18 @@ export const CAT_LABEL: Record<CategoryKey, string> = {
   facility: "시설",
   dorm: "기숙사",
   library: "도서관",
-  department: "학부",
+  other: "기타",
   software: "소프트웨어융합학부",
 };
 
-/* 서버 enum ↔ 앱 키. api.ts 가 쓰고, 순수 함수라 selfcheck 가 돌릴 수 있게 여기 둔다. */
+/* 서버 enum ↔ 앱 키. api.ts 가 쓰고, 순수 함수라 selfcheck 가 돌릴 수 있게 여기 둔다.
+   학부(DEPARTMENT)는 2026-11-07 기타(OTHER)로 바뀌었다 — 서버가 더는 받지도 주지도 않는다. */
 export const CATEGORY_KEY_TO_ENUM: Record<CategoryKey, string> = {
   scholarship: "SCHOLARSHIP",
   facility: "FACILITY",
   dorm: "DORMITORY",
   library: "LIBRARY",
-  department: "DEPARTMENT",
+  other: "OTHER",
   software: "SOFTWARE_CONVERGENCE",
 };
 export const CATEGORY_ENUM_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
@@ -79,7 +80,7 @@ export const CAT_CHIPS: { key: CategoryKey | "all"; label: string }[] = [
   { key: "facility", label: "시설" },
   { key: "dorm", label: "기숙사" },
   { key: "library", label: "도서관" },
-  { key: "department", label: "학부" },
+  { key: "other", label: "기타" },
   { key: "software", label: "소프트웨어융합학부" },
 ];
 
@@ -131,7 +132,7 @@ export const SEED: Petition[] = [
     title: "소프트웨어융합학부 실습실 야간 개방",
     excerpt: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족합니다.",
     body: "팀 프로젝트 기간에 실습실을 밤 10시까지 열어 주세요. 조별 작업 공간이 부족해 강의실을 전전하고 있습니다.",
-    category: "department",
+    category: "software",
     status: "received",
     agreeable: true,
     current: 88,

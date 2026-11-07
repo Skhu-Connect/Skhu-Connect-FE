@@ -58,11 +58,12 @@ assert.equal(visibleList(SEED, { tab: "home", category: "all", query: "없는말
 }
 
 /* 카테고리마다 임계치 기준이 다르다. */
-assert.equal(thresholdFor(basisFor("department")), 180);
+assert.equal(thresholdFor(basisFor("other")), 480, "기타는 전체 학생 기준");
 assert.equal(thresholdFor(basisFor("software")), 180);
 
 /* 작성 가능 카테고리 응답 → 키. 모르는 값·문자열 아닌 값은 버리고, 배열이 아니면 null(조회 실패). */
 assert.deepEqual(categoryKeysOf(["SCHOLARSHIP", "DORMITORY", "SOFTWARE_CONVERGENCE", "NEW_THING", 3]), ["scholarship", "dorm", "software"]);
+assert.deepEqual(categoryKeysOf(["OTHER", "DEPARTMENT"]), ["other"], "옛 학부 값은 작성 선택지가 되지 않는다");
 assert.deepEqual(categoryKeysOf([]), []);
 assert.equal(categoryKeysOf({ error: 1 }), null);
 assert.equal(thresholdFor(basisFor("dorm")), 240);
